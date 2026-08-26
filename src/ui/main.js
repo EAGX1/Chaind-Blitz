@@ -18,6 +18,7 @@ import { clearGate, isUnlocked, markTutorialSeen } from "../meta/soloGates.js";
 import { clearLab, puzzleOfTheDay, claimPuzzleToday } from "../meta/labs.js";
 import { progress as missionProgress, applyDuelMissions, rollDailies } from "../meta/missions.js";
 import { startRecording, pushAction, exportReplay, wrapIoReplay, captureLog } from "../meta/replay.js";
+import { wrapIoPeer, disconnectPeer } from "../meta/peerNet.js";
 import {
   newRun, resolveBattle, openCardReward, openRelicReward,
   duelMods, foeLpBonus, runMetaRewards
@@ -86,7 +87,7 @@ function setupTabs() {
 async function startDuel({
   deckYou, deckFoe, extraYou = [], extraFoe = [],
   youName, foeName, aiVsAi = false, seed = null, mode = "pve", onEnd = null, onCreated = null,
-  humanSide = null, laneDefs: laneOverride = null, firstPlayer = null, meta = {}
+  humanSide = null, laneDefs: laneOverride = null, firstPlayer = null, meta = {}, wrapIo = null
 }) {
   if (currentDuel) return;
   const duelSeed = seed ?? Math.floor(Math.random() * 2 ** 31);
@@ -122,7 +123,9 @@ async function startDuel({
   view.setNames(youName, foeName);
   let humanIo = makeHumanIo(G, view);
   const side = humanSide != null ? humanSide : (aiVsAi ? -1 : 0);
-  const io = wrapIoReplay(makeCompositeIo(G, { humanIo, view, humanSide: side }), lastReplay, G);
+  let io = makeCompositeIo(G, { humanIo, view, humanSide: side });
+  if (typeof wrapIo === "function") io = wrapIo(io, { G, humanIo }) || io;
+  io = wrapIoReplay(io, lastReplay, G);
   G.io = io;
   view.renderAll();
 
@@ -146,7 +149,7 @@ async function startDuel({
     });
     if (!ok || G.over) return;
     G.over = true;
-    G.winner = 1;
+    G.winner = (typeof side === "number" && side >= 0) ? 1 - side : 1;
     G.winReason = "You conceded.";
     pushAction(lastReplay, { type: "end", result: { winner: 1, reason: G.winReason } }, G);
     captureLog(lastReplay, G);
@@ -160,7 +163,7 @@ async function startDuel({
 
   currentDuel = { G, io, view, humanIo, mode };
   const firstTeach = !aiVsAi && !window.__CB_FAST && !profile.soloGates?.tutorialSeen
-    && mode !== "labs" && side !== "both";
+    && mode !== "labs" && mode !== "pvp" && side !== "both";
   if (firstTeach) window.__CB_TEACH = true;
   try {
     const result = await runDuel(G);
@@ -168,11 +171,12 @@ async function startDuel({
     captureLog(lastReplay, G);
     view.revealFoeHand();
     view.renderAll();
-    const won = result.winner === 0;
+    const localSeat = side === 1 ? 1 : 0;
+    const won = result.winner === localSeat;
     const draw = result.winner == null;
     let extra = "";
     // modes with their own reward pipelines handle them in onEnd instead
-    const CUSTOM_REWARD_MODES = ["rogue", "gauntlet", "tourney", "brawl", "hotseat", "labs"];
+    const CUSTOM_REWARD_MODES = ["rogue", "gauntlet", "tourney", "brawl", "hotseat", "labs", "pvp"];
     if (mode === "labs" && !aiVsAi) {
       if (won) {
         const r = clearLab(profile, G.meta?.labId);
@@ -206,6 +210,14 @@ async function startDuel({
         else if (rk.promoWon) extra += " Promo won!";
         else if (rk.promoLost) extra += " Promo lost — back to 60 LP.";
         else extra += ` ${rk.lpDelta >= 0 ? "+" : ""}${rk.lpDelta} LP.`;
+        if (won && isUnlocked(profile, "gate5") && !profile.soloGates?.cleared?.gate5) {
+          clearGate(profile, "gate5");
+          extra += " Solo Gate 5 cleared!";
+        }
+        if ((profile.rank?.tier || 0) >= 1 && isUnlocked(profile, "gate6") && !profile.soloGates?.cleared?.gate6) {
+          clearGate(profile, "gate6");
+          extra += " Solo Gate 6 cleared — Silver pool unlocked!";
+        }
       }
       if (rewards.pack) {
         const rng = makeRng((Date.now()) >>> 0);
@@ -344,6 +356,71 @@ function startHotseat(deckYou, deckFoe, youName = "P1", foeName = "P2", extras =
     extraYou: extras.extraYou || [],
     extraFoe: extras.extraFoe || [],
     youName, foeName, mode: "hotseat", humanSide: "both"
+  });
+}
+
+function startRoomDuel(opts) {
+  const o = opts || {};
+  const peer = o.peer;
+  const localSeat = o.localSeat === 1 ? 1 : 0;
+  const seed = o.seed;
+  const launch = () => startDuel({
+    deckYou: o.hostDeck,
+    deckFoe: o.guestDeck,
+    extraYou: o.hostExtra || [],
+    extraFoe: o.guestExtra || [],
+    youName: o.hostName || "HOST",
+    foeName: o.guestName || "GUEST",
+    seed: seed,
+    mode: "pvp",
+    humanSide: localSeat,
+    meta: { pvp: true, room: peer && peer.code },
+    wrapIo: (io, ctx) => {
+      const G = ctx && ctx.G;
+      const humanIo = ctx && ctx.humanIo;
+      if (peer && peer.onClose) {
+        peer.onClose(() => {
+          if (G && !G.over) {
+            G.over = true;
+            G.winner = localSeat;
+            G.winReason = "Opponent disconnected.";
+          }
+          if (humanIo && humanIo.cancelPending) humanIo.cancelPending();
+        });
+      }
+      return wrapIoPeer(io, {
+        localSeat: localSeat,
+        send: (payload) => peer && peer.send && peer.send(payload),
+        pullAction: (method, player) => peer && peer.pullAction ? peer.pullAction(method, player) : Promise.resolve(null)
+      });
+    },
+    onCreated(G) {
+      const line = localSeat === 0
+        ? "Room duel: you are the host (bottom board)." 
+        : "Room duel: you are the guest — you control the top board.";
+      G.log.push({ msg: line, cls: "system", t: G.turnCount, phase: G.phase });
+    },
+    onEnd() {
+      try { disconnectPeer(); } catch (e) { /* ignore */ }
+    }
+  });
+  wireGameoverButtons(launch, { allowRematch: false });
+  launch();
+}
+
+function startRoomSeedCpu(opts) {
+  const o = opts || {};
+  const foe = STARTERS[randomFoeStarter()];
+  runDuelWithRematch({
+    deckYou: o.deckYou,
+    extraYou: o.extraYou || [],
+    deckFoe: foe.deck,
+    extraFoe: foe.extra || [],
+    youName: o.youName || "YOU",
+    foeName: (foe.name || "FOE") + " CPU",
+    seed: o.seed,
+    mode: "pve",
+    meta: { roomSeedFallback: true }
   });
 }
 
@@ -564,7 +641,9 @@ function boot() {
         }
       });
     },
-    startHotseat
+    startHotseat,
+    startRoomDuel,
+    startRoomSeedCpu
   });
   showScreen("hub");
   window.__CB = {
@@ -572,6 +651,8 @@ function boot() {
     shippedLoaners, loanerById, hub,
     lastReplay: null,
     startHotseat,
+    startRoomDuel,
+    startRoomSeedCpu,
     startQuickDuel() {
       const you = shippedLoaners()[0];
       const foe = loanerById("control_counters") || STARTERS.terra;
@@ -589,6 +670,10 @@ function boot() {
       }
       if (String(gateId).startsWith("labs_")) {
         this.startLabs(gateId);
+        return;
+      }
+      if (gateId === "gate5" || gateId === "gate6") {
+        this.hub?.queueRanked?.();
         return;
       }
       const you = shippedLoaners()[0];

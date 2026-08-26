@@ -272,7 +272,7 @@ export function BattleCity({
           avatarUrl={avatar.url}
           avatarAspect={avatar.aspect}
         />
-        <PlazaPresence enabled={!reducedMotion} />
+        <PlazaPresence />
       </Canvas>
 
       <div className={`city-hud city-hud-${tod.toLowerCase()}`}>
@@ -287,6 +287,27 @@ export function BattleCity({
             </div>
           )}
         </div>
+        <nav className="city-util" aria-label="Plaza utilities">
+          <button type="button" className="city-classic" onClick={onOpenClassicHub}>Hub</button>
+          <button
+            type="button"
+            className="city-util-btn"
+            title={t("hub.settings")}
+            aria-label={t("hub.settings")}
+            onClick={() => window.dispatchEvent(new CustomEvent("cb-open-settings"))}
+          >
+            ⚙
+          </button>
+          <button
+            type="button"
+            className="city-util-btn"
+            title="Glossary"
+            aria-label="Glossary"
+            onClick={() => window.dispatchEvent(new CustomEvent("cb-open-glossary"))}
+          >
+            ?
+          </button>
+        </nav>
         <div className="city-clock" role="group" aria-label="Time of day">
           <span>{tod}</span>
           <button type="button" className={mode === "day" ? "on" : ""} onClick={() => pickClock("day")}>DAY</button>
@@ -332,7 +353,6 @@ export function BattleCity({
             </button>
           ))}
           <button type="button" className="city-dock-btn" onClick={() => onOpenKiosk("play")}>PLAY</button>
-          <button type="button" className="city-classic" onClick={onOpenClassicHub}>Hub</button>
         </nav>
         {!nearId && !panelOpen && (
           <p className="city-hint">

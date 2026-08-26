@@ -58,6 +58,47 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
+.city-util {
+  pointer-events: none;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  min-height: 40px;
+  background: linear-gradient(180deg, rgba(255, 252, 245, 0.92), rgba(255, 248, 232, 0.82));
+  border-bottom: 3px solid #c9a227;
+  box-shadow: 0 8px 24px rgba(20, 30, 40, 0.12);
+}
+.city-util .city-classic,
+.city-util .city-util-btn {
+  pointer-events: auto;
+}
+.city-util .city-classic {
+  position: static;
+  margin: 0;
+  padding: 8px 14px;
+  border: 1px solid rgba(201, 162, 39, 0.5);
+  background: rgba(8, 12, 20, 0.9);
+}
+.city-util-btn {
+  pointer-events: auto;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(201, 162, 39, 0.5);
+  background: rgba(8, 12, 20, 0.9);
+  color: #f0d78c;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: Orbitron, sans-serif;
+}
+.city-util-btn:hover,
+.city-util .city-classic:hover {
+  border-color: #c9a227;
+  color: #fff4c8;
+}
 .city-clock {
   pointer-events: auto;
   position: absolute;
@@ -101,7 +142,7 @@
   pointer-events: auto;
   position: absolute;
   bottom: 88px;
-  right: 108px;
+  right: 18px;
   display: grid;
   justify-items: center;
   gap: 4px;
@@ -145,8 +186,10 @@
 .city-hud-dusk .city-avatar em { color: #e8dcc0; }
 .city-hud-night .city-brand,
 .city-hud-night .city-clock,
+.city-hud-night .city-util,
 .city-hud-dusk .city-brand,
-.city-hud-dusk .city-clock {
+.city-hud-dusk .city-clock,
+.city-hud-dusk .city-util {
   background: rgba(10, 14, 24, 0.82);
   color: #f4ead0;
 }
@@ -400,7 +443,98 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
   pointer-events: auto;
 }
+.building-panel.room {
+  padding: 0;
+  overflow: auto;
+  background: #0a1018;
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.62),
+    inset 0 0 0 1px rgba(8, 12, 18, 0.8);
+}
+.bp-inner {
+  position: relative;
+  margin: 10px;
+  padding: 16px 18px 22px;
+  min-height: 260px;
+  border: 1px solid rgba(201, 162, 39, 0.42);
+  box-shadow:
+    inset 0 0 0 1px rgba(8, 12, 18, 0.65),
+    inset 0 22px 48px rgba(0, 0, 0, 0.28),
+    0 1px 0 rgba(255, 236, 180, 0.1);
+  background:
+    linear-gradient(180deg, rgba(255, 236, 180, 0.07), transparent 48px),
+    linear-gradient(180deg, #1a2838 0%, #101820 40%, #0c1018 100%);
+}
+.bp-inner::before {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.38), transparent);
+}
+.bp-inner::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  left: 10%;
+  right: 10%;
+  bottom: 0;
+  height: 22px;
+  background: linear-gradient(180deg, transparent, rgba(201, 162, 39, 0.1));
+  border-bottom: 2px solid rgba(201, 162, 39, 0.28);
+}
+.room-pack_shop .bp-inner {
+  background:
+    linear-gradient(180deg, rgba(201, 162, 39, 0.12), transparent 56px),
+    linear-gradient(180deg, #2a2218, #141014 55%, #0c0a0c);
+}
+.room-coliseum .bp-inner {
+  background:
+    linear-gradient(180deg, rgba(200, 80, 60, 0.14), transparent 56px),
+    linear-gradient(180deg, #2a1c18, #141014 55%, #0c0a0c);
+}
+.room-boutique .bp-inner {
+  background:
+    linear-gradient(180deg, rgba(58, 160, 200, 0.12), transparent 56px),
+    linear-gradient(180deg, #182430, #101820 55%, #0c1016);
+}
+.room-solo_gates .bp-inner {
+  background:
+    linear-gradient(180deg, rgba(107, 203, 119, 0.12), transparent 56px),
+    linear-gradient(180deg, #182418, #101610 55%, #0c100c);
+}
+.bp-room-body { position: relative; z-index: 1; }
+.building-panel .cb-btn {
+  background: linear-gradient(180deg, #3a3018 0%, #1c160c 46%, #100e08 100%);
+  border: 1px solid #e0c056;
+  color: #f3e0a0;
+  border-radius: 3px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 236, 180, 0.42),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(201, 162, 39, 0.28),
+    0 8px 18px rgba(0, 0, 0, 0.4);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.65);
+}
+.building-panel .cb-btn:hover:not(:disabled) {
+  border-color: #f0d56a;
+  color: #fff6d0;
+  filter: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 210, 0.55),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(240, 213, 106, 0.45),
+    0 0 22px rgba(201, 162, 39, 0.38);
+}
+.building-panel .cb-btn.primary {
+  background: linear-gradient(180deg, #4a3a18 0%, #241c0c 50%, #140e08 100%);
+}
 .building-panel header {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;

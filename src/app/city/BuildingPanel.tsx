@@ -285,18 +285,21 @@ export function BuildingPanel(props: Props) {
     <>
       <div className="building-panel-scrim" onClick={onClose} aria-hidden="true" />
       <div
-        className="building-panel"
+        className={`building-panel room room-${buildingId}`}
+        data-room={buildingId}
         role="dialog"
         aria-label={label}
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
-        <header>
-          <h2>{label}</h2>
-          <button type="button" className="cb-btn bp-leave" onClick={onClose} aria-label="Leave building">LEAVE</button>
-        </header>
-        {msg && <p className="bp-msg">{msg}</p>}
-        {body}
+        <div className="bp-inner">
+          <header>
+            <h2>{label}</h2>
+            <button type="button" className="cb-btn bp-leave" onClick={onClose} aria-label="Leave building">LEAVE</button>
+          </header>
+          {msg && <p className="bp-msg">{msg}</p>}
+          <div className="bp-room-body">{body}</div>
+        </div>
       </div>
     </>
   );

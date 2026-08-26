@@ -42,4 +42,4 @@ Avoid purple-default AI chrome; keep brand Orbitron/Rajdhani stack.
 
 ## City HUD
 
-Minimal: brand, wallet, Esc/Leave, building prompt. No dashboard clutter in first plaza viewport.
+Sacred bar (brand + wallet) top-left. Reserved utility slot top-right for settings/gear/Classic Hub so they never sit on the wallet. Building prompt, clock, and dock are the rest. HUD is `pointer-events: none` except actual buttons. No dashboard clutter in the first plaza viewport.

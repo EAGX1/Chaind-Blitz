@@ -42,9 +42,13 @@
 #app.classic-mode .cb-chrome {
   top: 12px;
 }
+/* Plaza HUD owns the top-right utility slot; keep chrome for duels. */
+body:not([data-screen="duel"]) #app.city-mode .cb-chrome {
+  display: none;
+}
 #app.city-mode .cb-chrome {
-  top: auto;
-  bottom: 88px;
+  top: 16px;
+  bottom: auto;
   right: 16px;
 }
 #app.city-mode .cb-chrome .cb-replay,
