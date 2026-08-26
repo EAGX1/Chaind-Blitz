@@ -1,0 +1,20 @@
+{
+  "name": "Chaind Blitz",
+  "short_name": "Chaind Blitz",
+  "description": "Browser TCG — chains, evolution, field lanes, Battle City.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0a0e16",
+  "theme_color": "#0a0e16",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

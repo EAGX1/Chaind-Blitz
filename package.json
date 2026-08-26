@@ -1,0 +1,35 @@
+{
+  "name": "chaind-blitz",
+  "version": "0.2.0",
+  "description": "Chaind Blitz — browser TCG fusing YGO chains, Shadowverse evolution, Marvel Snap field lanes, and a roguelike loop.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:legacy": "node tools/serve.js",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "soak": "node tools/soak.js",
+    "backend": "node backend/server.js"
+  },
+  "dependencies": {
+    "@react-three/drei": "^10.0.0",
+    "@react-three/fiber": "^9.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "three": "^0.172.0",
+    "ws": "^8.21.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.172.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.6",
+    "vitest": "^2.1.8"
+  }
+}

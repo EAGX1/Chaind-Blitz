@@ -1,0 +1,136 @@
+/* Mobile / narrow layout: stack hub + duel for max-width 720px */
+
+@media (max-width: 720px) {
+  .hub-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .hub-wallet {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .hub-tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 4px;
+    padding-bottom: 4px;
+  }
+
+  .hub-tab {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .hub-body {
+    padding: 12px 14px;
+  }
+
+  #screen-duel {
+    height: 100dvh;
+    overflow: auto;
+  }
+
+  .arena {
+    height: auto;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    grid-template-areas: none;
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    padding: 4px 6px 72px;
+    gap: 6px;
+  }
+
+  .opp-hud,
+  .you-hud,
+  .opp-hand,
+  .you-hand,
+  .board,
+  #side-panel {
+    grid-area: auto;
+    width: 100%;
+    min-width: 0;
+    justify-self: stretch;
+  }
+
+  .hud {
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  #side-panel {
+    order: 99;
+    max-height: 220px;
+  }
+
+  .opp-hud { order: 1; }
+  .opp-hand { order: 2; }
+
+  .board {
+    order: 5;
+    grid-template-columns: 64px 1fr 64px;
+  }
+
+  /* Karabast: dock the prompt in the board/hand gap. Do not cover MZ. */
+  .prompt-bar {
+    position: relative !important;
+    left: auto;
+    right: auto;
+    top: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    min-width: 0 !important;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    order: 6;
+    margin: 0;
+    max-height: 40dvh;
+    overflow-y: auto;
+    pointer-events: auto !important;
+    animation: none !important;
+  }
+
+  .you-hand { order: 7; }
+  .you-hud { order: 8; }
+
+  .phase-orb {
+    position: fixed;
+    right: 10px;
+    bottom: 88px;
+    z-index: 20;
+  }
+
+  /* Karabast: 16px so iOS Safari does not zoom on focus. Desktop stays smaller. */
+  .log-search,
+  input.cb-input,
+  textarea.cb-input,
+  select.cb-select,
+  input[type="search"],
+  #deck-list-text,
+  .deck-list-text {
+    font-size: 16px !important;
+    padding: 6px 10px;
+  }
+
+  #board-3d-host {
+    display: none;
+  }
+
+  .shop-cinema {
+    grid-template-columns: 1fr;
+  }
+
+  .hub-toast {
+    top: auto;
+    bottom: 16px;
+    max-width: calc(100vw - 24px);
+  }
+}

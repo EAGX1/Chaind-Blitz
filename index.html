@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" data-ui-scale="1">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHAIND BLITZ</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0a1628">
+<link rel="icon" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/duel.css">
+<link rel="stylesheet" href="css/aaa.css">
+<link rel="stylesheet" href="css/home.css">
+<link rel="stylesheet" href="css/mobile.css">
+</head>
+<body>
+<div id="react-root"></div>
+<div id="app">
+
+  <!-- ================= HUB ================= -->
+  <section id="screen-hub" class="screen">
+    <header class="home-top">
+      <div class="brand">
+        <div class="brand-mark">CB</div>
+        <div>
+          <h1>CHAIND BLITZ</h1>
+          <p>Duel · Chain · Evolve</p>
+        </div>
+      </div>
+      <nav class="home-nav" id="hub-tabs">
+        <button class="hub-tab active" data-tab="play">PLAY</button>
+        <button class="hub-tab" data-tab="deck">DECK</button>
+        <button class="hub-tab" data-tab="collection">CARDS</button>
+        <button class="hub-tab" data-tab="shop">SHOP</button>
+        <button class="hub-tab" data-tab="ranked">RANK</button>
+        <button class="hub-tab" data-tab="rogue">RUN</button>
+        <button class="hub-tab" data-tab="modes">MORE</button>
+        <button class="hub-tab" data-tab="rulebook">RULES</button>
+      </nav>
+      <div class="home-meta">
+        <div class="hub-wallet">
+          <div class="wallet-item rank" id="wallet-rank" title="Ranked tier">BRONZE</div>
+          <div class="wallet-item"><span class="ic gem"></span><b id="wallet-gems">0</b></div>
+          <div class="wallet-item"><span class="ic coin"></span><b id="wallet-coins">0</b></div>
+          <div class="wallet-item dust" title="Craft points N / R / SR / UR"><span class="ic dust"></span><b id="wallet-dust">0/0/0/0</b></div>
+        </div>
+        <button type="button" class="home-plaza" id="btn-to-plaza" title="Battle City plaza">Plaza</button>
+      </div>
+    </header>
+
+    <div class="hub-body">
+      <div class="hub-panel active" id="panel-play"></div>
+      <div class="hub-panel" id="panel-deck"></div>
+      <div class="hub-panel" id="panel-collection"></div>
+      <div class="hub-panel" id="panel-shop"></div>
+      <div class="hub-panel" id="panel-ranked"></div>
+      <div class="hub-panel" id="panel-rogue"></div>
+      <div class="hub-panel" id="panel-modes"></div>
+      <div class="hub-panel" id="panel-rulebook"></div>
+    </div>
+  </section>
+
+  <!-- ================= DUEL ================= -->
+  <section id="screen-duel" class="screen hidden">
+    <div class="arena" id="arena">
+      <div class="arena-bg"></div>
+      <div id="board-3d-host" aria-hidden="true"></div>
+      <div class="hud opp-hud" id="hud-1">
+        <div class="hud-avatar tribe-abyss" id="avatar-1">AI</div>
+        <div class="hud-info">
+          <div class="hud-name" id="name-1">CPU</div>
+          <div class="hud-lp"><span>LP</span><b id="lp-1">20</b></div>
+          <div class="ep-row" id="ep-1"></div>
+        </div>
+        <div class="hud-counts">
+          <span>HAND <b id="hcount-1">0</b></span>
+          <span>DECK <b id="dcount-1">0</b></span>
+        </div>
+      </div>
+      <div class="hand-rail opp-hand" id="hand-1"></div>
+
+      <!-- board grid -->
+      <div class="board" id="board">
+        <!-- Left: foe Deck/GY (their right) · your Extra/Ban (your left) -->
+        <div class="wells left-wells">
+          <div class="well well-deck" id="deck-1" title="Foe Deck"><i>DECK</i><b>0</b></div>
+          <div class="well well-gy" id="gy-1" title="Foe Graveyard"><i>GY</i><b>0</b></div>
+          <div class="well-gap" aria-hidden="true"></div>
+          <div class="well well-extra" id="extra-0" title="Extra Deck"><i>EXTRA</i><b>0</b></div>
+          <div class="well well-ban" id="ban-0" title="Banished"><i>BAN</i><b>0</b></div>
+        </div>
+        <div class="grid-zones">
+          <div class="zone-row stz-row" id="stz-1"></div>
+          <div class="zone-row mz-row" id="mz-1"></div>
+          <div class="lane-row" id="lanes"></div>
+          <div class="zone-row mz-row you-mz" id="mz-0"></div>
+          <div class="zone-row stz-row" id="stz-0"></div>
+        </div>
+        <!-- Right: foe Extra/Ban (their left) · your GY/Deck (your right) -->
+        <div class="wells right-wells">
+          <div class="well well-extra" id="extra-1" title="Foe Extra Deck"><i>EXTRA</i><b>0</b></div>
+          <div class="well well-ban" id="ban-1" title="Foe Banished"><i>BAN</i><b>0</b></div>
+          <div class="well-gap" aria-hidden="true"></div>
+          <div class="well well-gy" id="gy-0" title="Graveyard"><i>GY</i><b>0</b></div>
+          <div class="well well-deck" id="deck-0" title="Deck"><i>DECK</i><b>0</b></div>
+        </div>
+      </div>
+
+      <!-- your HUD -->
+      <div class="hand-rail you-hand" id="hand-0"></div>
+      <div class="hud you-hud" id="hud-0">
+        <div class="hud-avatar tribe-ignis" id="avatar-0">YOU</div>
+        <div class="hud-info">
+          <div class="hud-name" id="name-0">DUELIST</div>
+          <div class="hud-lp yours"><span>LP</span><b id="lp-0">20</b></div>
+          <div class="ep-row" id="ep-0"></div>
+        </div>
+        <div class="hud-counts">
+          <span>HAND <b id="hcount-0">0</b></span>
+          <span>DECK <b id="dcount-0">0</b></span>
+          <button class="mini-btn" id="btn-chain-mode" title="Cycle chain prompt: Smart, Confirm, Auto, Off">CHAIN: SMART</button>
+          <button class="mini-btn" id="btn-auto" title="Lets the CPU play your cards. Not pass-priority.">AI PILOT</button>
+          <button class="mini-btn" id="btn-emote" title="Emotes">EMOTE</button>
+          <button class="mini-btn danger" id="btn-concede" title="Concede">CONCEDE</button>
+        </div>
+      </div>
+
+      <!-- phase orb -->
+      <button class="phase-orb" id="phase-orb" title="End this phase">
+        <span class="orb-turn" id="orb-turn">T1</span>
+        <span class="orb-phase" id="orb-phase">M1</span>
+        <span class="orb-hint" id="orb-hint">END</span>
+      </button>
+
+      <!-- prompt bar -->
+      <div class="prompt-bar hidden" id="prompt">
+        <div class="prompt-title" id="prompt-title"></div>
+        <div class="prompt-options" id="prompt-options"></div>
+      </div>
+
+      <!-- chain popup -->
+      <div class="chain-popup hidden" id="chain-popup">
+        <div class="chain-head">CHAIN</div>
+        <div class="chain-links" id="chain-links"></div>
+      </div>
+
+      <!-- floating fx layer -->
+      <div class="fx-layer" id="fx-layer"></div>
+
+      <!-- log + inspector -->
+      <aside class="side-panel" id="side-panel">
+        <div class="inspector" id="inspector"><p class="dim">Hover a card to inspect it.</p></div>
+        <div class="duel-log-wrap" id="duel-log-wrap">
+          <div class="duel-log-head">
+            <span>DUEL LOG</span>
+            <button type="button" class="cb-btn" id="btn-copy-log" title="Copy the full match text — not replay JSON. Filter and search only hide rows">COPY LOG</button>
+          </div>
+          <div class="duel-log" id="duel-log"></div>
+        </div>
+      </aside>
+
+      <!-- game over -->
+      <div class="modal-veil hidden" id="gameover">
+        <div class="modal-card">
+          <h1 id="go-title">VICTORY</h1>
+          <p id="go-reason"></p>
+          <div id="go-hands" class="go-hands" hidden></div>
+          <div class="modal-actions">
+            <button class="cb-btn primary" id="btn-go-rematch">REMATCH</button>
+            <button class="cb-btn" id="btn-go-swap" title="Swap lists with the other seat — Talishar">SWAP &amp; REMATCH</button>
+            <button class="cb-btn" id="btn-go-replay">DUEL LOG</button>
+            <button class="cb-btn" id="btn-go-copy">COPY REPLAY</button>
+            <button class="cb-btn" id="btn-go-dl">DOWNLOAD</button>
+            <button class="cb-btn" id="btn-go-hub">RETURN TO HUB</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script type="module" src="/src/app/main.tsx"></script>
+</body>
+</html>
