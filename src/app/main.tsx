@@ -34,6 +34,9 @@ function Root() {
       const p = (window as unknown as { __CB?: { profile?: unknown } }).__CB?.profile;
       if (p) applyEquippedToDom(p);
       setReady(true);
+    }).catch(() => {
+      setClassic(true);
+      setReady(true);
     });
     if ("serviceWorker" in navigator) {
       if (import.meta.env.DEV) {
@@ -68,13 +71,16 @@ function Root() {
     };
   }, []);
 
+  const plazaOn = !classic && !dueling;
+
   useEffect(() => {
     const app = document.getElementById("app");
     if (!app) return;
     app.classList.toggle("city-mode", !classic);
     app.classList.toggle("classic-mode", classic);
     document.documentElement.dataset.classicHub = classic ? "1" : "0";
-  }, [classic, ready]);
+    document.documentElement.dataset.plaza = plazaOn ? "1" : "0";
+  }, [classic, ready, plazaOn]);
 
   useEffect(() => {
     if (!ready || dueling) return;
@@ -129,7 +135,7 @@ function Root() {
 
   return (
     <>
-      <AppChrome />
+      <AppChrome hideChrome={plazaOn && ready} />
       {ready && <StarterPick />}
       <DuelBoardMount />
       {ready && profile && (

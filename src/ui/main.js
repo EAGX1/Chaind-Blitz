@@ -44,6 +44,7 @@ import { installKeywordTips } from "../data/effectTags.js";
 import { mountEmoteWheel } from "./emotes.js";
 import { parseDuelSeat, swapDuelSides } from "./duelSeat.js";
 import { fillRevealedHands, clearRevealedHands } from "./handReveal.js";
+import { HUB_TAB_GUIDE, applyHubTabGuide } from "./hubGuide.js";
 
 const $ = (id) => document.getElementById(id);
 const profile = loadProfile();
@@ -73,13 +74,21 @@ function showScreen(name) {
 }
 
 function setupTabs() {
-  $("hub-tabs").addEventListener("click", (e) => {
+  const nav = $("hub-tabs");
+  if (!nav) return;
+  nav.querySelectorAll(".hub-tab").forEach((b) => {
+    const line = HUB_TAB_GUIDE[b.dataset.tab];
+    if (line) b.title = line;
+  });
+  applyHubTabGuide(nav.querySelector(".hub-tab.active")?.dataset.tab || "play");
+  nav.addEventListener("click", (e) => {
     const t = e.target.closest(".hub-tab");
     if (!t) return;
     document.querySelectorAll(".hub-tab").forEach((b) => b.classList.remove("active"));
     document.querySelectorAll(".hub-panel").forEach((p) => p.classList.remove("active"));
     t.classList.add("active");
     $(`panel-${t.dataset.tab}`).classList.add("active");
+    applyHubTabGuide(t.dataset.tab);
     // re-render the freshly shown panel so wallet/dust/collection state is live
     hub?.renderers?.[t.dataset.tab]?.();
   });
@@ -860,7 +869,10 @@ function boot() {
   };
 }
 
-boot();
-
-// Playwright may read __CB before boot finishes; keep a stub
+try {
+  boot();
+} catch (err) {
+  console.error("hub boot failed", err);
+  window.__CB_BOOT_ERR = String(err?.stack || err);
+}
 window.__CB = window.__CB || { profile, save };

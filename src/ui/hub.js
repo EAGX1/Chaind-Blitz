@@ -5,15 +5,6 @@ import { STARTERS } from "../data/starters.js";
 import { CARD_DB, ALL_CARDS } from "../data/cards/index.js";
 import { shippedLoaners } from "../data/loaners.js";
 import { monsterLevel } from "../engine/state.js";
-
-const BRONZE_DB = CARD_DB;
-const BRONZE_CARDS = ALL_CARDS;
-function deckPip(def) {
-  if (!def) return "?";
-  if (def.summon === "fusion") return "E";
-  if (def.type === "spell") return def.spell?.subtype === "counter" ? "T" : "S";
-  return `★${monsterLevel(def)}`;
-}
 import { buildCardEl } from "./cardArt.js";
 import { bindCardHover } from "./cardHover.js";
 import { fxFilterBarHtml, effectsOf } from "../data/effectTags.js";
@@ -58,6 +49,14 @@ import { copiesToAdd, removeAllCopies } from "./duelSeat.js";
 
 const $ = (id) => document.getElementById(id);
 const DECK_SIZE = 40;
+const BRONZE_DB = CARD_DB;
+const BRONZE_CARDS = ALL_CARDS;
+function deckPip(def) {
+  if (!def) return "?";
+  if (def.summon === "fusion") return "E";
+  if (def.type === "spell") return def.spell?.subtype === "counter" ? "T" : "S";
+  return `★${monsterLevel(def)}`;
+}
 
 function openDeckTextModal({ title, value = "", confirm = "APPLY", hint = "", readOnly = false }) {
   return new Promise((resolve) => {
@@ -246,7 +245,7 @@ export function initHub(ctx) {
           <div class="home-hero-copy">
             <p class="home-kicker">Solo duel</p>
             <h2>QUICK DUEL</h2>
-            <p>Aggro Swarm vs Control. Chains, evolve, three lanes. Seat uses DRAW 5 rules.</p>
+            <p>Gold button starts now. Tabs above open Deck, Cards, Shop, and Rank — the line under them says what each page is for.</p>
           </div>
           <div class="home-hero-actions">
             <select class="cb-select" id="pve-seat" title="Who goes first — going first skips Battle, going second gets 3 EP">

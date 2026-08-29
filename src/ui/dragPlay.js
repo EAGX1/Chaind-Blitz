@@ -92,12 +92,24 @@ function paintGhost(src, x, y) {
   if (!ghost) {
     ghost = src.cloneNode(true);
     ghost.classList.add("cb-drag-ghost");
+    ghost.classList.remove("drag-origin", "selectable", "selected", "kb-focus", "combo-live", "teach-next");
     ghost.removeAttribute("data-uid");
     ghost.style.pointerEvents = "none";
+    ghost.style.transform = "";
     document.body.appendChild(ghost);
   }
   ghost.style.left = `${x}px`;
   ghost.style.top = `${y}px`;
+}
+
+function installNoNativeDrag() {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  if (root.dataset.cbNoNativeDrag) return;
+  root.dataset.cbNoNativeDrag = "1";
+  document.addEventListener("dragstart", (e) => {
+    if (e.target?.closest?.(".cb-card, .cb-drag-ghost")) e.preventDefault();
+  });
 }
 
 /**
@@ -105,15 +117,28 @@ function paintGhost(src, x, y) {
  * Bind the returned `down` with bindEv so unbindAll can drop it.
  */
 export function watchDrag(el, { onDragStart, onHover, onDrop } = {}) {
+  installNoNativeDrag();
   let armed = false;
   let dragging = false;
   let sx = 0;
   let sy = 0;
   let skipClick = false;
+  let pointerId = null;
   const unbindWindow = () => {
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", up);
     window.removeEventListener("pointercancel", up);
+    window.removeEventListener("blur", up);
+  };
+  const releaseCapture = () => {
+    if (pointerId == null || typeof el.releasePointerCapture !== "function") {
+      pointerId = null;
+      return;
+    }
+    try {
+      if (el.hasPointerCapture?.(pointerId)) el.releasePointerCapture(pointerId);
+    } catch { /* already released */ }
+    pointerId = null;
   };
   const move = (ev) => {
     if (!armed) return;
@@ -132,13 +157,19 @@ export function watchDrag(el, { onDragStart, onHover, onDrop } = {}) {
     onHover?.(dropFromElement(under), under);
   };
   const up = (ev) => {
+    if (!armed && !dragging) return;
     armed = false;
     const was = dragging;
     dragging = false;
-    const under = was ? document.elementFromPoint(ev.clientX, ev.clientY) : null;
+    const clientX = ev?.clientX;
+    const clientY = ev?.clientY;
+    const under = was && Number.isFinite(clientX)
+      ? document.elementFromPoint(clientX, clientY)
+      : null;
     const drop = was ? dropFromElement(under) : null;
     liveCancel = null;
     unbindWindow();
+    releaseCapture();
     ghost?.remove();
     ghost = null;
     document.body?.classList.remove("cb-dragging");
@@ -158,10 +189,18 @@ export function watchDrag(el, { onDragStart, onHover, onDrop } = {}) {
     dragging = false;
     sx = ev.clientX;
     sy = ev.clientY;
-    liveCancel = unbindWindow;
+    pointerId = ev.pointerId;
+    liveCancel = () => {
+      armed = false;
+      dragging = false;
+      unbindWindow();
+      releaseCapture();
+    };
+    try { el.setPointerCapture?.(ev.pointerId); } catch { /* not a pointer event target */ }
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
     window.addEventListener("pointercancel", up);
+    window.addEventListener("blur", up);
   };
   return {
     down,

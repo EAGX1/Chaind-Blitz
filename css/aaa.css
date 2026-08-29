@@ -68,7 +68,7 @@ html[data-ui-scale="1.5"] { --ui-scale: 1.5; }
 .prompt-bar {
   top: 28%;
   bottom: auto;
-  min-width: 480px;
+  min-width: min(480px, calc(100vw - var(--duel-side, 300px) - 48px));
   border-width: 2px;
   background: linear-gradient(180deg, rgba(18, 24, 36, 0.97), rgba(8, 12, 20, 0.97));
 }
@@ -102,7 +102,7 @@ html[data-ui-scale="1.5"] { --ui-scale: 1.5; }
 }
 .phase-orb.clickable .orb-hint { display: inline-block; }
 .phase-orb {
-  right: 318px;
+  right: calc(var(--duel-side, 300px) + 18px);
   bottom: 188px;
 }
 
@@ -425,6 +425,7 @@ html[data-fx-skip="1"] .phase-orb.juice-lose-orb {
 .hub-body { padding: 16px 20px 72px; }
 
 /* Settings chrome sits over wallet without this gutter */
+#app.classic-mode .home-top,
 #app.classic-mode .hub-top { padding-right: 220px; }
 #app.classic-mode .cb-chrome { top: 14px; right: 16px; }
 

@@ -61,6 +61,7 @@
 .city-util {
   pointer-events: none;
   position: absolute;
+  z-index: 8;
   top: 16px;
   right: 16px;
   display: flex;
@@ -137,6 +138,15 @@
   background: linear-gradient(180deg, #f0d78c, #c9a227);
   color: #1a1408;
   border-color: #e8c35a;
+}
+@media (max-width: 960px) {
+  .city-clock {
+    top: 92px;
+    left: 20px;
+    right: auto;
+    transform: none;
+  }
+  .city-brand { max-width: calc(100vw - 200px); }
 }
 .city-avatar {
   pointer-events: auto;
@@ -277,9 +287,13 @@
   bottom: 18px;
   transform: translateX(-50%);
   display: flex;
+  flex-wrap: wrap;
   align-items: stretch;
+  justify-content: center;
   gap: 0;
-  min-width: min(760px, 92vw);
+  min-width: 0;
+  width: min(760px, 96vw);
+  max-width: 96vw;
   padding: 7px 8px 7px 7px;
   background:
     linear-gradient(180deg, rgba(28, 34, 22, 0.97), rgba(8, 10, 14, 0.98));
@@ -310,6 +324,11 @@
 }
 .city-quick:hover { filter: brightness(1.08); }
 .city-dock-btn,
+.city-quick {
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
+.city-dock-btn,
 .city-dock .city-classic {
   position: static;
   padding: 10px 16px;
@@ -330,7 +349,7 @@
   background: rgba(201, 162, 39, 0.1);
 }
 .city-dock .city-classic {
-  margin-left: auto;
+  margin-left: 0;
   border: 1px solid rgba(201, 162, 39, 0.4);
   border-right: 1px solid rgba(201, 162, 39, 0.4);
   background: linear-gradient(180deg, rgba(22, 28, 18, 0.9), rgba(10, 12, 10, 0.9));

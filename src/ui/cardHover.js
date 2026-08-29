@@ -4,8 +4,6 @@
 
 import { CARD_DB } from "../data/cards/index.js";
 import { buildCardEl } from "./cardArt.js";
-import { CARD_DB } from "../data/cards/index.js";
-import { buildCardEl } from "./cardArt.js";
 import { comboTagsFor, comboPartnersFor, CIRCUITS, circuitClass } from "../data/comboTags.js";
 
 const POP_ID = "card-hover-pop";

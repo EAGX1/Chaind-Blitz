@@ -288,7 +288,7 @@ export function BattleCity({
           )}
         </div>
         <nav className="city-util" aria-label="Plaza utilities">
-          <button type="button" className="city-classic" onClick={onOpenClassicHub}>Hub</button>
+          <button type="button" className="city-classic" title="Open Deck, Cards, Shop, and Rank menus" onClick={onOpenClassicHub}>Hub</button>
           <button
             type="button"
             className="city-util-btn"
@@ -356,7 +356,7 @@ export function BattleCity({
         </nav>
         {!nearId && !panelOpen && (
           <p className="city-hint">
-            {reducedMotion ? "Teleporter mode" : "Click to walk · WASD · E near a door"}
+            {reducedMotion ? "Teleporter mode" : "Click to walk · WASD · E near a door · Hub (top right) opens menus"}
           </p>
         )}
       </div>

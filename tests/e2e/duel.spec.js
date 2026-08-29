@@ -42,6 +42,10 @@ test("AI vs AI spectate completes with no errors", async ({ page }) => {
 test("hub renders and lanes/hud are present", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".brand h1")).toHaveText("CHAIND BLITZ");
+  await expect(page.locator("#hub-guide")).toContainText("PLAY");
+  await page.click('[data-tab="deck"]');
+  await expect(page.locator("#hub-guide")).toContainText("DECK");
+  await page.click('[data-tab="play"]');
   await page.click("#btn-quick-duel");
   await expect(page.locator("#hud-0")).toBeVisible();
   await expect(page.locator("#orb-phase")).not.toBeEmpty();

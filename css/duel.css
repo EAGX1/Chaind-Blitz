@@ -1,9 +1,10 @@
 /* ============ CHAIND BLITZ — duel screen (Master Duel layout) ============ */
 #screen-duel { background: var(--bg0); height: 100vh; overflow: hidden; }
 .arena {
+  --duel-side: 300px;
   position: relative; height: 100vh; display: grid;
-  grid-template-rows: auto auto 1fr auto auto;
-  grid-template-columns: 1fr 300px;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) var(--duel-side);
   grid-template-areas:
     "ohud side"
     "ohand side"
@@ -11,6 +12,7 @@
     "yhand side"
     "yhud side";
   padding: 6px 10px; gap: 4px;
+  min-width: 0;
 }
 .arena-bg {
   position: absolute; inset: 0; pointer-events: none; z-index: 0;
@@ -21,9 +23,9 @@
 
 /* ---- HUD ---- */
 .hud {
-  display: flex; gap: 12px; align-items: center; z-index: 2;
+  display: flex; gap: 12px; align-items: center; z-index: 2; flex-wrap: wrap;
   background: rgba(13,18,32,.85); border: 1px solid var(--line);
-  border-radius: 10px; padding: 6px 14px; width: max-content; min-width: 480px;
+  border-radius: 10px; padding: 6px 14px; width: auto; min-width: 0; max-width: 100%;
 }
 .opp-hud { grid-area: ohud; justify-self: start; }
 .you-hud { grid-area: yhud; justify-self: start; }
@@ -84,13 +86,21 @@
 /* ---- hands ---- */
 .hand-rail {
   display: flex; justify-content: center; align-items: flex-end; gap: 6px;
-  min-height: 40px; z-index: 3; padding: 0 40px;
+  min-height: 40px; z-index: 3; padding: 0 12px;
+  min-width: 0; max-width: 100%;
+  overflow-x: auto; overflow-y: visible;
+  scrollbar-width: thin;
 }
-.opp-hand { grid-area: ohand; align-items: flex-start; }
-.you-hand { grid-area: yhand; position: relative; z-index: 100; }
+.opp-hand { grid-area: ohand; align-items: flex-start; min-height: calc(52px * var(--ui-scale, 1) * 1.45 + 8px); }
+.you-hand {
+  grid-area: yhand; position: relative; z-index: 100;
+  min-height: calc(118px * var(--ui-scale, 1) * 1.5);
+  padding-top: 10px;
+}
 .you-hand .cb-card { pointer-events: auto; }
 .you-hand .cb-card { --cw: 96px; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
 .you-hand .cb-card:hover { transform: translateY(-18px) scale(1.06); z-index: 20; box-shadow: 0 12px 30px rgba(0,0,0,.7); }
+body.cb-dragging .you-hand .cb-card:hover { transform: none; box-shadow: none; }
 .you-hand .cb-card.selectable { box-shadow: 0 0 0 2px var(--teal), 0 0 18px rgba(57,208,200,.5); }
 .you-hand .cb-card.kb-focus,
 .zone .cb-card.kb-focus,
@@ -104,8 +114,8 @@
 /* ---- board ---- */
 .board {
   grid-area: board; display: grid;
-  grid-template-columns: 84px 1fr 84px;
-  gap: 8px; z-index: 2; min-height: 0;
+  grid-template-columns: minmax(52px, 84px) minmax(0, 1fr) minmax(52px, 84px);
+  gap: 8px; z-index: 2; min-height: 0; min-width: 0;
 }
 .wells {
   display: grid;
@@ -128,11 +138,12 @@
 .well-gy { border-color: rgba(148, 163, 184, .4); }
 .well-deck { border-style: solid; }
 .grid-zones { display: grid; grid-template-rows: 1fr 1.1fr .9fr 1.1fr 1fr; gap: 4px; min-height: 0; }
-.zone-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.zone-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; min-width: 0; }
 .zone {
   border: 1px solid rgba(38,51,82,.8); border-radius: 8px;
   background: rgba(13,18,32,.55);
   display: grid; place-items: center; position: relative;
+  min-width: 0;
   transition: box-shadow .15s ease, border-color .15s ease;
 }
 .zone .cb-card { --cw: 76px; pointer-events: auto; cursor: pointer; }
@@ -144,7 +155,7 @@
 .zone .cb-card.selected { box-shadow: 0 0 0 2px var(--gold), 0 0 22px rgba(245,197,66,.6); }
 
 /* ---- lanes ---- */
-.lane-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.lane-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; min-width: 0; }
 .lane {
   grid-column: span 2; border-radius: 8px; position: relative;
   border: 1px solid var(--line);
@@ -260,7 +271,7 @@
 
 /* ---- phase orb ---- */
 .phase-orb {
-  position: absolute; right: 322px; bottom: 210px; z-index: 10;
+  position: absolute; right: calc(var(--duel-side, 300px) + 22px); bottom: 210px; z-index: 10;
   width: 86px; height: 86px; border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #223055, #0d1220);
   border: 2px solid var(--line); color: var(--txt);
@@ -278,7 +289,10 @@
 /* ---- prompt bar ---- */
 .prompt-bar {
   position: absolute; left: 50%; top: 28%; bottom: auto; transform: translateX(-50%);
-  z-index: 40; min-width: 420px; max-width: 760px;
+  z-index: 40;
+  min-width: min(420px, calc(100vw - var(--duel-side, 300px) - 48px));
+  max-width: min(760px, calc(100vw - var(--duel-side, 300px) - 48px));
+  box-sizing: border-box;
   pointer-events: none;
   background: rgba(10,15,28,.95); border: 1px solid var(--gold); border-radius: 10px;
   padding: 12px 16px; box-shadow: 0 10px 40px rgba(0,0,0,.7), 0 0 24px rgba(245,197,66,.2);
@@ -426,7 +440,7 @@
   grid-area: side; z-index: 4;
   background: rgba(10,15,28,.9); border: 1px solid var(--line); border-radius: 10px;
   display: grid; grid-template-rows: minmax(72px, 30%) auto minmax(180px, 1fr);
-  overflow: hidden; min-height: 0;
+  overflow: hidden; min-height: 0; min-width: 0;
 }
 .duel-log-wrap {
   display: flex;
@@ -888,9 +902,21 @@ html[data-board3d="1"] #board-3d-host::after {
 .zone .cb-card { animation: cardIn .22s ease; }
 @keyframes cardIn { from { opacity: 0; transform: translateY(-8px) scale(.9); } to { opacity: 1; } }
 
+#screen-duel .cb-card { touch-action: none; }
+#screen-duel .phase-orb {
+  right: calc(var(--duel-side, 300px) + 18px);
+}
+#screen-duel .prompt-bar {
+  min-width: min(480px, calc(100vw - var(--duel-side, 300px) - 48px));
+  max-width: min(760px, calc(100vw - var(--duel-side, 300px) - 48px));
+}
+
 @media (max-width: 1200px) {
-  .arena { grid-template-columns: 1fr 240px; }
-  .phase-orb { right: 260px; }
+  .arena { --duel-side: 240px; }
+}
+@media (max-width: 900px) {
+  .arena { --duel-side: 200px; }
+  #screen-duel .zone .cb-card { --cw: calc(64px * var(--ui-scale, 1)); }
 }
 
 /* ================= lane reveal cinematic ================= */
@@ -969,8 +995,11 @@ html[data-board3d="1"] #board-3d-host::after {
   margin: 0;
   transform: translate(-50%, -50%) scale(1.06);
   opacity: 0.94;
+  touch-action: none;
 }
+.cb-card svg, .cb-card img { -webkit-user-drag: none; pointer-events: none; }
 body.cb-dragging { cursor: grabbing; user-select: none; }
+body.cb-dragging .you-hand .cb-card { transform: none; }
 body.cb-dragging .card-hover-pop { display: none !important; }
 .zone.zone-selectable::after {
   content: attr(data-lane);

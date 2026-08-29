@@ -29,7 +29,7 @@ function emitSettingsChanged(s: Settings) {
   window.dispatchEvent(new CustomEvent("cb-settings-changed", { detail: s }));
 }
 
-export function AppChrome() {
+export function AppChrome({ hideChrome = false }: { hideChrome?: boolean }) {
   const [open, setOpen] = useState(false);
   const [settings, setSettings] = useState<Settings>(() => loadSettings() as Settings);
   const [glossaryOpen, setGlossaryOpen] = useState(false);
@@ -213,18 +213,20 @@ export function AppChrome() {
   return (
     <>
       <ThreeBackdrop reducedMotion={!!settings.reducedMotion} />
-      <div className="cb-chrome">
-        <button type="button" className="cb-chrome-btn" onClick={() => (open ? setOpen(false) : openSettings())} title={t("hub.settings")}>
-          ⚙
-        </button>
-        <button type="button" className="cb-chrome-btn" onClick={() => setGlossaryOpen((v) => !v)} title="Glossary">
-          ?
-        </button>
-        <button type="button" className="cb-chrome-btn cb-replay" onClick={openLastReplay} title="Duel log">
-          ▶
-        </button>
-        <span className="cb-version">v0.2 · offline</span>
-      </div>
+      {!hideChrome ? (
+        <div className="cb-chrome">
+          <button type="button" className="cb-chrome-btn" onClick={() => (open ? setOpen(false) : openSettings())} title={t("hub.settings")}>
+            ⚙
+          </button>
+          <button type="button" className="cb-chrome-btn" onClick={() => setGlossaryOpen((v) => !v)} title="Glossary">
+            ?
+          </button>
+          <button type="button" className="cb-chrome-btn cb-replay" onClick={openLastReplay} title="Duel log">
+            ▶
+          </button>
+          <span className="cb-version">v0.2 · offline</span>
+        </div>
+      ) : null}
 
       {open && (
         <div className="cb-modal" role="dialog" aria-label={t("hub.settings")}>

@@ -42,18 +42,9 @@
 #app.classic-mode .cb-chrome {
   top: 12px;
 }
-/* Plaza HUD owns the top-right utility slot; keep chrome for duels. */
-body:not([data-screen="duel"]) #app.city-mode .cb-chrome {
-  display: none;
-}
-#app.city-mode .cb-chrome {
-  top: 16px;
-  bottom: auto;
-  right: 16px;
-}
-#app.city-mode .cb-chrome .cb-replay,
-#app.city-mode .cb-chrome .cb-version {
-  display: none;
+/* Chrome lives in #react-root, not #app — plaza already has Hub / ⚙ / ? */
+html[data-plaza="1"] .cb-chrome {
+  display: none !important;
 }
 .cb-chrome-btn {
   width: 36px;

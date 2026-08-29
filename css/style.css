@@ -196,6 +196,7 @@ select.cb-select, input.cb-input, textarea.cb-input {
   overflow: hidden;
   flex-shrink: 0;
   user-select: none;
+  -webkit-user-drag: none;
 }
 .cb-card.tribe-Ignis { border-color: color-mix(in srgb, var(--ignis) 65%, #222); }
 .cb-card.tribe-Abyss { border-color: color-mix(in srgb, var(--abyss) 65%, #222); }
@@ -515,7 +516,7 @@ html[data-avatar="avatar_crown"] #avatar-0 { border-color: #58d68d; color: #b8f5
 }
 
 /* deck editor */
-.deck-editor { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
+.deck-editor { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); gap: 20px; align-items: start; }
 .deck-side { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 0; }
 .deck-inspect {
   background: var(--panel); border: 1px solid var(--gold); border-radius: 10px; padding: 12px;
