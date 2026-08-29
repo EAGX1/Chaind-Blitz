@@ -20,6 +20,7 @@ import { formatDuelLog, copyText, logLineText } from "./duelLogText.js";
 import { installIdleBoardKeys } from "./idleKeys.js";
 import { paintCombatOverlay, clearCombatOverlay } from "./combatOverlay.js";
 import { CARD_DB } from "../data/cards/index.js";
+import { comboTagsFor, comboPartnersFor, CIRCUITS, circuitClass } from "../data/comboTags.js";
 import { announce, installAnnounceRepeat } from "./liveAnnounce.js";
 import { harvestSeen, handFaceUp } from "./seenSet.js";
 import { watchDrag, reorderHandList } from "./dragPlay.js";
@@ -210,6 +211,7 @@ export function createDuelView(G) {
       applyPlayHint(el, G, c);
       rail.appendChild(el);
     }
+    if (p === 0) paintComboLive();
   }
 
   function hintHand(rail, cards) {
@@ -217,6 +219,51 @@ export function createDuelView(G) {
     for (const c of cards) {
       const el = rail.querySelector(`[data-uid="${c.uid}"]`);
       applyPlayHint(el, G, c);
+    }
+    paintComboLive();
+  }
+
+  function circuitSetsFrom(cards) {
+    const enables = new Set();
+    const pays = new Set();
+    for (const c of cards) {
+      if (!c) continue;
+      const t = comboTagsFor(c.id);
+      for (const x of t.enables) enables.add(x);
+      for (const x of t.pays) pays.add(x);
+    }
+    return { enables, pays };
+  }
+
+  function comboHit(id, others) {
+    const t = comboTagsFor(id);
+    return t.pays.find((x) => others.enables.has(x)) || t.enables.find((x) => others.pays.has(x)) || null;
+  }
+
+  function markComboLive(el, hit) {
+    if (!el) return;
+    el.classList.toggle("combo-live", !!hit);
+    if (hit) {
+      el.dataset.circuit = hit;
+      el.title = `Combo live: ${CIRCUITS[hit].label} — ${CIRCUITS[hit].blurb}`;
+    } else {
+      delete el.dataset.circuit;
+    }
+  }
+
+  /** Ring a hand card when a circuit partner is on the board, and the reverse. */
+  function paintComboLive() {
+    const mine = [...P(G, 0).mz, ...P(G, 0).stz].filter((c) => c && c.faceup);
+    const hand = P(G, 0).hand || [];
+    const fromBoard = circuitSetsFrom(mine);
+    const fromHand = circuitSetsFrom(hand);
+    const rail = $("hand-0");
+    if (rail) {
+      for (const c of hand) markComboLive(rail.querySelector(`[data-uid="${c.uid}"]`), comboHit(c.id, fromBoard));
+    }
+    for (const c of mine) {
+      const el = document.querySelector(`#mz-0 [data-uid="${c.uid}"], #stz-0 [data-uid="${c.uid}"]`);
+      markComboLive(el, comboHit(c.id, fromHand));
     }
   }
 
@@ -264,6 +311,7 @@ export function createDuelView(G) {
         zone.dataset.dmg = c ? String(c.dmg || 0) : "0";
       }
     }
+    if (p === 0) paintComboLive();
   }
 
   function isZoneLocked(p, z) {
@@ -405,7 +453,46 @@ export function createDuelView(G) {
     }
     meta.textContent = bits.join(" · ");
     box.appendChild(meta);
+    paintCombos(box, c.def, showInspector);
     paintRelated(box, c.def);
+  }
+
+  /** COMBOS WITH: partners drawn from the shared circuit web. */
+  function paintCombos(box, def, onPick) {
+    const tags = comboTagsFor(def.id);
+    const partners = comboPartnersFor(def, { limit: 6 });
+    if (!partners.length) return;
+    const wrap = document.createElement("div");
+    wrap.className = "combo-block";
+    const head = document.createElement("p");
+    head.className = "related-head";
+    head.textContent = "COMBOS WITH";
+    wrap.appendChild(head);
+    if (tags.enables.length || tags.pays.length) {
+      const line = document.createElement("p");
+      line.className = "combo-circuits dim";
+      const feeds = tags.enables.map((c) => CIRCUITS[c].label).join(", ") || "—";
+      const pays = tags.pays.map((c) => CIRCUITS[c].label).join(", ") || "—";
+      line.textContent = `Feeds ${feeds} · Pays off on ${pays}`;
+      wrap.appendChild(line);
+    }
+    const list = document.createElement("div");
+    list.className = "related-list";
+    for (const row of partners) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = `combo-chip ${circuitClass(row.circuit)}`;
+      b.innerHTML = `<span class="combo-circuit ${circuitClass(row.circuit)}">${CIRCUITS[row.circuit].label}</span>${row.name}`;
+      b.title = row.why;
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const fake = relatedInspectCard(row.def);
+        if (fake) onPick(fake);
+      });
+      list.appendChild(b);
+    }
+    wrap.appendChild(list);
+    box.appendChild(wrap);
   }
 
   function paintRelated(box, def) {
@@ -792,6 +879,25 @@ export function createDuelView(G) {
     reorderHand,
 
     showInspector,
+    showCombo(n) {
+      let chip = $("combo-counter");
+      if (!chip) {
+        chip = document.createElement("div");
+        chip.id = "combo-counter";
+        chip.className = "combo-counter";
+        document.getElementById("arena")?.appendChild(chip);
+      }
+      chip.hidden = false;
+      chip.textContent = `COMBO ×${n}`;
+      chip.classList.remove("pop");
+      void chip.offsetWidth;
+      chip.classList.add("pop");
+      announce(`Combo ${n}`);
+    },
+    clearCombo() {
+      const chip = $("combo-counter");
+      if (chip) chip.hidden = true;
+    },
     showCpuIntent(intent) {
       let chip = $("cpu-intent");
       if (!chip) {

@@ -3,6 +3,7 @@
 import { enableCardTilt } from "./tiltFoil.js";
 import { monsterLevel } from "../engine/state.js";
 import { fxStripHtml, linkifyCardText } from "../data/effectTags.js";
+import { comboTagsFor, CIRCUITS, circuitClass } from "../data/comboTags.js";
 
 const PALETTES = {
   Ignis: ["#ffb37c", "#ff7a3c", "#7a1f00", "#2b0d00"],
@@ -77,7 +78,33 @@ function curatedPortrait(def) {
     fusion_cinder_archon: `<rect width="100" height="100" fill="${bg}"/><path d="M50 12 L66 44 L50 88 L34 44 Z" fill="${low}"/><path d="M50 24 L58 46 L50 72 L42 46 Z" fill="${mid}"/><circle cx="50" cy="44" r="6" fill="${hi}"/>`,
     fusion_warden_titan: `<rect width="100" height="100" fill="${bg}"/><rect x="26" y="30" width="48" height="56" fill="${low}"/><path d="M26 44 H74 M26 58 H74" stroke="${mid}" stroke-width="4"/><path d="M50 10 L62 30 H38 Z" fill="${hi}"/>`,
     fusion_rush_general: `<rect width="100" height="100" fill="${bg}"/><path d="M18 70 L50 26 L82 70 Z" fill="${low}"/><path d="M28 70 L50 40 L72 70" fill="${mid}"/><path d="M12 82 H88" stroke="${hi}" stroke-width="5"/>`,
-    fusion_storm_caller: `<rect width="100" height="100" fill="${bg}"/><path d="M56 12 L30 54 H48 L42 88 L72 42 H54 Z" fill="${mid}"/><circle cx="50" cy="50" r="30" fill="none" stroke="${low}" stroke-width="4"/>`
+    fusion_storm_caller: `<rect width="100" height="100" fill="${bg}"/><path d="M56 12 L30 54 H48 L42 88 L72 42 H54 Z" fill="${mid}"/><circle cx="50" cy="50" r="30" fill="none" stroke="${low}" stroke-width="4"/>`,
+    // Wave H — the neutral combo core: every glyph is a link in a circuit
+    relay_sprite: `<rect width="100" height="100" fill="${bg}"/><circle cx="30" cy="50" r="11" fill="${low}"/><circle cx="70" cy="50" r="11" fill="${low}"/><path d="M41 50 H59" stroke="${hi}" stroke-width="6"/><circle cx="50" cy="26" r="7" fill="${mid}"/>`,
+    sigil_courier: `<rect width="100" height="100" fill="${bg}"/><path d="M22 62 L50 20 L78 62 Z" fill="${low}"/><path d="M50 62 V86" stroke="${mid}" stroke-width="6"/><circle cx="50" cy="44" r="7" fill="${hi}"/>`,
+    chain_acolyte: `<rect width="100" height="100" fill="${bg}"/><circle cx="50" cy="36" r="16" fill="none" stroke="${low}" stroke-width="7"/><circle cx="50" cy="66" r="16" fill="none" stroke="${mid}" stroke-width="7"/><circle cx="50" cy="51" r="5" fill="${hi}"/>`,
+    echo_adept: `<rect width="100" height="100" fill="${bg}"/><circle cx="50" cy="50" r="10" fill="${hi}"/><circle cx="50" cy="50" r="20" fill="none" stroke="${mid}" stroke-width="4" opacity=".8"/><circle cx="50" cy="50" r="31" fill="none" stroke="${low}" stroke-width="3" opacity=".6"/>`,
+    muster_drum: `<rect width="100" height="100" fill="${bg}"/><ellipse cx="50" cy="40" rx="26" ry="10" fill="${mid}"/><rect x="24" y="40" width="52" height="30" fill="${low}"/><ellipse cx="50" cy="70" rx="26" ry="10" fill="${mid}"/><path d="M28 34 L72 76 M72 34 L28 76" stroke="${hi}" stroke-width="3"/>`,
+    ledger_imp: `<rect width="100" height="100" fill="${bg}"/><rect x="28" y="22" width="44" height="56" fill="${low}"/><path d="M36 36 H64 M36 48 H64 M36 60 H56" stroke="${hi}" stroke-width="4"/><circle cx="70" cy="72" r="9" fill="${mid}"/>`,
+    overdraft_sage: `<rect width="100" height="100" fill="${bg}"/><path d="M26 74 L26 26 L50 38 L74 26 L74 74" fill="none" stroke="${low}" stroke-width="7"/><circle cx="50" cy="60" r="9" fill="${hi}"/>`,
+    salvage_wisp: `<rect width="100" height="100" fill="${bg}"/><path d="M50 84 C30 62 26 44 38 30 C44 40 50 44 50 44 C50 44 56 40 62 30 C74 44 70 62 50 84 Z" fill="${mid}"/><circle cx="50" cy="56" r="7" fill="${hi}"/>`,
+    pitch_adept: `<rect width="100" height="100" fill="${bg}"/><path d="M24 28 L48 52 L24 76" fill="none" stroke="${low}" stroke-width="8"/><path d="M54 28 H80 M54 50 H80 M54 72 H70" stroke="${mid}" stroke-width="6"/>`,
+    grave_ledger: `<rect width="100" height="100" fill="${bg}"/><rect x="26" y="30" width="48" height="46" fill="${low}"/><path d="M26 44 H74 M26 58 H74" stroke="${mid}" stroke-width="3"/><path d="M38 30 V16 H62 V30" fill="none" stroke="${hi}" stroke-width="5"/>`,
+    carrion_bell: `<rect width="100" height="100" fill="${bg}"/><path d="M32 66 C32 42 40 28 50 28 C60 28 68 42 68 66 Z" fill="${low}"/><path d="M26 66 H74" stroke="${mid}" stroke-width="5"/><circle cx="50" cy="76" r="7" fill="${hi}"/>`,
+    exile_warden: `<rect width="100" height="100" fill="${bg}"/><circle cx="50" cy="50" r="28" fill="none" stroke="${low}" stroke-width="7"/><path d="M32 32 L68 68" stroke="${hi}" stroke-width="7"/><circle cx="50" cy="50" r="8" fill="${mid}"/>`,
+    rift_keeper: `<rect width="100" height="100" fill="${bg}"/><path d="M50 12 C60 34 60 66 50 88 C40 66 40 34 50 12 Z" fill="${low}"/><path d="M50 24 C56 38 56 62 50 76 C44 62 44 38 50 24 Z" fill="${bg}"/><circle cx="50" cy="50" r="5" fill="${hi}"/>`,
+    loop_warden: `<rect width="100" height="100" fill="${bg}"/><circle cx="50" cy="50" r="26" fill="none" stroke="${low}" stroke-width="8"/><path d="M50 24 L60 36 H40 Z" fill="${hi}"/><circle cx="50" cy="50" r="10" fill="${mid}"/>`,
+    spark_offering: `<rect width="100" height="100" fill="${bg}"/><path d="M30 22 L30 60 L18 60 L44 88 L44 50 L56 50 Z" fill="${mid}"/><path d="M60 22 H84 V56 H60 Z" fill="${low}"/>`,
+    exile_pact: `<rect width="100" height="100" fill="${bg}"/><circle cx="38" cy="50" r="18" fill="none" stroke="${low}" stroke-width="6"/><circle cx="66" cy="50" r="18" fill="none" stroke="${mid}" stroke-width="6"/><path d="M50 34 V66" stroke="${hi}" stroke-width="5"/>`,
+    rally_horn: `<rect width="100" height="100" fill="${bg}"/><path d="M18 58 L58 34 V74 Z" fill="${low}"/><path d="M60 40 Q86 54 60 68" fill="none" stroke="${hi}" stroke-width="6"/>`,
+    culling_rite: `<rect width="100" height="100" fill="${bg}"/><path d="M50 14 V64" stroke="${mid}" stroke-width="7"/><path d="M30 64 H70 L50 90 Z" fill="${low}"/><circle cx="50" cy="28" r="8" fill="${hi}"/>`,
+    hand_relay: `<rect width="100" height="100" fill="${bg}"/><rect x="16" y="34" width="30" height="42" fill="${low}"/><rect x="54" y="24" width="30" height="42" fill="${mid}"/><path d="M46 56 H54" stroke="${hi}" stroke-width="6"/>`,
+    grave_tithe: `<rect width="100" height="100" fill="${bg}"/><path d="M24 80 H76 L50 94 Z" fill="${mid}"/><rect x="32" y="26" width="36" height="52" fill="${low}"/><path d="M40 40 H60 M40 54 H60" stroke="${hi}" stroke-width="4"/>`,
+    double_sigil: `<rect width="100" height="100" fill="${bg}"/><rect x="18" y="26" width="32" height="48" fill="${low}"/><rect x="50" y="26" width="32" height="48" fill="${mid}"/><circle cx="34" cy="50" r="6" fill="${hi}"/><circle cx="66" cy="50" r="6" fill="${hi}"/>`,
+    relay_chain: `<rect width="100" height="100" fill="${bg}"/><circle cx="28" cy="50" r="12" fill="none" stroke="${low}" stroke-width="6"/><circle cx="50" cy="50" r="12" fill="none" stroke="${mid}" stroke-width="6"/><circle cx="72" cy="50" r="12" fill="none" stroke="${hi}" stroke-width="6"/>`,
+    void_ledger: `<rect width="100" height="100" fill="${bg}"/><rect x="26" y="24" width="48" height="54" fill="${low}"/><circle cx="50" cy="52" r="15" fill="${bg}"/><circle cx="50" cy="52" r="15" fill="none" stroke="${hi}" stroke-width="4"/>`,
+    summon_toll: `<rect width="100" height="100" fill="${bg}"/><path d="M22 74 L38 40 L54 74 Z" fill="${low}"/><path d="M50 74 L66 30 L82 74 Z" fill="${mid}"/><path d="M14 82 H88" stroke="${hi}" stroke-width="5"/>`,
+    token_recruit: `<rect width="100" height="100" fill="${bg}"/><circle cx="50" cy="36" r="13" fill="${mid}"/><path d="M30 82 C30 62 70 62 70 82 Z" fill="${low}"/>`
   };
   const body = portraits[def.id];
   if (!body) return null;
@@ -185,6 +212,11 @@ export function buildCardEl(card, { faceDown = false, stats = null, count = null
     : `LV${lv} ${def.tribe} Monster`;
   const defTitle = wounded ? `HP ${hp} / ${printedDef}` : "";
   const foilLayer = foil ? `<span class="card-foil" aria-hidden="true"></span>` : "";
+  // Cards that pay off on a circuit wear it, so their role reads at a glance.
+  const pays = comboTagsFor(def.id).pays;
+  const comboPip = pays.length
+    ? `<div class="combo-pip ${circuitClass(pays[0])}" data-circuit="${pays[0]}" title="Pays off on ${pays.map((c) => CIRCUITS[c].label).join(", ")}">${CIRCUITS[pays[0]].label}${pays.length > 1 ? ` +${pays.length - 1}` : ""}</div>`
+    : "";
   el.innerHTML = `
     <div class="card-head">
       ${costPip}
@@ -197,6 +229,7 @@ export function buildCardEl(card, { faceDown = false, stats = null, count = null
     ${isSpell ? "" : `<div class="card-stats"><span class="atk">${atk}</span><span class="def${wounded ? " wounded" : ""}" title="${defTitle}">${hp}</span></div>`}
     ${card.evolved ? `<div class="evolve-pip">EVO</div>` : ""}
     ${!isSpell && wounded ? `<div class="dmg-pip" title="Damage taken">-${card.dmg}</div>` : ""}
+    ${comboPip}
   `;
   if (count != null) {
     const b = document.createElement("div");

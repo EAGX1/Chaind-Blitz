@@ -4,6 +4,9 @@
 
 import { CARD_DB } from "../data/cards/index.js";
 import { buildCardEl } from "./cardArt.js";
+import { CARD_DB } from "../data/cards/index.js";
+import { buildCardEl } from "./cardArt.js";
+import { comboTagsFor, comboPartnersFor, CIRCUITS, circuitClass } from "../data/comboTags.js";
 
 const POP_ID = "card-hover-pop";
 let pop = null;
@@ -48,6 +51,29 @@ function fillDock(def) {
   text.className = "card-hover-text";
   text.textContent = def.text || "No effect text.";
   dock.appendChild(text);
+  const tags = comboTagsFor(def.id);
+  if (tags.enables.length || tags.pays.length) {
+    const line = document.createElement("p");
+    line.className = "combo-circuits dim";
+    const feeds = tags.enables.map((c) => CIRCUITS[c].label).join(", ") || "—";
+    const pays = tags.pays.map((c) => CIRCUITS[c].label).join(", ") || "—";
+    line.textContent = `Feeds ${feeds} · Pays off on ${pays}`;
+    dock.appendChild(line);
+  }
+  const partners = comboPartnersFor(def, { limit: 4 });
+  if (partners.length) {
+    const head = document.createElement("p");
+    head.className = "related-head";
+    head.textContent = "COMBOS WITH";
+    dock.appendChild(head);
+    for (const row of partners) {
+      const p = document.createElement("p");
+      p.className = `combo-hover-partner ${circuitClass(row.circuit)}`;
+      p.textContent = `${CIRCUITS[row.circuit].label} · ${row.name}`;
+      p.title = row.why;
+      dock.appendChild(p);
+    }
+  }
 }
 
 function place(anchor) {

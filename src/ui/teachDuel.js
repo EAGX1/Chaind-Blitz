@@ -1,5 +1,6 @@
 // First-duel coach: teach by highlighting the next legal click, not a rulebook.
 import { P, monstersOf, isFirstTurnNoBattle, canEvolveNow, cannotAttackReason } from "../engine/state.js";
+import { comboTagsFor, CIRCUITS } from "../data/comboTags.js";
 
 export function isTeachDuel(G) {
   if (!G) return false;
@@ -34,9 +35,11 @@ export function teachStep(G) {
     };
   }
   if (G.phase === "M1" || G.phase === "M2") {
+    const combo = comboLiveTip(G);
     return {
       id: "main",
-      tip: "Main Phase: click a glowing card, or the orb to go to Battle. Grey cards stay dead with a reason."
+      tip: combo
+        || "Main Phase: click a glowing card, or the orb to go to Battle. Grey cards stay dead with a reason."
     };
   }
   if (G.phase === "BP") {
@@ -46,6 +49,26 @@ export function teachStep(G) {
     };
   }
   return { id: "phase", tip: "Click the golden orb to advance the phase." };
+}
+
+function comboLiveTip(G) {
+  const field = [...P(G, 0).mz, ...P(G, 0).stz].filter((c) => c && c.faceup);
+  if (!field.length) return "";
+  const enables = new Set();
+  const pays = new Set();
+  for (const c of field) {
+    const t = comboTagsFor(c.id);
+    for (const x of t.enables) enables.add(x);
+    for (const x of t.pays) pays.add(x);
+  }
+  for (const c of P(G, 0).hand || []) {
+    const t = comboTagsFor(c.id);
+    const hit = t.pays.find((x) => enables.has(x)) || t.enables.find((x) => pays.has(x));
+    if (!hit) continue;
+    const name = c.def?.name || c.id;
+    return `Pulsing ring: ${name} combos with a card on your board (${CIRCUITS[hit].label}). Play it to pay off.`;
+  }
+  return "";
 }
 
 function preferredSummon(actions) {

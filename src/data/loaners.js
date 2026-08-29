@@ -61,6 +61,20 @@ export const LOANER_DECKS = {
     ]),
     extra: ["fusion_ember_drake"]
   },
+  circuit_relay: {
+    id: "circuit_relay", name: "Circuit Relay", pillar: "Combo", ship: "must",
+    desc: "Neutral 2–3 card loops. Every pair shares a verb — Spellchain, Pitch, Muster, Harvest.",
+    deck: deck40([
+      x("sigil_courier", 3), x("chain_acolyte", 2), x("relay_sprite", 3),
+      x("echo_adept", 2), x("ledger_imp", 3), x("salvage_wisp", 3),
+      x("carrion_bell", 2), x("exile_warden", 2), x("muster_drum", 2),
+      x("grave_ledger", 2),
+      x("spark_offering", 3), x("exile_pact", 2), x("rally_horn", 2),
+      x("hand_relay", 2), x("scroll_greed", 2), x("relay_chain", 2),
+      ["loop_warden", "veil_needle", "helix_shot"]
+    ]),
+    extra: ["fusion_staple_knight", "fusion_staple_aegis"]
+  },
   control_counters: {
     id: "control_counters", name: "Control / Counters", pillar: "Control", ship: "must",
     desc: "Answer everything with snares, counters, and hand traps.",
@@ -611,6 +625,7 @@ const ARCHETYPE_EXTRA = {
   ignis_mid: [...ignisThin, "fusion_cinder_archon"],
   wide_rush: [...ignisThin, "fusion_rush_general"],
   contact_combo: ["fusion_ember_drake"],
+  circuit_relay: ["fusion_staple_knight", "fusion_staple_aegis"],
   tri_splash: ["fusion_choice_blade"],
   gy: gyBest,
   gy_fusion_combo: ["fusion_grave_tyrant", "fusion_grave_jester", "fusion_ember_drake"],

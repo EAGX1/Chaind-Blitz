@@ -14,7 +14,7 @@ import { poolForTier } from "../../src/meta/pools.js";
 import { BRONZE_DB } from "../../src/data/cards/bronze.js";
 import {
   ALL_CARDS, BRONZE_CARDS, WAVE_C_CARDS, WAVE_D_CARDS, WAVE_E_CARDS,
-  WAVE_F_CARDS, WAVE_G_CARDS, SILVER_CARDS, GOLD_CARDS, PLATINUM_CARDS, EXTRA_CARDS
+  WAVE_F_CARDS, WAVE_G_CARDS, WAVE_H_CARDS, SILVER_CARDS, GOLD_CARDS, PLATINUM_CARDS, EXTRA_CARDS
 } from "../../src/data/cards/index.js";
 import { GATES, clearGate, isUnlocked, checklist } from "../../src/meta/soloGates.js";
 import { asSavedDeck, copyLimit, setCopyLimit, validateDeck, banlistFromPreset, ADVANCED_COPIES } from "../../src/meta/banlist.js";
@@ -95,11 +95,11 @@ describe("pool gating", () => {
   it("ranked pools ramp until Diamond equals the full unique catalog; Master is prestige", () => {
     const expected = [
       uniqueIds(BRONZE_CARDS),
-      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS, WAVE_G_CARDS),
-      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS, WAVE_G_CARDS, WAVE_D_CARDS, GOLD_CARDS),
-      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS, WAVE_G_CARDS, WAVE_D_CARDS, GOLD_CARDS, WAVE_E_CARDS, EXTRA_CARDS, PLATINUM_CARDS),
-      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS, WAVE_G_CARDS, WAVE_D_CARDS, GOLD_CARDS, WAVE_E_CARDS, EXTRA_CARDS, PLATINUM_CARDS, WAVE_F_CARDS),
-      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS, WAVE_G_CARDS, WAVE_D_CARDS, GOLD_CARDS, WAVE_E_CARDS, EXTRA_CARDS, PLATINUM_CARDS, WAVE_F_CARDS),
+      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS, WAVE_G_CARDS, WAVE_H_CARDS),
+      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS, WAVE_G_CARDS, WAVE_H_CARDS, WAVE_D_CARDS, GOLD_CARDS),
+      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS, WAVE_G_CARDS, WAVE_H_CARDS, WAVE_D_CARDS, GOLD_CARDS, WAVE_E_CARDS, EXTRA_CARDS, PLATINUM_CARDS),
+      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS, WAVE_G_CARDS, WAVE_H_CARDS, WAVE_D_CARDS, GOLD_CARDS, WAVE_E_CARDS, EXTRA_CARDS, PLATINUM_CARDS, WAVE_F_CARDS),
+      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS, WAVE_G_CARDS, WAVE_H_CARDS, WAVE_D_CARDS, GOLD_CARDS, WAVE_E_CARDS, EXTRA_CARDS, PLATINUM_CARDS, WAVE_F_CARDS),
     ];
     const uniqueAll = uniqueIds(ALL_CARDS);
     const sizes = [0, 1, 2, 3, 4, 5].map((t) => poolForTier(t).length);
@@ -115,6 +115,9 @@ describe("pool gating", () => {
   it("starter staples are in the Silver pool so new players can craft them", () => {
     const silver = new Set(poolForTier(1).map((c) => c.id));
     for (const id of ["veil_needle", "helix_shot", "ash_whisper", "twin_cut", "equal_cut"]) {
+      expect(silver.has(id), id).toBe(true);
+    }
+    for (const id of ["sigil_courier", "salvage_wisp", "spark_offering", "ledger_imp"]) {
       expect(silver.has(id), id).toBe(true);
     }
   });
@@ -217,7 +220,8 @@ describe("campaign start + dev account", () => {
   it("choosing Ignis grants that list only and saves the deck", () => {
     const p = freshProfile({ starter: "ignis" });
     expect(p.starterId).toBe("ignis");
-    expect(p.collection.ember_fox).toBe(3);
+    expect(p.collection.ember_fox).toBe(2);
+    expect(p.collection.sigil_courier).toBe(1);
     expect(p.decks["Ignis Rush"].main).toHaveLength(40);
     expect(p.collection.tide_caller || 0).toBe(0);
     expect(p.collection.moss_sprite || 0).toBe(0);
@@ -234,7 +238,7 @@ describe("campaign start + dev account", () => {
     saveProfile(p);
     const loaded = loadProfile();
     expect(loaded.collection.ember_fox || 0).toBe(0);
-    expect(loaded.collection.moss_sprite).toBe(3);
+    expect(loaded.collection.moss_sprite).toBe(2);
     expect(loaded.starterId).toBe("terra");
   });
 

@@ -7,6 +7,7 @@ import { WAVE_D_CARDS } from "../data/cards/waveD.js";
 import { WAVE_E_CARDS } from "../data/cards/waveE.js";
 import { WAVE_F_CARDS } from "../data/cards/waveF.js";
 import { WAVE_G_CARDS } from "../data/cards/waveG.js";
+import { WAVE_H_CARDS } from "../data/cards/waveH.js";
 import { SILVER_CARDS } from "../data/cards/silver.js";
 import { GOLD_CARDS } from "../data/cards/gold.js";
 import { PLATINUM_CARDS } from "../data/cards/platinum.js";
@@ -23,8 +24,9 @@ export const TIERS = [
 
 const SETS_BY_TIER = [
   BRONZE_CARDS,
-  // Silver front-loads the generic staples so starter decks can be completed early.
-  [...WAVE_C_CARDS, ...SILVER_CARDS, ...WAVE_G_CARDS],
+  // Silver front-loads the generic staples and the neutral combo core, so a
+  // new player can finish their starter and start building combos immediately.
+  [...WAVE_C_CARDS, ...SILVER_CARDS, ...WAVE_G_CARDS, ...WAVE_H_CARDS],
   [...WAVE_D_CARDS, ...GOLD_CARDS],
   [...WAVE_E_CARDS, ...EXTRA_CARDS, ...PLATINUM_CARDS],
   WAVE_F_CARDS,

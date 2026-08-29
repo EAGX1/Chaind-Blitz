@@ -52,6 +52,7 @@ import { loadSettings } from "./settingsStore.js";
 import { openReplayScrubber } from "./replayScrubber.js";
 import { connectPeer } from "../meta/peerNet.js";
 import { deckCurveHtml } from "./deckCurve.js";
+import { deckCircuits, deckComboLine, suggestedGlueForDeck, CIRCUITS, comboTagsFor, circuitClass } from "../data/comboTags.js";
 import { serializeDeckList, parseDeckList, drawOpeningHand, openingSeatNote } from "./deckList.js";
 import { copiesToAdd, removeAllCopies } from "./duelSeat.js";
 
@@ -484,6 +485,7 @@ export function initHub(ctx) {
       <p class="dim" id="deck-banlist" style="font-size:11px;margin:0 0 8px;"></p>
       <p class="dim" id="deck-analytics" style="font-size:11px;margin:0 0 8px;"></p>
       <div id="deck-curve-host" class="deck-curve-host"></div>
+      <div id="deck-combo-host" class="deck-combo-host"></div>
       ${dev ? `<div class="banlist-editor" id="banlist-editor"></div>` : `<p class="dim" style="font-size:11px;margin:0 0 8px;">Dev Mode (Settings) unlocks the banlist editor — set any card to 0 / 1 / 2 / 3 copies.</p>`}
       <div class="deck-editor">
         <div class="deck-pool" id="deck-pool"></div>
@@ -679,8 +681,14 @@ export function initHub(ctx) {
       const qn = q.trim().toLowerCase();
       const owned = have
         .filter((c) => extraTab ? isExtraCard(c) : !isExtraCard(c))
-        .filter((c) => !qn || c.name.toLowerCase().includes(qn) || c.id.includes(qn) || (c.tribe || "").toLowerCase().includes(qn)
-          || effectsOf(c).some((t) => t.label.toLowerCase().includes(qn) || t.id === qn))
+        .filter((c) => {
+          if (!qn) return true;
+          const tags = comboTagsFor(c.id);
+          const circuits = [...tags.enables, ...tags.pays].map((id) => CIRCUITS[id]?.label || id).join(" ");
+          return c.name.toLowerCase().includes(qn) || c.id.includes(qn) || (c.tribe || "").toLowerCase().includes(qn)
+            || effectsOf(c).some((t) => t.label.toLowerCase().includes(qn) || t.id === qn)
+            || circuits.toLowerCase().includes(qn);
+        })
         .filter((c) => !editor.poolFx.size || effectsOf(c).some((t) => editor.poolFx.has(t.id)));
       for (const def of owned) {
         const wrap = document.createElement("div");
@@ -742,6 +750,45 @@ export function initHub(ctx) {
       host.appendChild(scroll);
     }
 
+    /** Circuit meter: which combo verbs this list feeds, and what pays them off. */
+    function renderComboMeter() {
+      const host = $("deck-combo-host");
+      if (!host) return;
+      const ids = [...editor.cards, ...editor.extra];
+      if (!ids.length) { host.innerHTML = ""; return; }
+      const rows = deckCircuits(ids);
+      const glue = suggestedGlueForDeck(ids, { limit: 6 });
+      host.innerHTML = `
+        <p class="combo-meter-line">${deckComboLine(ids)}</p>
+        <div class="combo-meter">
+          ${rows.map((r) => `
+            <div class="combo-meter-row ${r.live ? "live" : r.payoffs ? "warm" : "cold"}" title="${r.blurb}">
+              <span class="cm-name">${r.label}</span>
+              <span class="cm-bar"><i style="width:${Math.min(100, r.enablers * 4)}%"></i></span>
+              <span class="cm-num">${r.enablers} feed · ${r.payoffs} payoff</span>
+            </div>`).join("")}
+        </div>
+        ${glue.length ? `<p class="combo-glue-label">Missing glue — click to add if you own it</p>
+          <div class="combo-glue">${glue.map((g) =>
+            `<button type="button" class="combo-glue-chip ${circuitClass(g.circuit)}" data-glue="${g.id}" title="${g.why}">${CIRCUITS[g.circuit].label} · ${g.name}</button>`
+          ).join("")}</div>` : ""}`;
+      host.querySelectorAll("[data-glue]").forEach((b) => {
+        b.addEventListener("click", () => {
+          const id = b.dataset.glue;
+          const def = BRONZE_DB[id];
+          const cap = capFor(id);
+          if (!def) return;
+          if (cap <= 0) return setStatus(`You don't own ${def.name} yet — craft it in Collection.`, true);
+          if (copiesInEditor(id) >= cap) return setStatus(`No more copies of ${def.name}.`, true);
+          if (editor.cards.length >= DECK_SIZE) return setStatus(`Main deck is ${DECK_SIZE}.`, true);
+          editor.cards.push(id);
+          sfx.click();
+          renderDeckList();
+          renderDeckPool();
+        });
+      });
+    }
+
     function renderDeckList() {
       const err = deckIsValid();
       const banEl = $("deck-banlist");
@@ -750,6 +797,7 @@ export function initHub(ctx) {
       if (anEl) anEl.textContent = deckAnalyticsLine(editor.cards);
       const curveHost = $("deck-curve-host");
       if (curveHost) curveHost.innerHTML = editor.cards?.length ? deckCurveHtml(editor.cards) : "";
+      renderComboMeter();
       const list = $("deck-list");
       const extraEl = $("deck-extra");
       renderIdList(list, editor.cards, `MAIN — ${editor.cards.length}/${DECK_SIZE}${err && editor.cards.length ? ` <span style="color:var(--red);font-size:11px;">${err}</span>` : ""}`, (id, { all } = {}) => {
@@ -778,6 +826,10 @@ export function initHub(ctx) {
           <select class="cb-select" id="col-filter">
             <option value="">All tribes</option><option>Ignis</option><option>Abyss</option><option>Terra</option><option>Neutral</option>
           </select>
+          <select class="cb-select" id="col-circuit">
+            <option value="">All circuits</option>
+            ${Object.values(CIRCUITS).map((c) => `<option value="${c.id}">${c.label}</option>`).join("")}
+          </select>
           <select class="cb-select" id="col-rarity">
             <option value="">All rarities</option>
             <option value="N">N</option><option value="R">R</option><option value="SR">SR</option><option value="UR">UR</option>
@@ -790,6 +842,7 @@ export function initHub(ctx) {
     const draw = () => {
       const tribe = $("col-filter").value;
       const rarity = $("col-rarity")?.value || "";
+      const circuit = $("col-circuit")?.value || "";
       const q = ($("col-search")?.value || "").trim().toLowerCase();
       const ownedOnly = $("col-owned").checked;
       const grid = $("col-grid");
@@ -797,8 +850,14 @@ export function initHub(ctx) {
       for (const def of BRONZE_CARDS) {
         if (tribe && def.tribe !== tribe) continue;
         if (rarity && def.rarity !== rarity) continue;
+        if (circuit) {
+          const tags = comboTagsFor(def.id);
+          if (!tags.enables.includes(circuit) && !tags.pays.includes(circuit)) continue;
+        }
         if (q) {
-          const blob = `${def.name} ${def.id} ${def.text || ""}`.toLowerCase();
+          const tags = comboTagsFor(def.id);
+          const circuits = [...tags.enables, ...tags.pays].map((id) => CIRCUITS[id]?.label || id).join(" ");
+          const blob = `${def.name} ${def.id} ${def.text || ""} ${circuits}`.toLowerCase();
           if (!blob.includes(q)) continue;
         }
         const owned = profile.collection[def.id] || 0;
@@ -853,6 +912,7 @@ export function initHub(ctx) {
     };
     $("col-filter").addEventListener("change", draw);
     $("col-rarity")?.addEventListener("change", draw);
+    $("col-circuit")?.addEventListener("change", draw);
     $("col-owned").addEventListener("change", draw);
     $("col-search")?.addEventListener("input", draw);
     document.querySelectorAll("[data-dustbuy]").forEach((b) => b.addEventListener("click", () => {
@@ -1357,6 +1417,10 @@ export function initHub(ctx) {
       then the Evolve effect starts a Speed 1 chain (Ash Whisper can answer).</p>
       <p>Freshly summoned monsters have <b>summoning sickness</b> and cannot attack unless they have <b>Rush</b>.
       Rush still cannot attack on the going-first player's first turn.</p>`],
+    ["COMBOS", `
+      <p>Every card <b>feeds</b> at least one circuit and many <b>pay off</b> on another. Two cards that share a verb are a combo — three cards are a chain.</p>
+      <p><b>Spellchain</b> — you activate a spell. <b>Muster</b> — a monster hits the field. <b>Overdraw</b> — you draw outside the Draw Phase. <b>Pitch</b> — a card leaves your hand. <b>Harvest</b> — a monster hits the GY. <b>Exile</b> — a card is banished.</p>
+      <p>Neutral glue like Sigil Courier, Salvage Wisp, Spark Offering, and Ledger Imp goes in any deck. In a duel, a pulsing ring means a partner is already live — play the glowing card to pay off. The deck editor's circuit meter tells you when you feed a verb with no payoff.</p>`],
     ["CHAINS", `
       <p>When a card or effect is activated, a <b>chain</b> opens. Both players may respond with legal fast effects, stacking
       <b>Chain Links</b> (CL1, CL2, CL3...). When both players pass, the chain resolves <b>backwards</b> — the last link resolves first.</p>
@@ -1391,8 +1455,8 @@ export function initHub(ctx) {
       <p>Ranked climbs Bronze → Silver → Gold → Platinum → Diamond → Master, 100 LP per tier. Hitting 100 LP starts a
       <b>promotion series</b>: you queue ranked duels one at a time and need 2 wins before 2 losses.
       Ranked is for your own collection (starters and custom lists); the ladder <b>soft-resets two tiers</b> each monthly season.
-      Your <b>card pool grows with your tier</b> — Bronze 60, Silver 162 (Wave C + Silver + staples), Gold 184 (Wave D + Gold),
-      Platinum 230 (Wave E + Extra + Platinum), Diamond 306 (Wave F — full catalog). Master is prestige: the pool is already complete.</p>
+      Your <b>card pool grows with your tier</b> — Bronze 60, Silver 186 (Wave C + Silver + staples + combo core), Gold 208 (Wave D + Gold),
+      Platinum 254 (Wave E + Extra + Platinum), Diamond 330 (Wave F — full catalog). Master is prestige: the pool is already complete.</p>
       <p>Packs drop cards only from your unlocked pool. Dismantle 3 cards of a rarity to craft any 1 card of that rarity (10 CP in, 30 CP out).</p>
       <p><b>Advanced</b> limits Starfall, Lightning Tempest, Both Boards, Scream Home, Research Burn, Empty Sky, and Tactic Choice to 1 copy. Unlimited is 3.</p>`],
     ["MODES", `

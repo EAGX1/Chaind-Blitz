@@ -523,6 +523,109 @@
 }
 .related-recipes { font-size: 11px; margin: 0 0 6px; line-height: 1.3; }
 .related-list { display: flex; flex-direction: column; gap: 3px; }
+
+/* ---- combo web ---- */
+.combo-block { margin-top: 10px; }
+.combo-circuits { font-size: 11px; margin: 0 0 6px; line-height: 1.3; }
+.combo-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  font-size: 11px;
+  padding: 4px 6px;
+  background: #131c2e;
+  border: 1px solid rgba(122, 214, 255, 0.35);
+  color: var(--txt);
+  cursor: pointer;
+}
+.combo-chip:hover { border-color: var(--teal); background: #17233b; }
+.combo-circuit {
+  flex: 0 0 auto;
+  font-family: var(--font-head);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: rgba(122, 214, 255, 0.18);
+  color: #9fdcff;
+}
+.combo-circuit.circuit-spell, .combo-pip.circuit-spell, .combo-chip.circuit-spell { color: #f5c542; border-color: rgba(245, 197, 66, 0.45); }
+.combo-circuit.circuit-summon, .combo-pip.circuit-summon, .combo-chip.circuit-summon { color: #39d0c8; border-color: rgba(57, 208, 200, 0.45); }
+.combo-circuit.circuit-draw, .combo-pip.circuit-draw, .combo-chip.circuit-draw { color: #c084fc; border-color: rgba(192, 132, 252, 0.45); }
+.combo-circuit.circuit-discard, .combo-pip.circuit-discard, .combo-chip.circuit-discard { color: #fb923c; border-color: rgba(251, 146, 60, 0.5); }
+.combo-circuit.circuit-death, .combo-pip.circuit-death, .combo-chip.circuit-death { color: #f87171; border-color: rgba(248, 113, 113, 0.5); }
+.combo-circuit.circuit-banish, .combo-pip.circuit-banish, .combo-chip.circuit-banish { color: #7a9cff; border-color: rgba(122, 156, 255, 0.5); }
+.combo-circuit.circuit-spell { background: rgba(245, 197, 66, 0.18); }
+.combo-circuit.circuit-summon { background: rgba(57, 208, 200, 0.18); }
+.combo-circuit.circuit-draw { background: rgba(192, 132, 252, 0.18); }
+.combo-circuit.circuit-discard { background: rgba(251, 146, 60, 0.18); }
+.combo-circuit.circuit-death { background: rgba(248, 113, 113, 0.18); }
+.combo-circuit.circuit-banish { background: rgba(122, 156, 255, 0.18); }
+.cb-card.combo-live {
+  outline: 2px solid rgba(122, 214, 255, 0.95);
+  outline-offset: -2px;
+  animation: comboLivePulse 1.15s ease-in-out infinite;
+}
+.cb-card.combo-live[data-circuit="SPELL"] { outline-color: #f5c542; }
+.cb-card.combo-live[data-circuit="SUMMON"] { outline-color: #39d0c8; }
+.cb-card.combo-live[data-circuit="DRAW"] { outline-color: #c084fc; }
+.cb-card.combo-live[data-circuit="DISCARD"] { outline-color: #fb923c; }
+.cb-card.combo-live[data-circuit="DEATH"] { outline-color: #f87171; }
+.cb-card.combo-live[data-circuit="BANISH"] { outline-color: #7a9cff; }
+@keyframes comboLivePulse {
+  0%, 100% { outline-offset: -2px; }
+  50% { outline-offset: 3px; }
+}
+.cb-card .combo-pip {
+  position: absolute;
+  top: 18%;
+  left: 5%;
+  z-index: 5;
+  font-family: var(--font-head);
+  font-size: calc(var(--cw) * 0.075);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 1px 4px;
+  border-radius: 2px;
+  background: rgba(10, 26, 44, 0.92);
+  color: #9fdcff;
+  border: 1px solid rgba(122, 214, 255, 0.5);
+  pointer-events: none;
+}
+.combo-counter {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  z-index: 18;
+  font-family: var(--font-head);
+  font-size: 28px;
+  letter-spacing: 0.12em;
+  padding: 10px 22px;
+  background: rgba(10, 26, 44, 0.94);
+  border: 2px solid var(--teal);
+  color: #9fdcff;
+  pointer-events: none;
+}
+.combo-counter.pop { animation: comboPop 0.45s ease-out; }
+@keyframes comboPop {
+  0% { transform: translate(-50%, -50%) scale(0.55); opacity: 0; }
+  55% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+.combo-counter[hidden] { display: none; }
+.fx-combo {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: fxCombo calc(.8s * var(--fx-pace, 1)) ease forwards;
+  background: radial-gradient(circle, rgba(122, 214, 255, 0.55), transparent 65%);
+}
+@keyframes fxCombo {
+  0% { opacity: 1; transform: scale(0.35); }
+  100% { opacity: 0; transform: scale(1.9); }
+}
 .related-chip {
   text-align: left;
   font-size: 11px;

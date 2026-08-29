@@ -10,7 +10,7 @@ import { WAVE_E_CARDS } from "../../src/data/cards/waveE.js";
 import { WAVE_F_CARDS } from "../../src/data/cards/waveF.js";
 import { WAVE_G_CARDS } from "../../src/data/cards/waveG.js";
 import { ALL_CARDS, CARD_DB } from "../../src/data/cards/index.js";
-import { STARTERS, STARTER_STAPLES } from "../../src/data/starters.js";
+import { STARTERS, STARTER_STAPLES, STARTER_COMBO } from "../../src/data/starters.js";
 import { shippedLoaners, loanerById } from "../../src/data/loaners.js";
 import { validateDeck } from "../../src/meta/banlist.js";
 import { AI_BUDGETS } from "../../src/ai/budgets.ts";
@@ -203,8 +203,9 @@ describe("must-ship decks", () => {
     expect(L.extra).toEqual(STARTERS.meta.extra);
   });
 
-  it("Ignis / Abyss / Terra ship an 8-card staple package and stay legal 40", () => {
+  it("Ignis / Abyss / Terra ship staples plus Neutral combo glue and stay legal 40", () => {
     expect(STARTER_STAPLES).toHaveLength(8);
+    expect(STARTER_COMBO).toHaveLength(4);
     for (const id of ["ignis", "abyss", "terra"]) {
       const s = STARTERS[id];
       expect(s.deck, id).toHaveLength(40);
@@ -215,7 +216,18 @@ describe("must-ship decks", () => {
       expect(s.deck.filter((x) => x === "ash_whisper")).toHaveLength(2);
       expect(s.deck).toContain("twin_cut");
       expect(s.deck).toContain("equal_cut");
+      for (const glue of STARTER_COMBO) expect(s.deck, id).toContain(glue);
     }
+  });
+
+  it("Circuit Relay loaner is a legal Neutral combo list", () => {
+    const L = loanerById("circuit_relay");
+    expect(L).toBeTruthy();
+    expect(L.deck).toHaveLength(40);
+    expect(validateDeck({ main: L.deck, extra: L.extra }).ok).toBe(true);
+    expect(L.deck).toContain("sigil_courier");
+    expect(L.deck).toContain("salvage_wisp");
+    expect(L.extra).toContain("fusion_staple_knight");
   });
 
   it("every spell in CARD_DB has a resolve function", () => {
@@ -305,7 +317,7 @@ describe("Wave E meta staples", () => {
 describe("Wave F authored set", () => {
   it("ships original staples without a 500-card name-fill cap", () => {
     expect(WAVE_F_CARDS.length).toBe(76);
-    expect(ALL_CARDS).toHaveLength(306);
+    expect(ALL_CARDS).toHaveLength(330);
     const ids = WAVE_F_CARDS.map((c) => c.id);
     expect(new Set(ids).size).toBe(76);
     const blob = WAVE_F_CARDS.map((c) => `${c.name} ${c.text}`).join("\n");

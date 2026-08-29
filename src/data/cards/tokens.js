@@ -9,5 +9,13 @@ export const token_stonewall = {
   keywords: ["ward"], archetypes: ["token_walls"], token: true
 };
 
-export const TOKEN_CARDS = [token_stonewall];
+/** Cheap SUMMON-circuit fuel for the neutral combo core. */
+export const token_recruit = {
+  id: "token_recruit", name: "Recruit Token", type: "monster",
+  tribe: "Neutral", cost: 1, atk: 1, def: 1, rarity: "N",
+  text: "A body called to feed the chain.",
+  archetypes: ["combo_core"], token: true
+};
+
+export const TOKEN_CARDS = [token_stonewall, token_recruit];
 export const TOKEN_DB = Object.fromEntries(TOKEN_CARDS.map((c) => [c.id, c]));

@@ -1,17 +1,23 @@
 // Starter decks (40 cards) and the 20-card roguelike run starter.
 
+/** 4 Neutral 2–3-card glue pieces — Spellchain, Pitch, Overdraw. Any tribe can run them. */
+export const STARTER_COMBO = [
+  "sigil_courier", "salvage_wisp", "spark_offering", "ledger_imp"
+];
+
 /** Wave E/F staple pile — original jobs, 40 main. */
 export const META_STAPLE_MAIN = [
-  ...Array(3).fill("trail_fox"), ...Array(3).fill("ember_fox"),
+  ...Array(2).fill("trail_fox"), ...Array(2).fill("ember_fox"),
   ...Array(2).fill("spark_juggler"), ...Array(2).fill("tithe_owl"),
   "charge_fool", ...Array(2).fill("cinder_tyrant"),
   "ivory_colossus", "flood_verdict", "bastion_reflector",
   "overreach_warden", "ink_magister",
   ...Array(3).fill("hush_petal"), ...Array(2).fill("empty_veto"),
   ...Array(2).fill("void_pitch"), ...Array(2).fill("ash_whisper"),
-  ...Array(3).fill("arc_triple"), ...Array(2).fill("recall_gust"),
-  "low_blow", "quiet_exile", "moon_fold", "grace_split",
-  "gale_sweep", "cyclone_break", "blood_veto", "rank_four_call"
+  ...Array(3).fill("arc_triple"), "recall_gust",
+  "low_blow", "quiet_exile", "moon_fold",
+  "gale_sweep", "cyclone_break", "blood_veto", "rank_four_call",
+  ...STARTER_COMBO
 ];
 export const META_STAPLE_EXTRA = [
   "fusion_pyre_wyrm", "fusion_ember_drake", "fusion_tempo_ace", "fusion_abyss_leviathan"
@@ -28,15 +34,15 @@ export const STARTERS = {
     id: "ignis", name: "Ignis Rush",
     desc: "Burn fast, evolve faster. Ember Spark answers threats; Fever Pitch ends games.",
     deck: [
-      ...Array(3).fill("ember_fox"), ...Array(3).fill("cinder_knight"),
+      ...Array(2).fill("ember_fox"), ...Array(2).fill("cinder_knight"),
       ...Array(3).fill("flame_djinn"), ...Array(2).fill("pyro_hydra"),
       "inferno_titan", ...Array(3).fill("ash_prophet"), ...Array(2).fill("lava_giant"),
       ...Array(3).fill("swift_falcon"), "rush_swarmling",
       "doomblade_novice",
-      ...Array(3).fill("ember_spark"), ...Array(2).fill("fever_pitch"),
-      "flame_banner", ...Array(3).fill("burning_lance"),
+      ...Array(2).fill("ember_spark"), ...Array(2).fill("fever_pitch"),
+      "flame_banner", ...Array(2).fill("burning_lance"),
       "spark_raider",
-      ...STARTER_STAPLES
+      ...STARTER_STAPLES, ...STARTER_COMBO
     ],
     extra: ["fusion_pyre_wyrm", "fusion_ember_drake", "fusion_tempo_ace"]
   },
@@ -44,15 +50,15 @@ export const STARTERS = {
     id: "abyss", name: "Abyss Control",
     desc: "Snares, freezes and counters. Win the long game behind walls of ice.",
     deck: [
-      ...Array(3).fill("tide_caller"), ...Array(3).fill("frost_mage"),
+      ...Array(2).fill("tide_caller"), ...Array(2).fill("frost_mage"),
       ...Array(2).fill("abyss_warden"), ...Array(2).fill("deep_serpent"),
       ...Array(2).fill("kraken"), ...Array(3).fill("tide_priestess"), ...Array(3).fill("depths_lurker"),
-      ...Array(2).fill("scav_wisp"), ...Array(2).fill("oracle_eel"),
-      ...Array(3).fill("tidal_snare"), "moonwell",
+      "scav_wisp", ...Array(2).fill("oracle_eel"),
+      ...Array(2).fill("tidal_snare"), "moonwell",
       ...Array(2).fill("deep_freeze"),
       "riptide", "tide_cutter",
       ...Array(2).fill("null_seal"),
-      ...STARTER_STAPLES
+      ...STARTER_STAPLES, ...STARTER_COMBO
     ],
     extra: ["fusion_abyss_leviathan"]
   },
@@ -60,16 +66,16 @@ export const STARTERS = {
     id: "terra", name: "Terra Midrange",
     desc: "Grow wide, evolve tall. The grove provides, the grove protects.",
     deck: [
-      ...Array(3).fill("moss_sprite"), ...Array(3).fill("dawn_pixie"),
+      ...Array(2).fill("moss_sprite"), ...Array(2).fill("dawn_pixie"),
       ...Array(2).fill("thorn_archer"), ...Array(2).fill("stoneback"),
       ...Array(2).fill("grove_elder"), "wolf_alpha",
       "world_turtle", ...Array(2).fill("seed_sage"),
-      ...Array(3).fill("shield_sprite"), ...Array(2).fill("gem_golem"),
-      ...Array(3).fill("root_snare"),
+      ...Array(2).fill("shield_sprite"), ...Array(2).fill("gem_golem"),
+      ...Array(2).fill("root_snare"),
       ...Array(2).fill("stone_skin"), "wild_call",
       ...Array(2).fill("verdant_rebuke"), "scroll_greed",
       ...Array(2).fill("null_seal"),
-      ...STARTER_STAPLES
+      ...STARTER_STAPLES, ...STARTER_COMBO
     ],
     extra: ["fusion_grove_titan", "fusion_choice_shield", "fusion_root_colossus"]
   },

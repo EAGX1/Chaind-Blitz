@@ -119,6 +119,11 @@ const SFX = {
     partial({ f0: 880, dur: 0.07, type: "sqr", gain: 0.3 }),
     partial({ f0: 1174, dur: 0.09, type: "sqr", gain: 0.3, at: 0.07 })
   ),
+  "sfx/combo": () => mix(
+    ...[659, 880, 1174, 1568].map((f, i) =>
+      partial({ f0: f, dur: 0.16, type: "tri", gain: 0.36, at: i * 0.06 })),
+    noiseBurst({ dur: 0.22, gain: 0.18, lp: 0.8, decay: 8, at: 0.02 })
+  ),
   "sfx/resolve": () => partial({ f0: 523, f1: 784, dur: 0.16, type: "tri", gain: 0.5 }),
   "sfx/negate": () => mix(
     partial({ f0: 300, f1: 110, dur: 0.3, type: "saw", gain: 0.5 }),

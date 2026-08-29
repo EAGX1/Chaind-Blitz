@@ -523,6 +523,11 @@ html[data-avatar="avatar_crown"] #avatar-0 { border-color: #58d68d; color: #b8f5
 .deck-inspect .cb-card { --cw: 168px; height: auto; min-height: calc(var(--cw) * 1.45); margin: 0 auto; }
 .deck-inspect .cb-card .card-text { overflow: visible; font-size: 12px; line-height: 1.35; }
 .deck-inspect .card-hover-text { margin: 8px 0 0; font-size: 13px; line-height: 1.4; color: var(--txt); }
+.deck-inspect .combo-circuits { font-size: 11px; margin: 6px 0 0; }
+.deck-inspect .related-head { margin-top: 10px; }
+.deck-inspect .combo-hover-partner {
+  font-size: 11px; margin: 2px 0 0; color: #9fdcff;
+}
 .deck-pool h3, .deck-list h3 { font-family: var(--font-head); font-size: 14px; letter-spacing: 2px; margin-bottom: 12px; }
 .deck-pool .card-grid { max-height: 62vh; overflow-y: auto; padding-right: 6px; }
 .deck-list {
@@ -566,6 +571,55 @@ html[data-avatar="avatar_crown"] #avatar-0 { border-color: #58d68d; color: #b8f5
 .deck-count { color: var(--gold); font-weight: 700; }
 
 .deck-curve-host { margin: 0 0 10px; }
+
+/* ---- combo circuit meter (deck editor) ---- */
+.deck-combo-host { margin: 0 0 12px; }
+.combo-meter-line {
+  font-size: 12px;
+  margin: 0 0 6px;
+  color: #9fdcff;
+}
+.combo-meter { display: grid; gap: 3px; }
+.combo-meter-row {
+  display: grid;
+  grid-template-columns: 84px 1fr 128px;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+}
+.combo-meter-row .cm-name { font-family: var(--font-head); letter-spacing: .06em; }
+.combo-meter-row .cm-bar {
+  height: 6px;
+  background: #131c2e;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.combo-meter-row .cm-bar i { display: block; height: 100%; background: #2c4a6b; }
+.combo-meter-row .cm-num { color: var(--dim); text-align: right; }
+.combo-meter-row.live .cm-name { color: #9fdcff; }
+.combo-meter-row.live .cm-bar i { background: var(--teal); }
+.combo-meter-row.warm .cm-bar i { background: #7a6a2e; }
+.combo-meter-row.cold { opacity: .55; }
+.combo-glue {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.combo-glue-chip {
+  font-size: 11px;
+  padding: 4px 8px;
+  background: #131c2e;
+  border: 1px solid rgba(122, 214, 255, 0.35);
+  color: var(--txt);
+  cursor: pointer;
+}
+.combo-glue-chip:hover { border-color: var(--teal); color: #9fdcff; }
+.combo-glue-label {
+  font-size: 11px;
+  color: var(--dim);
+  margin: 8px 0 0;
+}
 .deck-curve {
   display: flex;
   align-items: flex-end;

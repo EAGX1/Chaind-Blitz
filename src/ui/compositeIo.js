@@ -9,6 +9,7 @@ import { describeCpuIntent, describeCpuChainIntent } from "../ai/cpuIntent.js";
 import { P, opp, monstersOf } from "../engine/index.js";
 import { sfx, fxOnElement, fxFlash, fxAttackLunge } from "./fx.js";
 import { fxDelay } from "./fxPace.js";
+import { playStinger } from "../meta/music.js";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -53,6 +54,8 @@ export function makeCompositeIo(G, { humanIo, view, speed = 1, humanSide = 0 }) 
     autoHuman: false,   // AUTO button: let the AI drive the human side
     speed               // 1 | 4 (spectate pacing)
   };
+
+  let comboRun = 0;
 
   const isHuman = (p) => {
     if (state.autoHuman) return false;
@@ -186,6 +189,18 @@ export function makeCompositeIo(G, { humanIo, view, speed = 1, humanSide = 0 }) 
       view.renderChain(link.card.uid);
       const el = document.querySelector(`[data-uid="${link.card.uid}"]`);
       if (el) fxOnElement(el, "fx-chain");
+      // Two or more of your own links resolving back to back is a combo.
+      if (link.controller === 0 && link.kind === "trigger") {
+        comboRun += 1;
+        if (comboRun >= 2) {
+          view.showCombo?.(comboRun);
+          if (comboRun === 2) playStinger("combo");
+          document.querySelectorAll(".cb-card.combo-live").forEach((node) => fxOnElement(node, "fx-combo"));
+        }
+      }
+      if (remaining === 0) {
+        setTimeout(() => { comboRun = 0; view.clearCombo?.(); }, fxDelay(1600) || 1);
+      }
       await sleep(fxDelay(state.speed >= 4 ? 100 : 200));
     },
 
