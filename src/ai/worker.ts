@@ -8,8 +8,11 @@ function scoreMain(act, depth = 2) {
     case "summon": s = 6 + n * 0.2 - (act.tributes || 0) * 0.4; break;
     case "evolve": s = 8; break;
     case "activate":
-      if (act.cardId === "research_burn" && (act.handRest ?? 9) >= 3) s = 0;
-      else if (act.enemyCount >= 2 && (act.cardId === "starfall" || act.cardId === "lightning_tempest" || act.cardId === "empty_sky")) s = 12;
+      if (act.handTrap) s = 0;
+      else if (act.cardId === "research_burn") s = (act.handRest ?? 9) >= 3 ? 0 : 7;
+      else if ((act.enemyCount ?? 0) >= 2 &&
+        (act.cardId === "starfall" || act.cardId === "lightning_tempest" ||
+          act.cardId === "empty_sky" || act.cardId === "both_boards" || act.cardId === "scream_home")) s = 12;
       else if (act.cardId === "helix_shot" || act.cardId === "twin_cut" || act.cardId === "equal_cut") s = 8;
       else s = 5;
       break;

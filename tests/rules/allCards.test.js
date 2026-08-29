@@ -98,8 +98,8 @@ describe("all printed cards — structure", () => {
 
   it("every card has id, name, type, text, rarity and a unique id", () => {
     const ids = ALL_CARDS.map((c) => c.id);
-    expect(ALL_CARDS).toHaveLength(290);
-    expect(new Set(ids).size).toBe(290);
+    expect(ALL_CARDS).toHaveLength(306);
+    expect(new Set(ids).size).toBe(306);
     for (const c of ALL_CARDS) {
       expect(c.id, "id").toBeTruthy();
       expect(c.name, c.id).toBeTruthy();

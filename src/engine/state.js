@@ -294,6 +294,12 @@ export function cardStatusBadges(G, card) {
     badges.push({ id: "locked", label: "SET", title: "Set this turn — cannot activate yet." });
   }
   if (card.loc === "mz" && card.faceup) {
+    if (hasKeyword(card, "ward") && !card.negated) {
+      badges.push({ id: "ward", label: "WARD", title: "Ward — the enemy must attack a Ward monster before anything else." });
+    }
+    if (hasKeyword(card, "rush")) {
+      badges.push({ id: "rush", label: "RUSH", title: "Rush — may attack the turn it is summoned." });
+    }
     if (hasSummoningSickness(G, card)) {
       badges.push({
         id: "sickness",

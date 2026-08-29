@@ -4,12 +4,12 @@
 export const META_STAPLE_MAIN = [
   ...Array(3).fill("trail_fox"), ...Array(3).fill("ember_fox"),
   ...Array(2).fill("spark_juggler"), ...Array(2).fill("tithe_owl"),
-  ...Array(2).fill("charge_fool"), ...Array(2).fill("cinder_tyrant"),
+  "charge_fool", ...Array(2).fill("cinder_tyrant"),
   "ivory_colossus", "flood_verdict", "bastion_reflector",
   "overreach_warden", "ink_magister",
   ...Array(3).fill("hush_petal"), ...Array(2).fill("empty_veto"),
   ...Array(2).fill("void_pitch"), ...Array(2).fill("ash_whisper"),
-  ...Array(2).fill("arc_triple"), ...Array(2).fill("recall_gust"),
+  ...Array(3).fill("arc_triple"), ...Array(2).fill("recall_gust"),
   "low_blow", "quiet_exile", "moon_fold", "grace_split",
   "gale_sweep", "cyclone_break", "blood_veto", "rank_four_call"
 ];
@@ -46,9 +46,9 @@ export const STARTERS = {
     deck: [
       ...Array(3).fill("tide_caller"), ...Array(3).fill("frost_mage"),
       ...Array(2).fill("abyss_warden"), ...Array(2).fill("deep_serpent"),
-      "kraken", ...Array(3).fill("tide_priestess"), ...Array(3).fill("depths_lurker"),
+      ...Array(2).fill("kraken"), ...Array(3).fill("tide_priestess"), ...Array(3).fill("depths_lurker"),
       ...Array(2).fill("scav_wisp"), ...Array(2).fill("oracle_eel"),
-      ...Array(3).fill("tidal_snare"), ...Array(2).fill("moonwell"),
+      ...Array(3).fill("tidal_snare"), "moonwell",
       ...Array(2).fill("deep_freeze"),
       "riptide", "tide_cutter",
       ...Array(2).fill("null_seal"),

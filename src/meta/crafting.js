@@ -35,3 +35,19 @@ export function dismantle(profile, def, keepPlayset = false) {
 
 export const dustLine = (profile) =>
   `${profile.dust.N}/${profile.dust.R}/${profile.dust.SR}/${profile.dust.UR}`;
+
+/* ---- Coins sink: buy dust with coins (repeatable) ---- */
+export const DUST_SHOP = { N: 150, R: 300, SR: 500, UR: 800 };
+export const DUST_SHOP_AMOUNT = 10;
+
+export function canBuyDust(profile, rarity) {
+  const price = DUST_SHOP[rarity];
+  return Number.isFinite(price) && (profile.coins || 0) >= price;
+}
+
+export function buyDustWithCoins(profile, rarity) {
+  if (!canBuyDust(profile, rarity)) return false;
+  profile.coins -= DUST_SHOP[rarity];
+  profile.dust[rarity] = (profile.dust[rarity] || 0) + DUST_SHOP_AMOUNT;
+  return true;
+}

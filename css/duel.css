@@ -415,6 +415,8 @@
   background: var(--teal); color: #04252a;
 }
 .chain-link.resolving .cl-num { background: var(--gold); color: #2a1f05; }
+.chain-link.resolving .cb-card { --cw: 84px; }
+.chain-link.resolving { z-index: 2; }
 .chain-link.negated { opacity: .35; filter: grayscale(1); }
 .chain-link .cb-card { --cw: 64px; }
 .chain-link .cl-label { font-size: 10px; color: var(--dim); max-width: 90px; text-align: center; }

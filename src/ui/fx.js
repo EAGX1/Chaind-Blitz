@@ -1,8 +1,8 @@
 // Visual + audio effects: floating numbers, flashes, summon/evolve bursts,
-// and procedural WebAudio SFX (no audio assets).
+// and baked sample SFX (public/audio) with a procedural WebAudio fallback.
 
 import { laneTheme } from "../data/fields.js";
-import { sfxDestination } from "../meta/music.js";
+import { sfxDestination, playSample } from "../meta/music.js";
 import { fxDelay, fxSkip } from "./fxPace.js";
 
 const fxLayer = () => document.getElementById("fx-layer");
@@ -110,23 +110,50 @@ function noise({ dur = 0.2, gain = 0.1, when = 0, low = 400 }) {
   src.start(t0);
 }
 
+/** Card lunge toward the target + impact flash. Driven by attack log lines. */
+export function fxAttackLunge(fromEl, toEl) {
+  if (!fromEl || fxSkip()) return;
+  const a = fromEl.getBoundingClientRect();
+  const b = toEl ? toEl.getBoundingClientRect() : null;
+  const dx = b ? (b.left + b.width / 2) - (a.left + a.width / 2) : 0;
+  const dy = b ? (b.top + b.height / 2) - (a.top + a.height / 2) : -46;
+  const dist = Math.hypot(dx, dy) || 1;
+  const k = Math.min(0.6, 110 / dist);
+  try {
+    fromEl.animate([
+      { transform: "translate(0,0)" },
+      { transform: `translate(${dx * k}px, ${dy * k}px) scale(1.12)`, offset: 0.35 },
+      { transform: "translate(0,0)" }
+    ], { duration: Math.max(180, fxDelay(320)), easing: "cubic-bezier(.2,.9,.3,1)" });
+    if (toEl) {
+      toEl.animate([
+        { transform: "translate(0,0)" },
+        { transform: `translate(${-dx * 0.05}px, ${-dy * 0.05}px)`, offset: 0.5 },
+        { transform: "translate(0,0)" }
+      ], { duration: Math.max(160, fxDelay(280)), easing: "ease-out" });
+      setTimeout(() => fxFlash(b.left + b.width / 2, b.top + b.height / 2, 150), fxDelay(110) || 1);
+    }
+  } catch { /* WAAPI unavailable — the log line still lands */ }
+}
+
 export const sfx = {
-  summon: () => { noise({ dur: 0.18, low: 900 }); tone({ freq: 220, freqEnd: 440, dur: 0.2, type: "triangle", gain: 0.1 }); },
-  chain: () => { tone({ freq: 880, dur: 0.08, type: "square", gain: 0.05 }); tone({ freq: 1174, dur: 0.1, type: "square", gain: 0.05, when: 0.07 }); },
-  resolve: () => { tone({ freq: 523, freqEnd: 784, dur: 0.16, type: "triangle", gain: 0.09 }); },
-  negate: () => { tone({ freq: 300, freqEnd: 120, dur: 0.3, type: "sawtooth", gain: 0.1 }); },
-  damage: () => { noise({ dur: 0.16, low: 500, gain: 0.14 }); tone({ freq: 130, freqEnd: 60, dur: 0.2, type: "sawtooth", gain: 0.08 }); },
-  heal: () => { tone({ freq: 660, freqEnd: 990, dur: 0.25, type: "sine", gain: 0.08 }); },
-  draw: () => { tone({ freq: 500, freqEnd: 700, dur: 0.07, type: "triangle", gain: 0.05 }); },
-  evolve: () => { tone({ freq: 392, dur: 0.4, type: "triangle", gain: 0.1 }); tone({ freq: 523, dur: 0.4, type: "triangle", gain: 0.1, when: 0.1 }); tone({ freq: 784, dur: 0.5, type: "triangle", gain: 0.1, when: 0.2 }); },
-  lane: () => { tone({ freq: 196, freqEnd: 392, dur: 0.5, type: "sine", gain: 0.12 }); },
-  destroy: () => { noise({ dur: 0.3, low: 700, gain: 0.12 }); },
-  attack: () => { noise({ dur: 0.12, low: 1200, gain: 0.1 }); tone({ freq: 180, freqEnd: 90, dur: 0.12, type: "square", gain: 0.07 }); },
-  click: () => { tone({ freq: 700, dur: 0.04, type: "square", gain: 0.03 }); },
+  summon: () => { if (playSample("sfx/summon")) return; noise({ dur: 0.18, low: 900 }); tone({ freq: 220, freqEnd: 440, dur: 0.2, type: "triangle", gain: 0.1 }); },
+  chain: () => { if (playSample("sfx/chain")) return; tone({ freq: 880, dur: 0.08, type: "square", gain: 0.05 }); tone({ freq: 1174, dur: 0.1, type: "square", gain: 0.05, when: 0.07 }); },
+  resolve: () => { if (playSample("sfx/resolve")) return; tone({ freq: 523, freqEnd: 784, dur: 0.16, type: "triangle", gain: 0.09 }); },
+  negate: () => { if (playSample("sfx/negate")) return; tone({ freq: 300, freqEnd: 120, dur: 0.3, type: "sawtooth", gain: 0.1 }); },
+  damage: () => { if (playSample("sfx/damage")) return; noise({ dur: 0.16, low: 500, gain: 0.14 }); tone({ freq: 130, freqEnd: 60, dur: 0.2, type: "sawtooth", gain: 0.08 }); },
+  heal: () => { if (playSample("sfx/heal")) return; tone({ freq: 660, freqEnd: 990, dur: 0.25, type: "sine", gain: 0.08 }); },
+  draw: () => { if (playSample("sfx/draw")) return; tone({ freq: 500, freqEnd: 700, dur: 0.07, type: "triangle", gain: 0.05 }); },
+  evolve: () => { if (playSample("sfx/evolve")) return; tone({ freq: 392, dur: 0.4, type: "triangle", gain: 0.1 }); tone({ freq: 523, dur: 0.4, type: "triangle", gain: 0.1, when: 0.1 }); tone({ freq: 784, dur: 0.5, type: "triangle", gain: 0.1, when: 0.2 }); },
+  lane: () => { if (playSample("sfx/lane")) return; tone({ freq: 196, freqEnd: 392, dur: 0.5, type: "sine", gain: 0.12 }); },
+  destroy: () => { if (playSample("sfx/destroy")) return; noise({ dur: 0.3, low: 700, gain: 0.12 }); },
+  attack: () => { if (playSample("sfx/attack")) return; noise({ dur: 0.12, low: 1200, gain: 0.1 }); tone({ freq: 180, freqEnd: 90, dur: 0.12, type: "square", gain: 0.07 }); },
+  click: () => { if (playSample("sfx/click")) return; tone({ freq: 700, dur: 0.04, type: "square", gain: 0.03 }); },
   pack: () => {
+    if (playSample("sfx/pack")) return;
     noise({ dur: 0.12, low: 1400, gain: 0.08 });
     tone({ freq: 196, freqEnd: 392, dur: 0.22, type: "triangle", gain: 0.08 });
   },
-  victory: () => { [523, 659, 784, 1046].forEach((f, i) => tone({ freq: f, dur: 0.35, type: "triangle", gain: 0.1, when: i * 0.12 })); },
-  defeat: () => { [392, 330, 262, 196].forEach((f, i) => tone({ freq: f, dur: 0.35, type: "triangle", gain: 0.1, when: i * 0.12 })); }
+  victory: () => { if (playSample("sfx/win")) return; [523, 659, 784, 1046].forEach((f, i) => tone({ freq: f, dur: 0.35, type: "triangle", gain: 0.1, when: i * 0.12 })); },
+  defeat: () => { if (playSample("sfx/lose")) return; [392, 330, 262, 196].forEach((f, i) => tone({ freq: f, dur: 0.35, type: "triangle", gain: 0.1, when: i * 0.12 })); }
 };

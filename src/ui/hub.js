@@ -19,7 +19,7 @@ import { bindCardHover } from "./cardHover.js";
 import { fxFilterBarHtml, effectsOf } from "../data/effectTags.js";
 import { openPack, grantCards, PACK_COST_GEMS } from "../meta/packs.js";
 import { grantStarterCards, spendGems, canAffordGems, ownedCardDefs, ownedCopies } from "../meta/campaign.js";
-import { craft, dismantle, canCraft, canDismantle, dustLine, CRAFT_COST } from "../meta/crafting.js";
+import { craft, dismantle, canCraft, canDismantle, dustLine, CRAFT_COST, DUST_SHOP, DUST_SHOP_AMOUNT, buyDustWithCoins, canBuyDust } from "../meta/crafting.js";
 import { rankLabel } from "../meta/ranked.js";
 import { TIERS, poolForTier, tierName } from "../meta/pools.js";
 import { makeRng } from "../engine/rng.js";
@@ -31,6 +31,9 @@ import {
 import { slamPackCards, packRecapLine } from "./packSlam.js";
 import { showHubToast, pulseWallet, walletDeltaLine } from "./hubToast.js";
 import { puzzleOfTheDay, isLabCleared } from "../meta/labs.js";
+import { canClaim as canClaimLogin, claimToday } from "../meta/loginCalendar.js";
+import { claimTier, unlockedTiers, TRACK as PASS_TRACK } from "../meta/duelPass.js";
+import { rollDailies, claim as claimMission, missionStatus, progress as missionProgress } from "../meta/missions.js";
 import {
   RELICS, EVENTS, hasRelic, canEnter, enterNode,
   pickReward, pickRelic, openRest, applyRest, restHealAmount,
@@ -299,6 +302,11 @@ export function initHub(ctx) {
             <p>Draft, sealed, brawl, hotseat.</p>
             <button class="cb-btn" id="btn-modes">OPEN</button>
           </article>
+          <article class="home-tile">
+            <span class="home-tag">TODAY</span>
+            <h3>DAILY RITUAL</h3>
+            <div id="today-body"></div>
+          </article>
           <article class="home-tile home-history">
             <span class="home-tag">LOG</span>
             <h3>RECENT</h3>
@@ -319,6 +327,7 @@ export function initHub(ctx) {
         return `<div class="deck-row" style="cursor:default;"><span class="deck-cost">${outcome}</span><span class="deck-name">${m.mode || "?"} · ${m.reason || ""}</span><span class="deck-count">${when}</span></div>`;
       }).join("");
     }
+    renderToday();
     $("btn-last-replay").addEventListener("click", () => {
       const json = window.__CB?.exportLastReplay?.();
       if (!json) { sfx.defeat?.(); return; }
@@ -349,6 +358,55 @@ export function initHub(ctx) {
     $("btn-rogue").addEventListener("click", () => ctx.startRogue());
     $("btn-modes").addEventListener("click", () => document.querySelector('[data-tab="modes"]').click());
     $("btn-home-ranked")?.addEventListener("click", () => document.querySelector('[data-tab="ranked"]').click());
+  }
+
+  /* ================= TODAY (login + dailies + pass claims, classic hub) ================= */
+  function renderToday() {
+    const box = $("today-body");
+    if (!box) return;
+    rollDailies(profile);
+    const dailies = missionStatus(profile).dailies;
+    const passTier = unlockedTiers(profile);
+    const passPending = PASS_TRACK.filter((t) => t.tier <= passTier && !profile.duelPass?.claimed?.includes(t.tier)).length;
+    box.innerHTML = `
+      <div class="home-tile-row" style="margin-bottom:8px;">
+        <button class="cb-btn primary" id="btn-today-login" ${canClaimLogin(profile) ? "" : "disabled"}>
+          ${canClaimLogin(profile) ? "CLAIM LOGIN" : "LOGIN CLAIMED"}
+        </button>
+        <button class="cb-btn" id="btn-today-pass" ${passPending ? "" : "disabled"}>
+          PASS ${passPending ? `(${passPending} READY)` : `· TIER ${passTier}`}
+        </button>
+      </div>
+      <div class="today-dailies">
+        ${dailies.map((d) => `
+          <div class="deck-row" style="cursor:default;">
+            <span class="deck-name">${d.label} · ${d.have}/${d.goal}</span>
+            <button class="cb-btn" data-daily="${d.id}" ${d.done && !d.claimed ? "" : "disabled"}>
+              ${d.claimed ? "CLAIMED" : d.done ? "CLAIM" : "…"}
+            </button>
+          </div>`).join("")}
+      </div>
+      <p class="dim" id="today-msg" style="font-size:12px;margin:8px 0 0;"></p>`;
+    const note = (m) => { const el = $("today-msg"); if (el) el.textContent = m; };
+    $("btn-today-login")?.addEventListener("click", () => {
+      const r = claimToday(profile);
+      if (r?.ok) { missionProgress(profile, "login"); sfx.chain(); note(`Login day ${r.day} claimed.`); }
+      else note(r?.reason || "Already claimed");
+      ctx.save();
+      renderToday();
+    });
+    $("btn-today-pass")?.addEventListener("click", () => {
+      const r = claimTier(profile);
+      if (r?.ok) { sfx.chain(); note(`Pass tier ${r.tier} claimed.`); } else note(r?.reason || "Nothing to claim");
+      ctx.save();
+      renderToday();
+    });
+    box.querySelectorAll("[data-daily]").forEach((b) => b.addEventListener("click", () => {
+      const r = claimMission(profile, b.dataset.daily);
+      if (r?.ok) { sfx.chain(); note("Daily claimed."); } else note(r?.reason || "Not complete");
+      ctx.save();
+      renderToday();
+    }));
   }
 
   /* ================= DECK editor ================= */
@@ -712,6 +770,9 @@ export function initHub(ctx) {
       <div class="panel-head">
         <h2>COLLECTION</h2>
         <p>Owned <b style="color:var(--gold)">${ownedTotal}</b> / ${BRONZE_CARDS.length} · Dust <b style="color:var(--gold)">${dustLine(profile)}</b> · Dismantle 10 · Craft 30</p>
+        <p class="dim" style="font-size:12px;margin:0 0 6px;">Dust shop: ${Object.entries(DUST_SHOP).map(([r, price]) =>
+          `<button class="mini-btn" data-dustbuy="${r}" ${canBuyDust(profile, r) ? "" : "disabled"}>+${DUST_SHOP_AMOUNT} ${r} · ${price}c</button>`).join(" ")}
+          <span id="dust-shop-msg"></span></p>
         <div class="row">
           <input class="cb-input" id="col-search" placeholder="Search name or text…" />
           <select class="cb-select" id="col-filter">
@@ -794,6 +855,16 @@ export function initHub(ctx) {
     $("col-rarity")?.addEventListener("change", draw);
     $("col-owned").addEventListener("change", draw);
     $("col-search")?.addEventListener("input", draw);
+    document.querySelectorAll("[data-dustbuy]").forEach((b) => b.addEventListener("click", () => {
+      const r = b.dataset.dustbuy;
+      if (buyDustWithCoins(profile, r)) {
+        ctx.save();
+        showHubToast(`Bought +${DUST_SHOP_AMOUNT} ${r} dust`, "dust");
+        refreshWallet({ toast: false });
+        renderCollection();
+        sfx.chain();
+      }
+    }));
     draw();
   }
 
@@ -860,7 +931,7 @@ export function initHub(ctx) {
     const t = token
       || $("ranked-you")?.value
       || pickRankedToken({ loaners: shippedLoaners(), starters: STARTERS, customNames });
-    const result = tryQueueDeck(t, queueCtx());
+    const result = tryQueueDeck(t, { ...queueCtx(), ranked: true });
     const el = $("ranked-door-msg");
     if (!result.ok) {
       refuseDoor("ranked-door-msg", result.error);
@@ -895,6 +966,7 @@ export function initHub(ctx) {
               <select class="cb-select" id="ranked-you" title="Deck for this ranked queue">${deckOpts}</select>
               <button class="home-cta" id="btn-queue">QUEUE RANKED · VS CPU</button>
             </div>
+            <p class="dim" style="font-size:11px;margin:6px 0 0;">Starters and your own lists only — loaners cover Quick Duel and Labs. Ladder soft-resets each monthly season.</p>
             <p class="dim" id="ranked-door-msg" style="font-size:12px;margin:8px 0 0;"></p>
           </div>
         </section>
@@ -919,10 +991,9 @@ export function initHub(ctx) {
 
   function renderModes() {
     const panel = $("panel-modes");
-    const peer = connectPeer();
     panel.innerHTML = `
       <div class="panel-head"><h2>GAME MODES</h2>
-        <p class="dim" style="font-size:11px;">Peer Net: not shipped — Hotseat is local 2P. ${peer.ok ? "online" : peer.reason}.</p>
+        <p class="dim" style="font-size:11px;">All modes are vs CPU or local — Hotseat is two players on this device.</p>
       </div>
       <div class="modes-nav">
         ${MODE_TABS.map(([k, label]) => `<button class="cb-btn mode-nav-btn ${modesView === k ? "active" : ""}" data-mode="${k}">${label}</button>`).join("")}
@@ -1162,7 +1233,7 @@ export function initHub(ctx) {
       const customDecks = Object.keys(profile.decks);
       box.innerHTML = `
         <div class="mode-intro">
-          <h3>TOURNAMENT — 8-MAN SINGLE ELIM</h3>
+          <h3>TOURNAMENT — 3-ROUND CPU GAUNTLET</h3>
           <p>Three rounds: quarterfinal, semifinal, final. Foes hit harder each round (+0/+3/+6 LP).
           Champion: +${TOURNEY_REWARDS[3].gems} gems and ${TOURNEY_REWARDS[3].packs} packs.</p>
           <div class="row" style="margin-top:14px;">
@@ -1319,16 +1390,17 @@ export function initHub(ctx) {
     ["PROGRESSION", `
       <p>Ranked climbs Bronze → Silver → Gold → Platinum → Diamond → Master, 100 LP per tier. Hitting 100 LP starts a
       <b>promotion series</b>: you queue ranked duels one at a time and need 2 wins before 2 losses.
-      Your <b>card pool grows with your tier</b> — Bronze 60, Silver 105 (Wave C + Silver), Gold 127 (Wave D + Gold),
-      Platinum 165 (Wave E + Extra + Platinum), Diamond 241 (Wave F), Master 290 (Wave G, full catalog).</p>
+      Ranked is for your own collection (starters and custom lists); the ladder <b>soft-resets two tiers</b> each monthly season.
+      Your <b>card pool grows with your tier</b> — Bronze 60, Silver 162 (Wave C + Silver + staples), Gold 184 (Wave D + Gold),
+      Platinum 230 (Wave E + Extra + Platinum), Diamond 306 (Wave F — full catalog). Master is prestige: the pool is already complete.</p>
       <p>Packs drop cards only from your unlocked pool. Dismantle 3 cards of a rarity to craft any 1 card of that rarity (10 CP in, 30 CP out).</p>
       <p><b>Advanced</b> limits Starfall, Lightning Tempest, Both Boards, Scream Home, Research Burn, Empty Sky, and Tactic Choice to 1 copy. Unlimited is 3.</p>`],
     ["MODES", `
       <p><b>Roguelike Run</b> — a Slay-the-Spire gauntlet: 20-card run deck, HP carries between duels, node map of battles,
       elites, rests, shops and events, relics, and a boss.</p>
       <p><b>Draft / Cube Draft</b> — pick 1-of-3 forty times, then survive a 3-round gauntlet. <b>Sealed</b> — crack 6 packs, build 30, same gauntlet.</p>
-      <p><b>Highlander</b> — singleton decks. <b>Tournament</b> — 8-man single-elim bracket. <b>Tavern Brawl</b> — a new rule-breaking modifier every week.</p>
-      <p><b>WebRTC / Peer Net</b> — direct peer duels are stubbed (<code>connectPeer()</code> returns coming soon). Hotseat covers local 2P for now.</p>`]
+      <p><b>Highlander</b> — singleton decks. <b>Tournament</b> — a 3-round CPU gauntlet with escalating foe LP. <b>Tavern Brawl</b> — a new rule-breaking modifier every week.</p>
+      <p><b>Two players</b> — Hotseat is local pass-and-play on this device. Chaind Blitz is offline-first: there is no online PvP.</p>`]
   ];
 
   function renderRulebook() {

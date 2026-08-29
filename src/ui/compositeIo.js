@@ -6,7 +6,8 @@ import { makeAutopilot } from "../ai/autopilot.js";
 import { wrapWithWorkerAi } from "../ai/workerClient.ts";
 import { budgetFor } from "../ai/budgets.ts";
 import { describeCpuIntent, describeCpuChainIntent } from "../ai/cpuIntent.js";
-import { sfx, fxOnElement, fxFlash } from "./fx.js";
+import { P, opp, monstersOf } from "../engine/index.js";
+import { sfx, fxOnElement, fxFlash, fxAttackLunge } from "./fx.js";
 import { fxDelay } from "./fxPace.js";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -25,13 +26,17 @@ function flashLatestUid(cls) {
   if (best) fxOnElement(best, cls);
 }
 
-function flashNamedOnBoard(msg, cls) {
+function findBoardCardByName(name) {
   const nodes = document.querySelectorAll("#mz-0 [data-uid], #mz-1 [data-uid]");
-  let hit = null;
   for (const n of nodes) {
-    const name = n.querySelector(".card-name")?.textContent;
-    if (name && msg.includes(name)) hit = n;
+    const cardName = n.querySelector(".card-name")?.textContent;
+    if (cardName && name.includes(cardName)) return n;
   }
+  return null;
+}
+
+function flashNamedOnBoard(msg, cls) {
+  const hit = findBoardCardByName(msg);
   if (hit) fxOnElement(hit, cls);
   else flashLatestUid(cls);
 }
@@ -88,17 +93,18 @@ export function makeCompositeIo(G, { humanIo, view, speed = 1, humanSide = 0 }) 
       view.renderAll();
       if (isHuman(p) && (!legal || legal.length === 0)) {
         view.log("No legal response — passing automatically.", "dim");
-        await sleep(fxDelay(state.speed >= 4 ? 60 : 350));
+        await sleep(fxDelay(state.speed >= 4 ? 60 : 120));
         return null;
       }
       if (isHuman(p)) return wrap(p, "askChain")(legal, chain, extra);
       try {
         const pick = await ai.askChain(p, legal, chain, extra);
-        if (legal?.length) {
+        const telegraph = window.__CB_SETTINGS?.cpuIntent !== false;
+        if (legal?.length && telegraph) {
           const intent = describeCpuChainIntent(G, legal, pick);
           view.showCpuIntent?.(intent);
           await sleep(pace(p));
-          if (state.speed < 4) await sleep(fxDelay(420));
+          if (state.speed < 4) await sleep(fxDelay(260));
           view.clearCpuIntent?.();
         } else {
           await sleep(pace(p));
@@ -121,11 +127,16 @@ export function makeCompositeIo(G, { humanIo, view, speed = 1, humanSide = 0 }) 
       if (isHuman(p)) return wrap(p, "askAttack")(attackers, targetsFn);
       try {
         const choice = await ai.askAttack(p, attackers, targetsFn);
-        const intent = describeCpuIntent(G, choice);
-        view.showCpuIntent?.(intent);
-        await sleep(pace(p));
-        if (state.speed < 4) await sleep(fxDelay(420));
-        view.clearCpuIntent?.();
+        const telegraph = window.__CB_SETTINGS?.cpuIntent !== false;
+        if (telegraph) {
+          const intent = describeCpuIntent(G, choice);
+          view.showCpuIntent?.(intent);
+          await sleep(pace(p));
+          if (state.speed < 4) await sleep(fxDelay(260));
+          view.clearCpuIntent?.();
+        } else {
+          await sleep(pace(p));
+        }
         view.renderAll();
         return choice;
       } catch (err) {
@@ -157,14 +168,25 @@ export function makeCompositeIo(G, { humanIo, view, speed = 1, humanSide = 0 }) 
         const gy = document.getElementById("gy-0") || document.getElementById("gy-1");
         if (gy) fxOnElement(gy, "fx-destroy");
       }
-      if (cls === "attack") flashNamedOnBoard(msg, "fx-flash");
+      if (cls === "attack") {
+        const m = msg.match(/^(.*?) attacks (.*)!$/);
+        const atkEl = m ? findBoardCardByName(m[1]) : null;
+        let tgtEl = null;
+        if (m && m[2] && m[2] !== "directly") tgtEl = findBoardCardByName(m[2]);
+        else if (atkEl) {
+          const foeSide = atkEl.closest("#mz-0") ? 1 : 0;
+          tgtEl = document.getElementById(`hud-${foeSide}`);
+        }
+        if (atkEl) fxAttackLunge(atkEl, tgtEl);
+        else flashNamedOnBoard(msg, "fx-flash");
+      }
     },
 
     async onResolveLink(link, clNum, remaining) {
       view.renderChain(link.card.uid);
       const el = document.querySelector(`[data-uid="${link.card.uid}"]`);
       if (el) fxOnElement(el, "fx-chain");
-      await sleep(fxDelay(state.speed >= 4 ? 120 : 500));
+      await sleep(fxDelay(state.speed >= 4 ? 100 : 200));
     },
 
     async onLaneReveal(lane) {
@@ -175,9 +197,9 @@ export function makeCompositeIo(G, { humanIo, view, speed = 1, humanSide = 0 }) 
       const laneEl = document.querySelectorAll("#lanes .lane")[lane.index];
       if (laneEl) {
         laneEl.classList.add("lane-flip");
-        setTimeout(() => laneEl.classList.remove("lane-flip"), fxDelay(900) || 1);
+        setTimeout(() => laneEl.classList.remove("lane-flip"), fxDelay(700) || 1);
       }
-      await sleep(fxDelay(state.speed >= 4 ? 500 : 1600));
+      await sleep(fxDelay(state.speed >= 4 ? 400 : 800));
     },
 
     onEvolve(card) {
@@ -196,7 +218,12 @@ export function makeCompositeIo(G, { humanIo, view, speed = 1, humanSide = 0 }) 
     },
 
     async hint(p, actions) {
-      if (typeof ai.hint === "function") return ai.hint(p, actions);
+      if (typeof ai.hint === "function") {
+        return ai.hint(p, actions, {
+          enemyCount: monstersOf(G, opp(p)).length,
+          handRest: Math.max(0, P(G, p).hand.length - 1)
+        });
+      }
       return [];
     }
   };

@@ -68,6 +68,9 @@ export function rollDailies(profile, now = new Date()) {
   }
   profile.missions.rolledOn = today;
   profile.missions.dailies = pickDailies(today);
+  // New day: daily progress and yesterday's daily claim keys reset.
+  for (const d of DAILY_POOL) delete profile.missions.progress[d.id];
+  profile.missions.claimed = profile.missions.claimed.filter((k) => !String(k).includes(":d_"));
   return profile.missions.dailies;
 }
 

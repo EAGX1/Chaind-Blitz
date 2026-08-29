@@ -1,14 +1,16 @@
 // Wave C content: keywords, hand traps, fusion monsters, substitutes, GY-fusion spell.
-import { P, opp, monstersOf, pushEvents } from "../../engine/state.js";
+import { P, opp, monstersOf, pushEvents, makeCard } from "../../engine/state.js";
 import {
   drawCards, dealDamageToPlayer, healPlayer, damageMonster, sweepDestroyed,
-  destroyByEffect, sendToGY, mill, specialSummon, discardCard
+  destroyByEffect, sendToGY, mill, specialSummon, discardCard, bounceToHand
 } from "../../engine/ops.js";
 import { negateLastLinkOfKind } from "../../engine/chain.js";
 import { gyFusionSummon, legalGyFusions } from "../../engine/fusion.js";
+import { TOKEN_DB } from "./tokens.js";
 import {
   must,
   evSelfSummon,
+  evAmbushFlip,
   rDraw, rDamageLeader, rHeal,
   tEnemyMonster, tOwnMonster
 } from "./helpers.js";
@@ -274,13 +276,94 @@ export const lane_breaker = M("lane_breaker", "Lane Breaker", "Neutral", 2, 3, 2
     archetypes: ["tempo_bounce", "pyro_control", "ambush_trapdoor"]
   });
 
+/* ---- Mill package: real deckout plan with a burn closer ---- */
+export const mill_lantern = M("mill_lantern", "Mill Lantern", "Abyss", 2, 1, 2, "N",
+  "Fanfare: mill the opponent 1. Evolve: mill the opponent 2.",
+  {
+    archetypes: ["mill", "gy"],
+    triggers: [must("lantern_mill", "Mill 1", evSelfSummon,
+      async (G, card) => mill(G, opp(card.controller), 1))],
+    evolveEffect: { text: "Mill the opponent 2", resolve: async (G, card) => mill(G, opp(card.controller), 2) }
+  });
+
+export const mill_angler = M("mill_angler", "Mill Angler", "Abyss", 3, 2, 3, "R",
+  "Fanfare: mill the opponent 2. Evolve: mill the opponent 2.",
+  {
+    archetypes: ["mill", "gy"],
+    triggers: [must("angler_mill", "Mill 2", evSelfSummon,
+      async (G, card) => mill(G, opp(card.controller), 2))],
+    evolveEffect: { text: "Mill the opponent 2", resolve: async (G, card) => mill(G, opp(card.controller), 2) }
+  });
+
+export const deep_current = S("deep_current", "Deep Current", "normal", 1, 2, "R",
+  "Normal: mill the opponent 3. If their GY has 10 or more cards, mill 3 more.",
+  {
+    resolve: async (G, card) => {
+      const foe = opp(card.controller);
+      mill(G, foe, 3);
+      if (P(G, foe).gy.length >= 10) mill(G, foe, 3);
+    },
+    archetypes: ["mill"]
+  });
+
+export const hollow_tax = S("hollow_tax", "Hollow Tax", "continuous", 1, 2, "SR",
+  "Continuous: when the opponent mills a card, deal 1 to the enemy leader.",
+  {
+    resolve: async () => {},
+    archetypes: ["mill"]
+  });
+// Triggers must live on the card root — the engine reads def.triggers.
+hollow_tax.triggers = [must("tax_burn", "Deal 1 on enemy mill",
+  (G, card, ev) => ev.type === "sentToGY" && ev.kind === "mill"
+    && ev.card?.controller !== card.controller,
+  rDamageLeader(1))];
+
+/* ---- Ambush payoffs ---- */
+export const sudden_maw = M("sudden_maw", "Sudden Maw", "Terra", 2, 2, 2, "R",
+  "Ambush. When this card is flipped face-up: draw 1.",
+  {
+    keywords: ["ambush"],
+    archetypes: ["ambush_trapdoor", "draw"],
+    triggers: [must("maw_flip", "Draw 1 when flipped", evAmbushFlip, rDraw(1))]
+  });
+
+export const trapdoor_queen = M("trapdoor_queen", "Trapdoor Queen", "Abyss", 4, 3, 4, "SR",
+  "Ambush. When this card is summoned or flipped face-up: bounce the enemy's highest-ATK face-up monster.",
+  {
+    keywords: ["ambush"],
+    archetypes: ["ambush_trapdoor", "tempo_bounce"],
+    triggers: [must("queen_bounce", "Bounce an enemy monster",
+      (G, card, ev) => evSelfSummon(G, card, ev) || evAmbushFlip(G, card, ev),
+      async (G, card) => {
+        const foes = monstersOf(G, opp(card.controller)).filter((m) => m.faceup);
+        if (!foes.length) return;
+        const t = foes.reduce((a, b) => ((a.def.atk || 0) >= (b.def.atk || 0) ? a : b));
+        const ev = bounceToHand(G, t);
+        pushEvents(G, [ev]);
+      })]
+  });
+
+/* ---- Token Walls ---- */
+export const token_sprouter = M("token_sprouter", "Token Sprouter", "Terra", 2, 1, 2, "N",
+  "Fanfare: Special Summon a 0/4 Ward Stonewall Token.",
+  {
+    archetypes: ["token_walls", "ward_walls"],
+    triggers: [must("sprout_token", "Summon a Stonewall Token", evSelfSummon,
+      async (G, card) => {
+        const t = makeCard("token_stonewall", TOKEN_DB.token_stonewall, card.controller);
+        specialSummon(G, t, card.controller, card);
+      })]
+  });
+
 export const WAVE_C_CARDS = [
   ward_sentinel, drain_leech, ambush_stalker, rush_swarmling, heal_bloom, mill_spore,
   evolve_colossus, burn_spark_imp, fusion_polymer,
   ash_whisper, veil_negate, gy_fusion_rite,
   fusion_ember_drake, fusion_abyss_leviathan, fusion_terra_crown,
   fusion_choice_blade, fusion_choice_shield,
-  spark_raider, edict_squire, trapdoor_lurker, bastion_oak, pyre_colossus, tide_cutter, tri_envoy, lane_breaker
+  spark_raider, edict_squire, trapdoor_lurker, bastion_oak, pyre_colossus, tide_cutter, tri_envoy, lane_breaker,
+  mill_lantern, mill_angler, deep_current, hollow_tax,
+  sudden_maw, trapdoor_queen, token_sprouter
 ];
 
 export const WAVE_C_DB = Object.fromEntries(WAVE_C_CARDS.map((c) => [c.id, c]));

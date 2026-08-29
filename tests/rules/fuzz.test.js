@@ -8,13 +8,16 @@ import { FIELD_LANES } from "../../src/data/fields.js";
 import { makeAutopilot } from "../../src/ai/autopilot.js";
 
 describe("chaos fuzz", () => {
-  it("CARD_DB ids are unique and match ALL_CARDS", () => {
+  it("CARD_DB ids are unique and match ALL_CARDS plus tokens", () => {
     const ids = ALL_CARDS.map((c) => c.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const c of ALL_CARDS) {
       expect(CARD_DB[c.id], c.id).toBe(c);
     }
-    expect(Object.keys(CARD_DB).length).toBe(ALL_CARDS.length);
+    // Tokens (token_stonewall) live in CARD_DB for makeCard but are not collectable.
+    const tokenCount = Object.keys(CARD_DB).filter((id) => CARD_DB[id].token).length;
+    expect(tokenCount).toBeGreaterThan(0);
+    expect(Object.keys(CARD_DB).length).toBe(ALL_CARDS.length + tokenCount);
   });
 
   it("shipped loaners length >= 40", () => {

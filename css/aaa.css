@@ -121,7 +121,7 @@ body[data-screen="duel"] .cb-chrome {
 
 /* ---- Duel readability: ATK / DEF ---- */
 .cb-card .card-stats {
-  font-size: calc(var(--cw) * 0.115);
+  font-size: calc(var(--cw) * 0.155);
   letter-spacing: 0.3px;
   gap: 10%;
   padding: 0 6% 3%;
@@ -836,6 +836,7 @@ button:focus-visible,
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 #gameover.modal-veil {
+  z-index: 130; /* above the hand rail (z-100) and mulligan hand (z-120) */
   background:
     radial-gradient(ellipse at 50% 42%, rgba(28, 22, 8, 0.35), rgba(4, 6, 10, 0.92) 68%);
   backdrop-filter: blur(10px);

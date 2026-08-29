@@ -853,6 +853,7 @@ async function openLabsCounterChain(G) {
 
 export async function runDuel(G) {
   setupDuel(G, G.setup);
+  G.afterSetup?.(G);
   await openingMulligan(G);
   await revealLanes(G);
   await openLabsCounterChain(G);

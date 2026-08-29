@@ -52,7 +52,7 @@ function askWorker(req, timeoutMs) {
   });
 }
 
-function slimActs(actions) {
+function slimActs(actions, ctx = {}) {
   return (actions || []).map((a) => ({
     type: a.type,
     label: a.label,
@@ -60,7 +60,9 @@ function slimActs(actions) {
     cost: typeof a.card?.def?.cost === "number" ? a.card.def.cost : 0,
     cardId: a.card?.id || a.card?.def?.id || a.fusion?.id || null,
     speed: a.card?.def?.spell?.speed || 0,
-    handTrap: !!(a.card?.def?.handTrap || a.card?.def?.spell?.handTrap)
+    handTrap: !!(a.card?.def?.handTrap || a.card?.def?.spell?.handTrap),
+    enemyCount: typeof ctx.enemyCount === "number" ? ctx.enemyCount : undefined,
+    handRest: typeof ctx.handRest === "number" ? ctx.handRest : undefined
   }));
 }
 
@@ -78,12 +80,12 @@ export function wrapWithWorkerAi(baseIo, getTier = () => "normal") {
     async askChain(p, legal, chain, ctx) {
       return baseIo.askChain(p, legal, chain, ctx);
     },
-    async hint(p, actions) {
+    async hint(p, actions, ctx = {}) {
       try {
         const tier = tierOf() === "easy" ? "normal" : tierOf();
         const budget = budgetFor(tier);
         const res = await askWorker(
-          { type: "hint", snapshot: null, player: p, tier, actions: slimActs(actions) },
+          { type: "hint", snapshot: null, player: p, tier, actions: slimActs(actions, ctx) },
           budget.ms
         );
         return res.pv || [];

@@ -1,28 +1,41 @@
-// Local Duel Pass — season XP track, no server. Thin free track for s1.
+// Local Duel Pass — monthly season XP track, no server. Free track, 30 tiers.
 
-export const SEASON_ID = "s1";
+/** Dated season id: rolls over on the first of each month. */
+export function currentSeasonId(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export const SEASON_ID = currentSeasonId();
 export const XP_PER_WIN = 80;
 export const XP_PER_TIER = 200;
 
 // Free-track rewards. Cosmetic ids must exist in cosmetics.CATALOG.
-export const TRACK = [
-  { tier: 1, coins: 50 },
-  { tier: 2, dust: { N: 10 } },
-  { tier: 3, cosmetic: "emote_chain" },
-  { tier: 4, coins: 80, gems: 20 },
-  { tier: 5, cosmetic: "back_ember" },
-  { tier: 6, dust: { R: 10 } },
-  { tier: 7, coins: 120 },
-  { tier: 8, cosmetic: "mat_coliseum" },
-  { tier: 9, dust: { SR: 5 }, gems: 40 },
-  { tier: 10, coins: 250, cosmetic: "theme_gold" }
-];
+// 30 tiers ≈ 75 wins at 80 XP — a month of regular play.
+const FIXED = {
+  3: { cosmetic: "emote_chain" },
+  8: { cosmetic: "back_ember" },
+  15: { cosmetic: "mat_coliseum" },
+  22: { cosmetic: "theme_gold" },
+  10: { gems: 60 },
+  20: { gems: 80 },
+  30: { gems: 120 }
+};
+export const TRACK = Array.from({ length: 30 }, (_, i) => {
+  const tier = i + 1;
+  const fixed = FIXED[tier] || {};
+  const base = tier % 5 === 0 ? { gems: 20 }
+    : tier % 3 === 0 ? { dust: { [tier % 2 ? "R" : "SR"]: 5 } }
+    : tier % 2 === 0 ? { coins: 60 + tier * 4 }
+    : { coins: 40 + tier * 4 };
+  return { tier, ...base, ...fixed };
+});
 
 export function ensureDuelPass(profile) {
   const prev = profile.duelPass || {};
-  const seasonChanged = prev.seasonId && prev.seasonId !== SEASON_ID;
+  const season = currentSeasonId();
+  const seasonChanged = prev.seasonId && prev.seasonId !== season;
   profile.duelPass = {
-    seasonId: SEASON_ID,
+    seasonId: season,
     xp: seasonChanged ? 0 : (prev.xp || 0),
     claimed: seasonChanged ? [] : (Array.isArray(prev.claimed) ? prev.claimed.slice() : [])
   };

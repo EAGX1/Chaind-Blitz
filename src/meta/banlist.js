@@ -16,7 +16,13 @@ export const ADVANCED_COPIES = {
   scream_home: 1,
   research_burn: 1,
   empty_sky: 1,
-  tactic_choice: 1
+  tactic_choice: 1,
+  cyclone_break: 1,
+  flood_verdict: 1,
+  charge_fool: 1,
+  ion_shuffle: 1,
+  heart_claim: 1,
+  alloy_core: 1
 };
 
 export const PRESETS = {

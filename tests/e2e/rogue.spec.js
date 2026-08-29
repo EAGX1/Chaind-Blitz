@@ -10,6 +10,7 @@ test("roguelike run: start -> battle -> reward -> map advances -> survives reloa
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
+  await page.waitForFunction(() => !!window.__CB?.hub);
 
   // start a run from the PLAY tab
   await page.click("#btn-rogue");
@@ -54,6 +55,7 @@ test("roguelike run: start -> battle -> reward -> map advances -> survives reloa
 
     // persistence across reload
     await page.reload();
+    await page.waitForFunction(() => !!window.__CB?.hub);
     const persisted = await page.evaluate(() => ({
       hasRun: !!window.__CB.profile.rogue,
       floor: window.__CB.profile.rogue?.floor,
@@ -76,6 +78,7 @@ test("roguelike: rest site heals through the UI", async ({ page }) => {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
+  await page.waitForFunction(() => !!window.__CB?.hub);
   // start a run, force-open a rest node via the save, then use the UI
   await page.click("#btn-rogue");
   await expect(page.locator(".rogue-map")).toBeVisible();

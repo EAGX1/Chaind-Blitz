@@ -11,6 +11,7 @@ import {
   collectionCopyCount
 } from "./campaign.js";
 import { ADVANCED_COPIES } from "./banlist.js";
+import { ensureSeason } from "./ranked.js";
 
 export function freshProfile(opts = {}) {
   const p = {
@@ -61,6 +62,7 @@ export function freshProfile(opts = {}) {
   } else if (opts.starter) {
     applyStarter(p, opts.starter);
   }
+  ensureSeason(p);
   return p;
 }
 
@@ -112,6 +114,7 @@ function migrate(p) {
   if (!out.starterId && collectionCopyCount(out) >= 200) {
     out.starterId = "legacy";
   }
+  ensureSeason(out);
   return maybeFastStarter(out);
 }
 

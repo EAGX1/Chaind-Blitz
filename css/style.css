@@ -334,7 +334,7 @@ select.cb-select, input.cb-input, textarea.cb-input {
 .cb-card .card-stats {
   display: flex; justify-content: flex-end; gap: 10%;
   padding: 0 6% 3%; font-family: var(--font-head);
-  font-size: calc(var(--cw) * .11); font-weight: 700;
+  font-size: calc(var(--cw) * .15); font-weight: 700;
   line-height: 1;
 }
 .cb-card .card-stats .atk { color: #ffb04a; }
@@ -474,6 +474,8 @@ html[data-avatar="avatar_crown"] #avatar-0 { border-color: #58d68d; color: #b8f5
 .cb-card .badge-locked { background: #4a5a22; }
 .cb-card .badge-sickness { background: #3a4258; }
 .cb-card .badge-noatk { background: #6a3418; }
+.cb-card .badge-ward { background: #1f5fa8; outline: 1px solid #9fd0ff; }
+.cb-card .badge-rush { background: #a85a1f; outline: 1px solid #ffd29f; }
 .cb-card .loc-pip {
   position: absolute; bottom: 4%; left: 4%; z-index: 5;
   font-size: calc(var(--cw) * .08); font-weight: 800; letter-spacing: .3px;

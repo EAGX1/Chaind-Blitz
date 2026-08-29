@@ -92,6 +92,25 @@ export function playBed(name = "hub", settings) {
     return;
   }
   stopBedNodes();
+  bedName = name;
+  const baked = loadSample(`music/${name}`);
+  if (baked.status !== "missing") {
+    const startLoop = () => {
+      if (baked.status !== "ready" || bedName !== name) return;
+      const src = ac.createBufferSource();
+      src.buffer = baked.buffer;
+      src.loop = true;
+      const g = ac.createGain();
+      g.gain.value = 1;
+      src.connect(g).connect(musicGain);
+      src.start();
+      pushNode(src);
+      pushNode(g);
+    };
+    if (baked.status === "ready") startLoop();
+    else baked.promise?.then(startLoop);
+    return;
+  }
   const spec = BEDS[name] || BEDS.hub;
   const timbre = BED_TIMBRE[name] || BED_TIMBRE.hub;
   const t0 = ac.currentTime;
@@ -169,6 +188,7 @@ export function playStinger(name = "win", settings) {
   if (settings) bindSettings(settings);
   const ac = audioCtx();
   if (!ac || !sfxGain) return;
+  if (playSample(`sfx/${name}`)) return;
   const notes = STINGERS[name] || STINGERS.win;
   const t0 = ac.currentTime;
   notes.forEach((freq, i) => {
@@ -189,6 +209,73 @@ export function sfxDestination() {
   const ac = audioCtx();
   if (!ac || !sfxGain) return null;
   return sfxGain;
+}
+
+/* ---------- baked sample playback (public/audio), oscillator fallback ---------- */
+const sampleCache = new Map(); // name -> { status, buffer, promise }
+
+function loadSample(name) {
+  let e = sampleCache.get(name);
+  if (e) return e;
+  e = { status: "loading", buffer: null, promise: null };
+  sampleCache.set(name, e);
+  const ac = audioCtx();
+  if (!ac || typeof fetch !== "function") {
+    e.status = "missing";
+    return e;
+  }
+  e.promise = fetch(`audio/${name}.wav`)
+    .then((r) => {
+      if (!r.ok) throw new Error(`audio ${name}: ${r.status}`);
+      return r.arrayBuffer();
+    })
+    .then((ab) => ac.decodeAudioData(ab))
+    .then((buf) => {
+      e.buffer = buf;
+      e.status = "ready";
+    })
+    .catch(() => {
+      e.status = "missing";
+    });
+  return e;
+}
+
+/** Warm the cache so first duel beats don't wait on decode. */
+export function preloadAudio() {
+  for (const n of ["sfx/summon", "sfx/attack", "sfx/damage", "sfx/chain", "sfx/destroy",
+    "music/hub", "music/duel", "music/city"]) {
+    loadSample(n);
+  }
+}
+
+/**
+ * Play a baked sample through the volume bus. Returns false when the file is
+ * known-missing so the caller can fall back to procedural audio.
+ */
+export function playSample(name, { bus = "sfx", loop = false, gain = 1 } = {}) {
+  const ac = audioCtx();
+  if (!ac) return false;
+  const e = loadSample(name);
+  if (e.status === "missing") return false;
+  const start = () => {
+    if (e.status !== "ready" || !e.buffer) return null;
+    const src = ac.createBufferSource();
+    src.buffer = e.buffer;
+    src.loop = loop;
+    const g = ac.createGain();
+    g.gain.value = gain;
+    src.connect(g).connect(bus === "music" ? musicGain : sfxGain);
+    src.start();
+    return src;
+  };
+  if (e.status === "ready") return start() ? true : false;
+  e.promise?.then(() => { start(); });
+  return true;
+}
+
+/** True once a baked sample is confirmed on disk (used by beds to switch over). */
+export function sampleReady(name) {
+  return sampleCache.get(name)?.status === "ready";
 }
 
 export function resume() {

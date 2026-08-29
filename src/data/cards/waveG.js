@@ -8,7 +8,7 @@ import {
 } from "../../engine/ops.js";
 import { negateLastLinkOfKind } from "../../engine/chain.js";
 import {
-  must, ifTrig,
+  must, ifTrig, when,
   evSelfSummon, evSentFromField,
   rDraw, rDamageLeader, rDestroyTarget, rBounceTarget, rDamageMonster,
   tEnemyMonster, tOwnMonster, tOwnGyMonster,
@@ -615,6 +615,16 @@ export const dirty_summon = S("dirty_summon", "Dirty Summon", "normal", 1, 2, "S
     }
   });
 
+/** Banish-matter proof: fires from the banished pile. */
+export const ash_drifter = M("ash_drifter", "Ash Drifter", "Neutral", 2, 2, 1, "R",
+  "When this card is banished: you can draw 1.",
+  {
+    archetypes: ["staple", "draw"],
+    triggers: [when("drifter_draw", "Draw 1 when banished",
+      (G, card, ev) => ev.type === "banished" && ev.card === card,
+      rDraw(1), { from: "ban" })]
+  });
+
 export const WAVE_G_CARDS = [
   veil_needle, ghost_crack, drop_veil, tactic_choice, empty_sky, twin_cut, star_banish,
   hard_veto, strike_tax, both_boards, helix_shot, fire_arc, anger_wave, holy_wave,
@@ -623,7 +633,7 @@ export const WAVE_G_CARDS = [
   hand_split, ion_shuffle, research_burn, peek_three, exile_draw, brainstorm_fold,
   consider_top, friends_draw, nest_call, ultra_search, switch_home, airbound_cut,
   glimpse_cut, bow_sniper, dusk_clerk, azure_wing, alloy_core, banshee_claim,
-  soul_wake, one_line, dirty_summon
+  soul_wake, one_line, dirty_summon, ash_drifter
 ];
 
 export const WAVE_G_DB = Object.fromEntries(WAVE_G_CARDS.map((c) => [c.id, c]));

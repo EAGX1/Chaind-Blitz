@@ -42,7 +42,7 @@ const EN = {
   "format.unlimited": "Unlimited",
   "settings.uiScale": "UI scale",
   "settings.chainMode": "Chain mode",
-  "settings.board3d": "3D board overlay (2D stays clickable)",
+  "settings.board3d": "3D board overlay (decorative — 2D stays clickable)",
   "settings.colorblind": "Colorblind tribe patterns",
   "settings.locale": "Language",
   "settings.music": "Music",

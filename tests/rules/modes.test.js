@@ -12,6 +12,9 @@ import {
 } from "../../src/meta/modes.js";
 import { makeRng } from "../../src/engine/rng.js";
 import { newGame, canEvolveNow, makeCard } from "../../src/engine/state.js";
+import { createDuel, runDuel } from "../../src/engine/index.js";
+import { CARD_DB } from "../../src/data/cards/index.js";
+import { makeDriver } from "./helpers.js";
 
 describe("draft / cube draft", () => {
   it("cube list only contains real Bronze cards", () => {
@@ -156,6 +159,30 @@ describe("tavern brawl", () => {
     BRAWLS.find((b) => b.id === "sudden_death").apply(G, {});
     expect(G.players[0].lp).toBe(10);
     expect(G.players[1].lp).toBe(10);
+  });
+
+  it("brawl mutators apply after setupDuel (EP override sticks)", async () => {
+    const G = createDuel({
+      cardDb: CARD_DB,
+      decks: [STARTERS.ignis.deck, STARTERS.terra.deck],
+      laneDefs: [],
+      seed: 5,
+      io: null,
+      firstPlayer: 0
+    });
+    Object.defineProperty(G, "afterSetup", {
+      value: (g) => { for (const p of g.players) { p.ep = 4; p.evolveTurn = 1; } },
+      enumerable: false
+    });
+    let seen = null;
+    G.io = makeDriver({
+      chooseMain(p, actions) {
+        seen ??= G.players.map((x) => x.ep);
+        return actions.find((a) => a.type === "end");
+      }
+    });
+    await runDuel(G);
+    expect(seen).toEqual([4, 4]);
   });
 
   it("evolutionary_war unlocks evolve from turn 1 with 4 EP", () => {

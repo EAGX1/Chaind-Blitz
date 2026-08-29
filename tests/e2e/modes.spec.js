@@ -10,6 +10,7 @@ test("draft: 40 picks build a deck, gauntlet duel resolves, state persists", asy
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
+  await page.waitForFunction(() => !!window.__CB?.hub);
   await page.click('[data-tab="modes"]');
   await page.click("#btn-draft-start");
 
@@ -34,6 +35,7 @@ test("draft: 40 picks build a deck, gauntlet duel resolves, state persists", asy
   expect(st.round).toBe(1);
   // persistence across reload
   await page.reload();
+  await page.waitForFunction(() => !!window.__CB?.hub);
   const st2 = await page.evaluate(() => window.__CB.profile.modes.draft);
   expect(st2.round).toBe(1);
   expect(st2.picks.length).toBe(40);
@@ -44,6 +46,7 @@ test("tavern brawl: weekly modifier applies to the duel", async ({ page }) => {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
+  await page.waitForFunction(() => !!window.__CB?.hub);
   await page.click('[data-tab="modes"]');
   await page.click('[data-mode="brawl"]');
   await page.click("#btn-brawl-start");
@@ -76,6 +79,7 @@ test("tournament: bracket starts, match resolves, result persists", async ({ pag
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
+  await page.waitForFunction(() => !!window.__CB?.hub);
   await page.click('[data-tab="modes"]');
   await page.click('[data-mode="tourney"]');
   await page.click("#btn-tourney-start");
@@ -93,6 +97,7 @@ test("sealed: open packs and pool renders; highlander duel starts", async ({ pag
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
+  await page.waitForFunction(() => !!window.__CB?.hub);
   await page.click('[data-tab="modes"]');
   await page.click('[data-mode="sealed"]');
   await page.click("#btn-sealed-open");

@@ -2,9 +2,29 @@
 // and pool expansion on tier-up. Iron-safe floors: you can't drop a tier.
 
 import { TIERS, poolForTier } from "./pools.js";
+import { currentSeasonId } from "./duelPass.js";
 
 export const WIN_LP = 20;
 export const LOSS_LP = 15;
+
+/**
+ * Monthly season roll: soft-reset the ladder (drop two tiers, Master lands on
+ * Gold), clear LP and any promo series. Idempotent within a season.
+ */
+export function ensureSeason(profile, now = new Date()) {
+  const r = profile.rank;
+  if (!r) return false;
+  const season = currentSeasonId(now);
+  if (r.seasonId === season) return false;
+  const hadSeason = !!r.seasonId;
+  r.seasonId = season;
+  if (hadSeason) {
+    r.tier = Math.max(0, r.tier - 2);
+    r.lp = 0;
+    r.promo = null;
+  }
+  return hadSeason;
+}
 
 // result: { tierUp, lpDelta, promoStarted, promoWon, promoLost, newPoolSize }
 export function applyRankedResult(profile, won) {

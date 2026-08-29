@@ -190,6 +190,42 @@ describe("AI difficulty changes picks", () => {
     expect(scoreMainAct(G, 0, sky, { tier: "hard", depth: 3 })).toBe(12);
     expect(scoreMainAct(G, 0, sky, { tier: "easy", depth: 1 })).toBe(0);
   });
+
+  it("refuses suicidal attacks but takes even trades upward", () => {
+    const G = mkState(1);
+    const fox = addField(G, 0, "ember_fox", 0, { summonedTurn: 0 });
+    const giant = addField(G, 1, "lava_giant", 0, { summonedTurn: 0 });
+    const suicide = pickAttack(G, [fox], () => ({ foes: [giant], canDirect: false }));
+    expect(suicide).toBe(null);
+    const mine = addField(G, 0, "lava_giant", 1, { summonedTurn: 0 });
+    const trade = pickAttack(G, [mine], () => ({ foes: [giant], canDirect: false }));
+    expect(trade).toEqual({ attackerUid: mine.uid, targetUid: giant.uid });
+  });
+
+  it("mulligan keeps a hand trap and bounces bricks and clutter", async () => {
+    const G = mkState(1);
+    const trap = addHand(G, 0, "veil_needle");
+    addHand(G, 0, "inferno_titan");
+    const brick2 = addHand(G, 0, "inferno_titan");
+    addHand(G, 0, "ember_fox");
+    addHand(G, 0, "ember_fox");
+    const fox3 = addHand(G, 0, "ember_fox");
+    const ai = makeAutopilot(G);
+    const bounce = await ai.askMulligan(0, P(G, 0).hand);
+    expect(bounce).not.toContain(trap.uid);
+    expect(bounce).toContain(brick2.uid);
+    expect(bounce).toContain(fox3.uid);
+    expect(bounce.length).toBeLessThanOrEqual(3);
+  });
+
+  it("comeback picks free Evolve with a board, draw without one", async () => {
+    const G = mkState(1);
+    addField(G, 0, "ember_fox", 0, { summonedTurn: 0 });
+    expect(await makeAutopilot(G).askComeback(0)).toBe("evolve");
+    const G2 = mkState(1);
+    addField(G2, 1, "lava_giant", 0, { summonedTurn: 0 });
+    expect(await makeAutopilot(G2).askComeback(0)).toBe("draw");
+  });
 });
 
 describe("tutorial flag", () => {
@@ -303,7 +339,7 @@ describe("PNG character cutout", () => {
 
 describe("extra ladder", () => {
   it("ships 10 Extra fusions and Grove Knight has a fanfare", () => {
-    expect(EXTRA_CARDS.length).toBe(12);
+    expect(EXTRA_CARDS.length).toBe(20);
     expect(CARD_DB.fusion_staple_knight.fusion?.contact).toBe(true);
     expect(CARD_DB.fusion_staple_aegis.keywords).toContain("ward");
     expect(CARD_DB.fusion_grove_knight.triggers?.length).toBeGreaterThan(0);
@@ -829,6 +865,39 @@ describe("on-card status badges", () => {
     expect(cardStatusBadges(G, fox).some((b) => b.id === "negated")).toBe(true);
     const trap = addSet(G, 0, "null_seal", 0, 2);
     expect(cardStatusBadges(G, trap).some((b) => b.id === "locked")).toBe(true);
+  });
+
+  it("marks Ward and Rush so combat rules are visible at a glance", () => {
+    const G = mkState(1);
+    G.turnCount = 5;
+    G.tp = 0;
+    const ward = addField(G, 0, "ward_sentinel", 0, { summonedTurn: 1 });
+    const ids = cardStatusBadges(G, ward).map((b) => b.id);
+    expect(ids).toContain("ward");
+    const falcon = addField(G, 0, "swift_falcon", 1, { summonedTurn: 5 });
+    expect(cardStatusBadges(G, falcon).map((b) => b.id)).toContain("rush");
+    ward.negated = true;
+    expect(cardStatusBadges(G, ward).map((b) => b.id)).not.toContain("ward");
+  });
+});
+
+describe("baked audio assets", () => {
+  it("ships real WAV files for the core SFX and music beds", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const { fileURLToPath } = await import("node:url");
+    const { dirname, join } = await import("node:path");
+    const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
+    for (const f of ["sfx/summon", "sfx/attack", "sfx/damage", "sfx/chain", "sfx/negate",
+      "sfx/evolve", "sfx/fusion", "sfx/win", "sfx/lose", "music/hub", "music/duel", "music/city"]) {
+      const buf = await readFile(join(root, "public", "audio", `${f}.wav`));
+      expect(buf.subarray(0, 4).toString(), f).toBe("RIFF");
+    }
+  });
+
+  it("playSample no-ops without a browser AudioContext", async () => {
+    const { playSample, preloadAudio } = await import("../../src/meta/music.js");
+    expect(playSample("sfx/summon")).toBe(false);
+    expect(() => preloadAudio()).not.toThrow();
   });
 });
 

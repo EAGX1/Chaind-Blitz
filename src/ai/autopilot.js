@@ -28,12 +28,21 @@ export function makeAutopilot(G, opts = {}) {
   };
 
   const targetIdx = (p, req) => {
-    // enemy targets: highest ATK. own targets: highest ATK (buffs) — either way biggest.
-    let best = 0, bestAtk = -1;
-    (req.uids || []).forEach((uid, i) => {
+    // Role-based: heal own most-damaged, remove the biggest enemy threat
+    // (Ward first on ties), buff the biggest attacker.
+    const uids = req.uids || [];
+    const cards = uids.map((uid) => findCard(G, uid)).filter(Boolean);
+    const ownSide = cards.length > 0 && cards.every((c) => c.controller === p);
+    const title = String(req.title || "").toLowerCase();
+    const healish = /heal|restore|mend|recover/.test(title);
+    let best = 0, bestS = -Infinity;
+    uids.forEach((uid, i) => {
       const c = findCard(G, uid);
-      const atk = c ? getATK(G, c) : 0;
-      if (atk > bestAtk) { bestAtk = atk; best = i; }
+      if (!c) return;
+      let s = getATK(G, c);
+      if (ownSide && healish) s = (c.dmg || 0) * 10 + getATK(G, c) * 0.1;
+      else if (!ownSide && c.def?.keywords?.includes("ward")) s += 0.5;
+      if (s > bestS) { bestS = s; best = i; }
     });
     return best;
   };
@@ -74,13 +83,23 @@ export function makeAutopilot(G, opts = {}) {
     onLog: opts.onLog || (() => {}),
 
     async askMulligan(p, hand) {
-      // Keep high-cost bombs; mulligan cost-1 clutter if hand is heavy
-      const bounce = hand.filter((c) => (c.def?.cost || 0) <= 1).slice(0, 2).map((c) => c.uid);
-      return bounce;
+      // Opener roles: keep one hand trap and a playable curve; bounce bricks
+      // and cheap clutter beyond what the first turns can use.
+      const traps = hand.filter((c) => c.def?.handTrap || c.def?.spell?.handTrap);
+      const keep = new Set(traps.slice(0, 1).map((c) => c.uid));
+      const bricks = hand.filter((c) => (c.def?.cost || 0) >= 6 && !keep.has(c.uid));
+      const cheap = hand.filter((c) => (c.def?.cost || 0) <= 1 && !keep.has(c.uid));
+      const bounce = [];
+      for (const c of bricks.slice(1)) bounce.push(c.uid);
+      for (const c of cheap.slice(2)) bounce.push(c.uid);
+      return bounce.slice(0, 3);
     },
 
-    async askComeback(_p) {
-      return "draw";
+    async askComeback(p) {
+      // Free Evolve pays off when we already have a body; otherwise draw.
+      const mine = monstersOf(G, p).length;
+      const theirs = monstersOf(G, opp(p)).length;
+      return mine > 0 && mine >= theirs ? "evolve" : "draw";
     },
 
     async choose(p, req) {

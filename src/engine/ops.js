@@ -40,6 +40,14 @@ export function banishCard(G, card, { from = null, kind = "effect" } = {}) {
   return { type: "banished", card, from: src, kind, player: card.controller };
 }
 
+/** Return a banished card to the GY (default) or hand. */
+export function returnFromBanish(G, card, to = "gy") {
+  if (!card || card.loc !== "ban") return null;
+  moveTo(G, card, to);
+  P(G, card.owner)[to].push(card);
+  return { type: "banishReturn", card, from: "ban", to, player: card.controller };
+}
+
 export function bounceToHand(G, card) {
   const src = card.loc;
   moveTo(G, card, "hand");

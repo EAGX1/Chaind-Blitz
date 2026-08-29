@@ -5,6 +5,8 @@ import { previewCombat } from "../engine/state.js";
 
 /**
  * Pick the next attack the CPU would declare, or null to end Battle.
+ * Refuses suicidal trades: after lethal and profitable kills it only takes
+ * even trades into bigger monsters, otherwise it holds back.
  * @param {{ snipeLethal?: boolean }} opts Easy skips the lethal-direct snipe.
  */
 export function pickAttack(G, attackers, targetsFn, { snipeLethal = true } = {}) {
@@ -28,17 +30,16 @@ export function pickAttack(G, attackers, targetsFn, { snipeLethal = true } = {})
       .sort((x, y) => getATK(G, y) - getATK(G, x));
     if (killable.length) return { attackerUid: a.uid, targetUid: killable[0].uid };
   }
+  // Even trades are only worth it upward: both die, theirs was bigger.
   for (const a of sorted) {
     const { foes } = targetsFn(a);
     if (!foes.length) continue;
     const aAtk = getATK(G, a);
-    const ranked = [...foes].sort((x, y) => {
-      const xKill = aAtk >= remainingHealth(G, x) ? 1 : 0;
-      const yKill = aAtk >= remainingHealth(G, y) ? 1 : 0;
-      if (xKill !== yKill) return yKill - xKill;
-      return getATK(G, y) - getATK(G, x);
-    });
-    return { attackerUid: a.uid, targetUid: ranked[0].uid };
+    const evenUp = foes
+      .filter((f) => aAtk >= remainingHealth(G, f) && getATK(G, f) >= remainingHealth(G, a))
+      .filter((f) => getATK(G, f) >= aAtk)
+      .sort((x, y) => getATK(G, y) - getATK(G, x));
+    if (evenUp.length) return { attackerUid: a.uid, targetUid: evenUp[0].uid };
   }
   return null;
 }

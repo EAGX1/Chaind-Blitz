@@ -91,15 +91,16 @@ export const LOANER_DECKS = {
   },
   mill: {
     id: "mill", name: "Mill", pillar: "GY", ship: "must",
-    desc: "Mill the opponent out; spore and abyss tools.",
+    desc: "Mill the opponent out; Hollow Tax and Deep Hollow burn them on the way.",
     deck: deck40([
-      x("mill_spore", 3), x("tide_caller", 3), x("frost_mage", 3),
-      x("scav_wisp", 3), x("depths_lurker", 2), x("oracle_eel", 2),
-      x("mawling", 2), x("jestling", 2), x("drain_leech", 2), ["kraken"],
-      x("silencing_depths", 3), x("moonwell", 2), x("riptide", 2),
-      x("tidal_snare", 2), x("null_seal", 2), x("deep_freeze", 2), ["call_fallen"]
+      x("mill_spore", 3), x("mill_lantern", 3), x("mill_angler", 2),
+      x("tide_caller", 2), x("frost_mage", 2), x("scav_wisp", 3),
+      x("depths_lurker", 2), x("oracle_eel", 2), x("drain_leech", 2), ["kraken"],
+      x("deep_current", 2), x("hollow_tax", 2), x("silencing_depths", 2),
+      x("moonwell", 2), x("riptide", 2), x("tidal_snare", 2), x("null_seal", 2),
+      ["call_fallen"]
     ], "silencing_depths"),
-    extra: []
+    extra: ["fusion_mill_maw", "fusion_deep_hollow"]
   },
   heal_ramp: {
     id: "heal_ramp", name: "Heal / Ramp", pillar: "Ramp", ship: "must",
@@ -217,16 +218,15 @@ export const LOANER_DECKS = {
   },
   token_walls: {
     id: "token_walls", name: "Token Walls", pillar: "Walls", ship: "silver",
-    desc: "Mason and ward bodies stall while value accrues.",
+    desc: "Mason and Sprouter raise real token walls; Warden Titan crowns them.",
     deck: deck40([
-      x("silver_token_mason", 3), x("ward_sentinel", 3), x("shield_sprite", 3),
-      x("stoneback", 3), x("heal_bloom", 2), x("gem_golem", 2),
-      x("moss_sprite", 2), x("dawn_pixie", 2), ["grove_elder"],
+      x("silver_token_mason", 3), x("token_sprouter", 3), x("ward_sentinel", 3),
+      x("shield_sprite", 3), x("stoneback", 3), x("heal_bloom", 2),
+      x("gem_golem", 2), x("moss_sprite", 2), x("dawn_pixie", 2), ["grove_elder"],
       x("stone_skin", 3), x("moonwell", 2), x("overgrowth", 2),
-      x("root_snare", 2), x("verdant_rebuke", 2), x("null_seal", 2),
-      ["wild_call", "final_edict", "thorn_archer", "thorn_archer"]
+      x("root_snare", 2), x("verdant_rebuke", 2), x("null_seal", 2)
     ], "stone_skin"),
-    extra: ["fusion_choice_shield"]
+    extra: ["fusion_choice_shield", "fusion_warden_titan"]
   },
   discard_payoff: {
     id: "discard_payoff", name: "Discard Payoff", pillar: "GY", ship: "silver",
@@ -472,16 +472,17 @@ export const LOANER_DECKS = {
   },
   ambush_trapdoor: {
     id: "ambush_trapdoor", name: "Ambush Trapdoor", pillar: "Control", ship: "silver",
-    desc: "Ambush Door and set traps punish overextension.",
+    desc: "Ambush Door and the Queen punish overextension; the Fiend flips them all up.",
     deck: deck40([
-      x("silver_ambush_door", 3), x("ambush_stalker", 3), x("tide_caller", 2),
+      x("silver_ambush_door", 3), x("ambush_stalker", 3), x("trapdoor_queen", 2),
+      x("sudden_maw", 2), x("tide_caller", 2),
       x("frost_mage", 2), x("abyss_warden", 2), x("depths_lurker", 2),
       x("drain_leech", 2), x("oracle_eel", 2), ["chrono_mite"],
       x("tidal_snare", 3), x("ash_whisper", 2), x("veil_negate", 2),
       x("null_seal", 2), x("trapdoor_lurker", 1), x("riptide", 2),
       x("lane_breaker", 2), x("tide_cutter", 2), ["final_edict", "silencing_depths"]
     ], "tidal_snare"),
-    extra: ["fusion_abyss_leviathan"]
+    extra: ["fusion_abyss_leviathan", "fusion_trapdoor_fiend"]
   },
   gy_fusion_combo: {
     id: "gy_fusion_combo", name: "GY Fusion Combo", pillar: "Combo", ship: "silver",
@@ -600,21 +601,21 @@ const fusionMid = ["fusion_ember_drake", "fusion_choice_blade", "fusion_choice_s
 const dualBest = ["fusion_pyre_wyrm", "fusion_veil_lock", "fusion_ember_drake", "fusion_abyss_leviathan"];
 
 const ARCHETYPE_EXTRA = {
-  spell_tempo: ["fusion_pyre_wyrm", "fusion_tempo_ace"],
+  spell_tempo: ["fusion_pyre_wyrm", "fusion_tempo_ace", "fusion_storm_caller"],
   otk_face: ignisBest,
   pyro_control: ignisBest,
   burn: ignisBest,
   evolve_burn: ["fusion_pyre_wyrm", "fusion_ember_drake"],
-  going_second: ignisMid,
-  aggro_swarm: ignisMid,
-  ignis_mid: ignisThin,
-  wide_rush: ignisThin,
+  going_second: [...ignisMid, "fusion_rush_general"],
+  aggro_swarm: [...ignisMid, "fusion_rush_general"],
+  ignis_mid: [...ignisThin, "fusion_cinder_archon"],
+  wide_rush: [...ignisThin, "fusion_rush_general"],
   contact_combo: ["fusion_ember_drake"],
   tri_splash: ["fusion_choice_blade"],
   gy: gyBest,
-  gy_fusion_combo: ["fusion_grave_tyrant", "fusion_ember_drake"],
+  gy_fusion_combo: ["fusion_grave_tyrant", "fusion_grave_jester", "fusion_ember_drake"],
   discard_payoff: gyMid,
-  jest_engine: gyMid,
+  jest_engine: ["fusion_grave_jester", "fusion_grave_tyrant"],
   handtrap_midrange: dualBest,
   comeback_toolbox: ["fusion_veil_lock", "fusion_choice_shield", "fusion_grove_knight"],
   control_counters: abyssMid,
@@ -622,23 +623,23 @@ const ARCHETYPE_EXTRA = {
   counter_war: abyssMid,
   abyss_tempo: abyssMid,
   tempo_bounce: ["fusion_abyss_leviathan", "fusion_tempo_ace"],
-  ambush_trapdoor: abyssThin,
+  ambush_trapdoor: ["fusion_abyss_leviathan", "fusion_trapdoor_fiend"],
   drain_walls: abyssThin,
-  mill: ["fusion_mill_maw"],
+  mill: ["fusion_mill_maw", "fusion_deep_hollow"],
   stall_to_fusion: ["fusion_ember_drake", "fusion_choice_shield", "fusion_grove_knight"],
   fusion_ladder: fusionBest,
   choice_recipe: fusionMid,
   substitute_toolbox: ignisThin,
-  heal_stall: terraBest,
-  ward_walls: terraMid,
+  heal_stall: [...terraBest, "fusion_warden_titan"],
+  ward_walls: [...terraMid, "fusion_warden_titan"],
   big_evolve: terraBest,
   lifegain_midrange: terraThin,
   heal_ramp: terraMid,
-  token_walls: terraMid,
-  value_midrange: ["fusion_tempo_ace", "fusion_choice_blade", "fusion_choice_shield"],
-  lane_surfer: ["fusion_tempo_ace", "fusion_choice_blade"],
-  terra_beat: terraBest,
-  ramp_into_boss: terraBest,
+  token_walls: [...terraMid, "fusion_warden_titan"],
+  value_midrange: ["fusion_tempo_ace", "fusion_staple_knight", "fusion_staple_aegis", "fusion_storm_caller"],
+  lane_surfer: ["fusion_tempo_ace", "fusion_rush_general", "fusion_staple_knight"],
+  terra_beat: [...terraBest, "fusion_worldroot"],
+  ramp_into_boss: [...terraBest, "fusion_worldroot"],
   hybrid_abyss_tempo: ["fusion_ember_drake", "fusion_abyss_leviathan"],
   hybrid_terra_abyss: ["fusion_abyss_leviathan", "fusion_choice_shield"]
 };

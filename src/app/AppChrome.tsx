@@ -308,6 +308,11 @@ export function AppChrome() {
               </button>
             </div>
             <label className="cb-check">
+              <input type="checkbox" checked={settings.cpuIntent !== false}
+                onChange={(e) => patch({ cpuIntent: e.target.checked })} />
+              CPU telegraph (show the opponent's intended play)
+            </label>
+            <label className="cb-check">
               <input type="checkbox" checked={!!settings.board3d}
                 onChange={(e) => patch({ board3d: e.target.checked })} />
               {t("settings.board3d")}

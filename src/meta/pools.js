@@ -23,11 +23,13 @@ export const TIERS = [
 
 const SETS_BY_TIER = [
   BRONZE_CARDS,
-  [...WAVE_C_CARDS, ...SILVER_CARDS],
+  // Silver front-loads the generic staples so starter decks can be completed early.
+  [...WAVE_C_CARDS, ...SILVER_CARDS, ...WAVE_G_CARDS],
   [...WAVE_D_CARDS, ...GOLD_CARDS],
   [...WAVE_E_CARDS, ...EXTRA_CARDS, ...PLATINUM_CARDS],
   WAVE_F_CARDS,
-  WAVE_G_CARDS,
+  // Master is prestige: the pool is already complete at Diamond.
+  [],
 ];
 
 export function poolForTier(tier) {

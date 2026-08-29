@@ -19,6 +19,7 @@ import {
 import { GATES, clearGate, isUnlocked, checklist } from "../../src/meta/soloGates.js";
 import { asSavedDeck, copyLimit, setCopyLimit, validateDeck, banlistFromPreset, ADVANCED_COPIES } from "../../src/meta/banlist.js";
 import { shippedLoaners } from "../../src/data/loaners.js";
+import { STARTERS } from "../../src/data/starters.js";
 
 // localStorage shim for node
 beforeEach(() => {
@@ -91,23 +92,43 @@ describe("pool gating", () => {
   it("bronze pool is exactly 60 cards", () => {
     expect(poolForTier(0).length).toBe(60);
   });
-  it("ranked pools ramp until Master equals the full unique catalog", () => {
+  it("ranked pools ramp until Diamond equals the full unique catalog; Master is prestige", () => {
     const expected = [
       uniqueIds(BRONZE_CARDS),
-      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS),
-      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS, WAVE_D_CARDS, GOLD_CARDS),
-      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS, WAVE_D_CARDS, GOLD_CARDS, WAVE_E_CARDS, EXTRA_CARDS, PLATINUM_CARDS),
-      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS, WAVE_D_CARDS, GOLD_CARDS, WAVE_E_CARDS, EXTRA_CARDS, PLATINUM_CARDS, WAVE_F_CARDS),
-      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS, WAVE_D_CARDS, GOLD_CARDS, WAVE_E_CARDS, EXTRA_CARDS, PLATINUM_CARDS, WAVE_F_CARDS, WAVE_G_CARDS),
+      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS, WAVE_G_CARDS),
+      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS, WAVE_G_CARDS, WAVE_D_CARDS, GOLD_CARDS),
+      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS, WAVE_G_CARDS, WAVE_D_CARDS, GOLD_CARDS, WAVE_E_CARDS, EXTRA_CARDS, PLATINUM_CARDS),
+      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS, WAVE_G_CARDS, WAVE_D_CARDS, GOLD_CARDS, WAVE_E_CARDS, EXTRA_CARDS, PLATINUM_CARDS, WAVE_F_CARDS),
+      uniqueIds(BRONZE_CARDS, WAVE_C_CARDS, SILVER_CARDS, WAVE_G_CARDS, WAVE_D_CARDS, GOLD_CARDS, WAVE_E_CARDS, EXTRA_CARDS, PLATINUM_CARDS, WAVE_F_CARDS),
     ];
     const uniqueAll = uniqueIds(ALL_CARDS);
     const sizes = [0, 1, 2, 3, 4, 5].map((t) => poolForTier(t).length);
     expect(sizes[0]).toBe(60);
     expect(sizes).toEqual(expected);
-    for (let t = 1; t <= 5; t++) {
+    for (let t = 1; t <= 4; t++) {
       expect(sizes[t]).toBeGreaterThan(sizes[t - 1]);
     }
-    expect(poolForTier(5).length).toBe(uniqueAll);
+    expect(sizes[4]).toBe(uniqueAll);
+    expect(sizes[5]).toBe(uniqueAll);
+  });
+
+  it("starter staples are in the Silver pool so new players can craft them", () => {
+    const silver = new Set(poolForTier(1).map((c) => c.id));
+    for (const id of ["veil_needle", "helix_shot", "ash_whisper", "twin_cut", "equal_cut"]) {
+      expect(silver.has(id), id).toBe(true);
+    }
+  });
+
+  it("mill package, token support, and the new fusions are in the pools", () => {
+    const silver = new Set(poolForTier(1).map((c) => c.id));
+    for (const id of ["mill_lantern", "mill_angler", "deep_current", "hollow_tax", "sudden_maw", "trapdoor_queen", "token_sprouter"]) {
+      expect(silver.has(id), id).toBe(true);
+    }
+    const plat = new Set(poolForTier(3).map((c) => c.id));
+    for (const id of ["fusion_deep_hollow", "fusion_trapdoor_fiend", "fusion_grave_jester", "fusion_worldroot",
+      "fusion_cinder_archon", "fusion_warden_titan", "fusion_rush_general", "fusion_storm_caller"]) {
+      expect(plat.has(id), id).toBe(true);
+    }
   });
 });
 
@@ -292,9 +313,10 @@ describe("banlist + saved decks", () => {
     expect(validateDeck(doubled, "Unlimited", limited).ok).toBe(true);
   });
 
-  it("Advanced limits Wave G bombs to 1 and Unlimited does not", () => {
+  it("Advanced limits Wave G bombs and their unlimited peers to 1; Unlimited does not", () => {
     const advanced = banlistFromPreset("advanced");
-    for (const id of ["both_boards", "scream_home", "research_burn", "empty_sky", "tactic_choice", "starfall"]) {
+    for (const id of ["both_boards", "scream_home", "research_burn", "empty_sky", "tactic_choice", "starfall",
+      "cyclone_break", "flood_verdict", "charge_fool", "ion_shuffle", "heart_claim", "alloy_core"]) {
       expect(ADVANCED_COPIES[id]).toBe(1);
       expect(copyLimit(id, "Advanced", advanced)).toBe(1);
       expect(copyLimit(id, "Unlimited", advanced)).toBe(3);
@@ -324,8 +346,64 @@ describe("banlist + saved decks", () => {
   });
 });
 
-describe("effect icons", () => {
-  it("tags draw / heal / burn / negate from printed text", async () => {
+describe("economy tuning + seasons", () => {
+  it("duel rewards are a trickle; the 10th win pays a pack", async () => {
+    const { duelRewards } = await import("../../src/meta/rewards.js");
+    const p = freshProfile();
+    expect(duelRewards(p, { won: true, mode: "ranked" }).gems).toBe(18);
+    expect(duelRewards(p, { won: true, mode: "pve" }).gems).toBe(10);
+    p.stats.wins = 9;
+    expect(duelRewards(p, { won: true, mode: "pve" }).pack).toBe(true);
+  });
+
+  it("loaners cannot queue ranked; starters and customs can", async () => {
+    const { tryQueueDeck } = await import("../../src/ui/deckDoor.js");
+    const loaners = shippedLoaners();
+    const ctx = { starters: STARTERS, loaners, decks: {}, profile: freshProfile() };
+    expect(tryQueueDeck(`loaner:${loaners[0].id}`, { ...ctx, ranked: true }).ok).toBe(false);
+    expect(tryQueueDeck("starter:ignis", { ...ctx, ranked: true }).ok).toBe(true);
+    expect(tryQueueDeck(`loaner:${loaners[0].id}`, ctx).ok).toBe(true);
+  });
+
+  it("season roll resets the pass and soft-resets the ladder, idempotently", async () => {
+    const { ensureDuelPass, TRACK, currentSeasonId } = await import("../../src/meta/duelPass.js");
+    const { ensureSeason } = await import("../../src/meta/ranked.js");
+    expect(TRACK.length).toBe(30);
+    const p = freshProfile();
+    p.rank.tier = 5;
+    p.rank.lp = 40;
+    p.rank.seasonId = "2000-01";
+    p.duelPass = { seasonId: "2000-01", xp: 500, claimed: [1, 2] };
+    expect(ensureSeason(p)).toBe(true);
+    expect(p.rank.tier).toBe(3);
+    expect(p.rank.lp).toBe(0);
+    expect(p.rank.promo).toBeNull();
+    ensureDuelPass(p);
+    expect(p.duelPass.xp).toBe(0);
+    expect(p.duelPass.claimed).toEqual([]);
+    expect(p.duelPass.seasonId).toBe(currentSeasonId());
+    expect(ensureSeason(p)).toBe(false);
+  });
+
+  it("fresh profiles stamp the current season without a reset", async () => {
+    const { currentSeasonId } = await import("../../src/meta/duelPass.js");
+    const p = freshProfile();
+    expect(p.rank.seasonId).toBe(currentSeasonId());
+  });
+
+  it("dust shop converts coins to dust and respects the price", async () => {
+    const { buyDustWithCoins, DUST_SHOP, DUST_SHOP_AMOUNT } = await import("../../src/meta/crafting.js");
+    const p = freshProfile();
+    p.coins = 1000;
+    expect(buyDustWithCoins(p, "SR")).toBe(true);
+    expect(p.dust.SR).toBe(DUST_SHOP_AMOUNT);
+    expect(p.coins).toBe(1000 - DUST_SHOP.SR);
+    p.coins = 0;
+    expect(buyDustWithCoins(p, "N")).toBe(false);
+  });
+});
+
+describe("effect icons", () => {  it("tags draw / heal / burn / negate from printed text", async () => {
     const { effectsOf } = await import("../../src/data/effectTags.js");
     const { CARD_DB } = await import("../../src/data/cards/index.js");
     const ids = (def) => effectsOf(def).map((t) => t.id);

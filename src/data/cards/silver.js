@@ -1,9 +1,10 @@
 // Silver tier pool — unlocks with ranked tier / live-ops. Expands toward ~40 archetypes.
-import { P, opp, monstersOf, pushEvents } from "../../engine/state.js";
+import { P, opp, monstersOf, pushEvents, makeCard } from "../../engine/state.js";
 import {
   drawCards, dealDamageToPlayer, healPlayer, damageMonster, sweepDestroyed,
-  bounceToHand, buff, mill
+  bounceToHand, buff, mill, specialSummon
 } from "../../engine/ops.js";
+import { TOKEN_DB } from "./tokens.js";
 import {
   must, evSelfSummon, evAmbushFlip, rDraw, rHeal, rDamageLeader, rDamageMonster,
   tEnemyMonster
@@ -20,9 +21,12 @@ export const SILVER_CARDS = [
     triggers: [must("scout_burn", "Deal 1", evSelfSummon,
       async (G, card) => dealDamageToPlayer(G, opp(card.controller), 1, card))]
   }),
-  mon("silver_token_mason", "Token Mason", "Terra", 3, 1, 3, "R", "Ward. Fanfare: heal 2.", {
+  mon("silver_token_mason", "Token Mason", "Terra", 3, 1, 3, "R", "Ward. Fanfare: Special Summon a 0/4 Ward Stonewall Token.", {
     keywords: ["ward"], archetypes: ["token_walls", "ward_walls"],
-    triggers: [must("mason_heal", "Heal 2", evSelfSummon, rHeal(2))]
+    triggers: [must("mason_token", "Summon a Stonewall Token", evSelfSummon, async (G, card) => {
+      const t = makeCard("token_stonewall", TOKEN_DB.token_stonewall, card.controller);
+      specialSummon(G, t, card.controller, card);
+    })]
   }),
   mon("silver_discard_wraith", "Discard Wraith", "Abyss", 2, 2, 2, "SR", "Drain. Fanfare: draw 1 if you have 4 or more cards in GY.", {
     keywords: ["drain"], archetypes: ["discard_payoff", "gy"],

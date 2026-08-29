@@ -496,4 +496,73 @@ export const BRONZE_CARDS = [
   null_seal, sealbreak, final_edict, judgment_chain, mind_surge
 ];
 
+/* Bronze predates the archetype tag system; tag by job so filters, loaner
+   tooling, and the deck editor see the real pool. */
+const BRONZE_ARCHETYPES = {
+  jestling: ["jest_engine", "gy"],
+  scav_wisp: ["gy", "draw"],
+  mawling: ["gy", "burn"],
+  doomblade_novice: ["control_counters", "contact_combo"],
+  surge_imp: ["going_second", "otk_face"],
+  shield_sprite: ["ward_walls", "big_evolve"],
+  gem_golem: ["big_evolve", "ward_walls"],
+  swift_falcon: ["wide_rush", "going_second"],
+  nimbus_knight: ["wide_rush", "going_second"],
+  oracle_eel: ["draw", "value_midrange"],
+  chrono_mite: ["draw", "big_evolve"],
+  grinning_echo: ["jest_engine", "gy"],
+  void_pilgrim: ["gy", "control_counters"],
+  ember_fox: ["burn", "aggro_swarm", "contact_combo"],
+  cinder_knight: ["burn", "contact_combo", "pyro_control"],
+  flame_djinn: ["burn", "spell_tempo"],
+  pyro_hydra: ["burn", "pyro_control"],
+  inferno_titan: ["burn", "big_evolve", "pyro_control"],
+  ash_prophet: ["spell_tempo", "burn"],
+  lava_giant: ["burn", "big_evolve"],
+  ember_spark: ["burn", "spell_tempo"],
+  flame_banner: ["burn", "aggro_swarm"],
+  burning_lance: ["burn", "pyro_control"],
+  backdraft: ["control_counters", "burn"],
+  fever_pitch: ["otk_face", "burn"],
+  tide_caller: ["tempo_bounce", "abyss_tempo"],
+  frost_mage: ["control_counters", "abyss_tempo"],
+  abyss_warden: ["ward_walls", "control_counters"],
+  deep_serpent: ["control_counters", "abyss_tempo"],
+  kraken: ["control_counters", "discard_payoff"],
+  tide_priestess: ["heal_stall", "lifegain_midrange"],
+  depths_lurker: ["mill", "gy"],
+  tidal_snare: ["control_counters", "tempo_bounce"],
+  moonwell: ["heal_stall", "lifegain_midrange"],
+  deep_freeze: ["control_counters", "chain_lock"],
+  silencing_depths: ["control_counters", "counter_war"],
+  riptide: ["tempo_bounce", "control_counters"],
+  moss_sprite: ["heal_ramp", "draw"],
+  dawn_pixie: ["heal_ramp", "terra_beat"],
+  thorn_archer: ["terra_beat", "tempo_bounce"],
+  stoneback: ["ward_walls", "heal_stall"],
+  grove_elder: ["terra_beat", "heal_ramp"],
+  wolf_alpha: ["terra_beat", "wide_rush"],
+  world_turtle: ["heal_stall", "big_evolve", "ward_walls"],
+  seed_sage: ["gy", "heal_ramp"],
+  overgrowth: ["heal_ramp", "big_evolve"],
+  root_snare: ["control_counters", "ward_walls"],
+  verdant_rebuke: ["control_counters", "heal_stall"],
+  wild_call: ["draw", "terra_beat"],
+  stone_skin: ["ward_walls", "heal_stall"],
+  starfall: ["control_counters"],
+  lightning_tempest: ["control_counters", "discard_payoff"],
+  scroll_greed: ["draw"],
+  shatter_sigil: ["tempo_bounce", "control_counters"],
+  call_fallen: ["gy", "gy_fusion_combo"],
+  null_seal: ["control_counters", "counter_war"],
+  sealbreak: ["counter_war", "control_counters"],
+  final_edict: ["control_counters", "chain_lock"],
+  judgment_chain: ["control_counters", "counter_war"],
+  mind_surge: ["draw", "discard_payoff"]
+};
+for (const c of BRONZE_CARDS) {
+  const tags = BRONZE_ARCHETYPES[c.id];
+  if (tags && !c.archetypes) c.archetypes = tags;
+}
+
 export const BRONZE_DB = Object.fromEntries(BRONZE_CARDS.map((c) => [c.id, c]));

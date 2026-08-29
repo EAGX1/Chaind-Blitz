@@ -224,9 +224,13 @@ const AUTHORED = [
     { archetypes: ["draw", "evolve_burn"],
       evolveEffect: { text: "Draw 1 then ping 1", resolve: async (G, card) => { drawCards(G, card.controller, 1); dealDamageToPlayer(G, opp(card.controller), 1, card); } } }),
   M("heat_needle", "Heat Needle", "Ignis", 2, 1, 2, "N",
-    "Fanfare: deal 1 to an enemy monster. Evolve: deal 2 to an enemy monster.",
+    "Fanfare: deal 1 to an enemy monster. Evolve: deal 1 to an enemy monster and 1 to the enemy leader.",
     { archetypes: ["burn"],
-      evolveEffect: { text: "Deal 2 to an enemy monster", targets: [tEnemyMonster()], resolve: rDamageMonster(2) },
+      evolveEffect: { text: "Deal 1 to an enemy monster and 1 to the enemy leader", targets: [tEnemyMonster()], resolve: async (G, card, link) => {
+        const t = link.targets?.[0]?.[0];
+        if (t && t.loc === "mz") { damageMonster(G, t, 1, card); sweepDestroyed(G); }
+        dealDamageToPlayer(G, opp(card.controller), 1, card);
+      } },
       triggers: [must("needle_snipe", "Deal 1 to an enemy monster", evSelfSummon, async (G, card) => {
         const foes = enemyMonsters(G, card.controller);
         if (foes[0]) { damageMonster(G, foes[0], 1, card); sweepDestroyed(G); }
@@ -250,9 +254,9 @@ const AUTHORED = [
       evolveEffect: ignisEvoAll(1),
       triggers: [must("twin_spellburn", "Deal 1 to the enemy leader", evOwnSpell, rDamageLeader(1))] }),
   M("coal_knight", "Coal Knight", "Ignis", 2, 1, 3, "N",
-    "Ward. Evolve: deal 1 to the enemy leader.",
+    "Ward. Evolve: this gets +1/+2 permanently.",
     { keywords: ["ward"], archetypes: ["ward_walls", "evolve_burn"],
-      evolveEffect: { text: "Deal 1 to the enemy leader", resolve: rDamageLeader(1) } }),
+      evolveEffect: { text: "This gets +1/+2 permanently", resolve: rBuffSelf(1, 2, true) } }),
   M("flare_raider", "Flare Raider", "Ignis", 2, 2, 1, "N",
     "Rush. Fanfare: this gets +1 ATK this turn.",
     { keywords: ["rush"], archetypes: ["wide_rush"],
@@ -264,9 +268,11 @@ const AUTHORED = [
       evolveEffect: { text: "Deal 1 to the enemy leader", resolve: rDamageLeader(1) },
       triggers: [must("courier_mill", "Mill 1", evSelfSummon, async (G, card) => mill(G, card.controller, 1))] }),
   M("kiln_guard", "Kiln Guard", "Ignis", 3, 2, 4, "R",
-    "Ward. Evolve: deal 2 to an enemy monster.",
+    "Ward. Evolve: enemy monsters get -1/-0 this turn.",
     { keywords: ["ward"], archetypes: ["ward_walls", "evolve_burn"],
-      evolveEffect: { text: "Deal 2 to an enemy monster", targets: [tEnemyMonster()], resolve: rDamageMonster(2) } }),
+      evolveEffect: { text: "Enemy monsters get -1/-0 this turn", resolve: async (G, card) => {
+        for (const m of monstersOf(G, opp(card.controller))) buff(G, m, -1, 0, { permanent: false });
+      } } }),
   S("spark_banner", "Spark Banner", "continuous", 1, 2, "R",
     "Continuous: your evolved monsters get +1 ATK.",
     { continuousAura: true, resolve: async () => {},
@@ -448,9 +454,13 @@ const AUTHORED = [
       evolveEffect: { text: "Heal 2 LP", resolve: rHeal(2) },
       triggers: [must("seed_draw", "Draw 1", evSelfSummon, rDraw(1))] }),
   M("thorn_twin", "Thorn Twin", "Terra", 2, 2, 2, "R",
-    "If this card is summoned: this gains Ward. Evolve: deal 2 to an enemy monster.",
-    { archetypes: ["ward_walls"],
-      evolveEffect: { text: "Deal 2 to an enemy monster", targets: [tEnemyMonster()], resolve: rDamageMonster(2) },
+    "If this card is summoned: this gains Ward. Evolve: deal 1 to an enemy monster and heal 2 LP.",
+    { archetypes: ["ward_walls", "heal_ramp"],
+      evolveEffect: { text: "Deal 1 to an enemy monster, heal 2", targets: [tEnemyMonster()], resolve: async (G, card, link) => {
+        const t = link.targets?.[0]?.[0];
+        if (t && t.loc === "mz") { damageMonster(G, t, 1, card); sweepDestroyed(G); }
+        healPlayer(G, card.controller, 2);
+      } },
       triggers: [must("thorn_ward", "Gain Ward", evSelfSummon, async (G, card) => { card.wardGranted = true; })] }),
   M("grove_colossus", "Grove Colossus", "Terra", 4, 3, 6, "SR",
     "Ward. Tribute 1 (Level 6). Evolve: heal 4 LP and this gets +0/+2.",

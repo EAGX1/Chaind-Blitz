@@ -305,7 +305,7 @@ describe("Wave E meta staples", () => {
 describe("Wave F authored set", () => {
   it("ships original staples without a 500-card name-fill cap", () => {
     expect(WAVE_F_CARDS.length).toBe(76);
-    expect(ALL_CARDS).toHaveLength(290);
+    expect(ALL_CARDS).toHaveLength(306);
     const ids = WAVE_F_CARDS.map((c) => c.id);
     expect(new Set(ids).size).toBe(76);
     const blob = WAVE_F_CARDS.map((c) => `${c.name} ${c.text}`).join("\n");
@@ -390,7 +390,7 @@ describe("Gold / Platinum unique effects", () => {
 
 describe("Wave G generic staples", () => {
   it("ships original jobs, not trademarked staple names", () => {
-    expect(WAVE_G_CARDS).toHaveLength(49);
+    expect(WAVE_G_CARDS).toHaveLength(50);
     const blob = WAVE_G_CARDS.map((c) => `${c.name} ${c.text}`).join("\n");
     expect(blob).not.toMatch(/Ash Blossom|Maxx C|Nibiru|Pot of Greed|Raigeki|Dark Hole|Monster Reborn|Thoughtseize|Lightning Bolt|Fireball|Professor's Research|Boss's Orders|Be Prepared/i);
     expect(CARD_DB.veil_needle.handTrap).toBe(true);
@@ -422,6 +422,184 @@ describe("Wave G generic staples", () => {
     extra.loc = "extra";
     P(G, 0).extra.push(extra);
     expect(legalContactFusions(G, 0).some((o) => o.fusion.id === "fusion_staple_knight")).toBe(true);
+  });
+});
+
+describe("Mill / Ambush / Token packages + new fusions", () => {
+  it("Mill Lantern fanfare mills 1 and its Evolve mills 2", async () => {
+    const G = mkState(31);
+    G.phase = "M1";
+    G.tp = 0;
+    G.turnCount = 5;
+    const pl = P(G, 0);
+    pl.ep = 2;
+    pl.ownTurnCount = 3;
+    addDeck(G, 1, Array(10).fill("ember_fox"));
+    addHand(G, 0, "mill_lantern");
+    G.io = makeDriver({});
+    await normalSummon(G, P(G, 0).hand[0], 0);
+    expect(P(G, 1).gy.length).toBe(1);
+    const lantern = P(G, 0).mz[0];
+    const { evolveMonster } = await import("../../src/engine/index.js");
+    await evolveMonster(G, lantern);
+    expect(P(G, 1).gy.length).toBe(3);
+  });
+
+  it("Hollow Tax burns the enemy leader when they are milled", async () => {
+    const G = mkState(32);
+    const tax = makeCard("hollow_tax", CARD_DB.hollow_tax, 0);
+    tax.loc = "stz";
+    tax.zone = 0;
+    tax.faceup = true;
+    P(G, 0).stz[0] = tax;
+    addDeck(G, 1, Array(6).fill("ember_fox"));
+    const { mill } = await import("../../src/engine/ops.js");
+    const { collectTriggers, segocOrder } = await import("../../src/engine/triggers.js");
+    mill(G, 1, 2);
+    const found = collectTriggers(G);
+    expect(found.some((f) => f.card.id === "hollow_tax")).toBe(true);
+    const ordered = await segocOrder(G, found);
+    for (const f of ordered) await f.trig.resolve(G, f.card, { targets: [] });
+    expect(P(G, 1).lp).toBe(19);
+  });
+
+  it("Token Sprouter and Token Mason summon a 0/4 Ward Stonewall Token", async () => {
+    const G = mkState(33);
+    G.phase = "M1";
+    G.tp = 0;
+    addHand(G, 0, "token_sprouter");
+    G.io = makeDriver({});
+    await normalSummon(G, P(G, 0).hand[0], 0);
+    const token = P(G, 0).mz.find((c) => c && c.id === "token_stonewall");
+    expect(token).toBeTruthy();
+    expect(token.def.atk).toBe(0);
+    expect(token.def.def).toBe(4);
+    expect(token.def.keywords).toContain("ward");
+    const G2 = mkState(34);
+    G2.phase = "M1";
+    G2.tp = 0;
+    const fodder = addField(G2, 0, "ember_fox", 0);
+    addHand(G2, 0, "silver_token_mason");
+    G2.io = makeDriver({});
+    await normalSummon(G2, P(G2, 0).hand[0], 1, [fodder.uid]);
+    expect(P(G2, 0).mz.some((c) => c && c.id === "token_stonewall")).toBe(true);
+  });
+
+  it("tokens are summonable but not collectable", () => {
+    expect(CARD_DB.token_stonewall).toBeTruthy();
+    expect(ALL_CARDS.some((c) => c.id === "token_stonewall")).toBe(false);
+  });
+
+  it("Ash Drifter fires from the banished pile", async () => {
+    const G = mkState(41);
+    G.tp = 0;
+    const drifter = addField(G, 0, "ash_drifter", 0);
+    addDeck(G, 0, ["ember_fox", "scroll_greed"]);
+    G.io = makeDriver({});
+    const { banishCard } = await import("../../src/engine/ops.js");
+    const { collectTriggers, segocOrder } = await import("../../src/engine/triggers.js");
+    const ev = banishCard(G, drifter);
+    const { pushEvents } = await import("../../src/engine/state.js");
+    pushEvents(G, [ev]);
+    const found = collectTriggers(G);
+    expect(found.some((f) => f.card.id === "ash_drifter")).toBe(true);
+    const before = P(G, 0).hand.length;
+    const ordered = await segocOrder(G, found);
+    for (const f of ordered) await f.trig.resolve(G, f.card, { targets: [] });
+    expect(P(G, 0).hand.length).toBe(before + 1);
+  });
+
+  it("Deep Hollow is contactable from 2 Abyss and mills 4 on summon", async () => {
+    const G = mkState(35);
+    G.phase = "M1";
+    G.tp = 0;
+    addField(G, 0, "tide_caller", 0);
+    addField(G, 0, "frost_mage", 1);
+    addDeck(G, 1, Array(10).fill("ember_fox"));
+    const extra = makeCard("fusion_deep_hollow", CARD_DB.fusion_deep_hollow, 0);
+    extra.loc = "extra";
+    P(G, 0).extra.push(extra);
+    G.io = makeDriver({});
+    const opts = legalContactFusions(G, 0);
+    expect(opts.some((o) => o.fusion.id === "fusion_deep_hollow")).toBe(true);
+    await contactFusionSummon(G, 0, extra, [P(G, 0).mz[0], P(G, 0).mz[1]], 0);
+    expect(P(G, 1).gy.length).toBe(4);
+  });
+
+  it("Trapdoor Fiend flips your face-down monsters up with +1/+0", async () => {
+    const G = mkState(36);
+    G.phase = "M1";
+    G.tp = 0;
+    const door = addField(G, 0, "silver_ambush_door", 0);
+    door.faceup = false;
+    door.faceDownMz = true;
+    const stalker = addField(G, 0, "ambush_stalker", 1);
+    stalker.faceup = false;
+    stalker.faceDownMz = true;
+    const extra = makeCard("fusion_trapdoor_fiend", CARD_DB.fusion_trapdoor_fiend, 0);
+    extra.loc = "extra";
+    P(G, 0).extra.push(extra);
+    G.io = makeDriver({});
+    await contactFusionSummon(G, 0, extra, [door, stalker], 2);
+    // materials went to the GY for the fusion; flip two fresh face-downs instead
+    const d2 = addField(G, 0, "silver_ambush_door", 3);
+    d2.faceup = false;
+    d2.faceDownMz = true;
+    const trig = CARD_DB.fusion_trapdoor_fiend.triggers[0];
+    await trig.resolve(G, P(G, 0).mz[2]);
+    expect(d2.faceup).toBe(true);
+    expect(d2.atkMod).toBe(1);
+  });
+
+  it("Grave Jester revives a small monster from the GY", async () => {
+    const G = mkState(37);
+    addGy(G, 0, "ember_fox");
+    addGy(G, 0, "inferno_titan");
+    const card = { controller: 0, def: CARD_DB.fusion_grave_jester, loc: "mz" };
+    G.io = makeDriver({});
+    const trig = CARD_DB.fusion_grave_jester.triggers[0];
+    await trig.resolve(G, card);
+    expect(P(G, 0).mz.some((c) => c && c.id === "ember_fox")).toBe(true);
+    expect(P(G, 0).mz.some((c) => c && c.id === "inferno_titan")).toBe(false);
+  });
+
+  it("Worldroot heals and sweeps by Ward count", async () => {
+    const G = mkState(38);
+    P(G, 0).lp = 10;
+    addField(G, 0, "ward_sentinel", 0);
+    addField(G, 0, "stoneback", 1);
+    addField(G, 1, "ember_fox", 0);
+    addField(G, 1, "lava_giant", 1);
+    const card = { controller: 0, def: CARD_DB.fusion_worldroot, loc: "mz" };
+    const trig = CARD_DB.fusion_worldroot.triggers[0];
+    await trig.resolve(G, card);
+    expect(P(G, 0).lp).toBe(14);
+    // 1 ward (sentinel) -> 1 damage to each enemy: fox dies, giant survives
+    expect(P(G, 1).mz[0]).toBeFalsy();
+    expect(P(G, 1).mz[1]?.id).toBe("lava_giant");
+  });
+
+  it("Warden Titan grants Ward and Rush General grants Rush", async () => {
+    const G = mkState(39);
+    const fox = addField(G, 0, "ember_fox", 0);
+    await CARD_DB.fusion_warden_titan.triggers[0].resolve(G, { controller: 0, loc: "mz" });
+    expect(fox.wardGranted).toBe(true);
+    const fox2 = addField(G, 0, "gem_golem", 1);
+    await CARD_DB.fusion_rush_general.triggers[0].resolve(G, { controller: 0, loc: "mz" });
+    expect(fox2.rushGranted).toBe(true);
+  });
+
+  it("Cinder Archon sweeps 1 and draws on a kill; Storm Caller recycles a Quick spell", async () => {
+    const G = mkState(40);
+    addField(G, 1, "ember_fox", 0);
+    addField(G, 1, "lava_giant", 1);
+    addDeck(G, 0, ["scroll_greed"]);
+    await CARD_DB.fusion_cinder_archon.triggers[0].resolve(G, { controller: 0, loc: "mz" });
+    expect(P(G, 1).mz[0]).toBeFalsy();
+    expect(P(G, 0).hand.some((c) => c.id === "scroll_greed")).toBe(true);
+    addGy(G, 0, "ember_spark");
+    await CARD_DB.fusion_storm_caller.triggers[0].resolve(G, { controller: 0, loc: "mz" });
+    expect(P(G, 0).hand.some((c) => c.id === "ember_spark")).toBe(true);
   });
 });
 

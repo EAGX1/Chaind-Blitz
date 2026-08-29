@@ -18,7 +18,7 @@ export function teachStep(G) {
   if ((G.phase === "M1" || G.phase === "M2") && !pl.normalSummoned) {
     return {
       id: "summon",
-      tip: "Click a glowing Level 4 monster to Normal Summon. Grey cards cannot play — tap them for the reason."
+      tip: "Click a glowing Level 4 monster to Normal Summon. DEF is a health pool here — damage sticks as wounds; there are no battle positions."
     };
   }
   if ((G.phase === "M1" || G.phase === "M2") && canEvolveNow(G, 0) && field.length) {
@@ -42,7 +42,7 @@ export function teachStep(G) {
   if (G.phase === "BP") {
     return {
       id: "attack",
-      tip: "Battle: click an attacker, then a target or Direct Attack. Grey monsters cannot attack — tap them to see why."
+      tip: "Battle: click an attacker, then a target — combat compares ATK against ATK, and wounds stick. A blue WARD badge must be attacked first."
     };
   }
   return { id: "phase", tip: "Click the golden orb to advance the phase." };

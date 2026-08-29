@@ -13,12 +13,13 @@
 import { P, opp, log, newEvents, markEventsChecked, allFieldCards } from "./state.js";
 
 // Cards whose triggers are "live": face-up on field, plus cards in GY/banished
-// whose trigger defs declare they fire from there (fromGY etc.).
+// whose trigger defs declare they fire from there (fromGY / from: "ban").
 function triggerSources(G) {
   const out = [];
   for (const c of allFieldCards(G)) if (c.faceup && !c.negated) out.push(c);
   for (let p = 0; p < 2; p++) {
     for (const c of P(G, p).gy) if (c.def.triggers?.some((t) => t.from === "gy")) out.push(c);
+    for (const c of P(G, p).ban) if (c.def.triggers?.some((t) => t.from === "ban")) out.push(c);
   }
   return out;
 }
@@ -41,8 +42,9 @@ export function collectTriggers(G) {
   for (const card of triggerSources(G)) {
     for (const trig of card.def.triggers || []) {
       if (card._queued || oncePerTurnUsed(G, card, trig)) continue;
-      if (trig.from === "gy" && card.loc !== "gy") continue;
-      if (trig.from !== "gy" && card.loc === "gy") continue;
+      const home = trig.from === "gy" ? "gy" : trig.from === "ban" ? "ban" : null;
+      if (home && card.loc !== home) continue;
+      if (!home && (card.loc === "gy" || card.loc === "ban")) continue;
       const ev = evts.find((e) => trig.match(G, card, e));
       if (!ev) continue;
       const optional = trig.optional !== false && trig.whenVsIf === "when";

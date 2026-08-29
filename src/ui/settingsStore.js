@@ -28,6 +28,7 @@ export function defaultSettings() {
     hidePlaza: false,
     classicHub: false,
     aiTier: "normal",
+    cpuIntent: true,
     cloudSync: false,
     devMode: false,
   };
@@ -61,6 +62,7 @@ export function normalizeSettings(raw = {}) {
     hidePlaza: !!raw.hidePlaza,
     classicHub: !!raw.classicHub,
     aiTier,
+    cpuIntent: raw.cpuIntent !== false,
     cloudSync: !!raw.cloudSync,
     devMode: !!raw.devMode,
   };

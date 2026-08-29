@@ -67,9 +67,12 @@ export function customDoorError(main, extra, profile = null) {
 /**
  * @returns {{ ok: true, deck: string[], extra: string[], label: string, kind: string } | { ok: false, error: string }}
  */
-export function tryQueueDeck(token, { starters = {}, loaners = [], decks = {}, profile = null } = {}) {
+export function tryQueueDeck(token, { starters = {}, loaners = [], decks = {}, profile = null, ranked = false } = {}) {
   const { kind, key } = parseDeckToken(token);
   if (kind === "loaner") {
+    if (ranked) {
+      return { ok: false, error: "Ranked is for your own collection — pick a starter or a custom list. Loaners cover Quick Duel and Labs." };
+    }
     const L = (loaners || []).find((d) => d.id === key);
     if (!L) return { ok: false, error: "Unknown loaner." };
     return { ok: true, kind, deck: L.deck, extra: L.extra || [], label: String(L.name || key).toUpperCase() };

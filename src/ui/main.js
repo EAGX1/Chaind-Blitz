@@ -37,7 +37,7 @@ import { makeHumanIo } from "./humanIo.js";
 import { makeCompositeIo } from "./compositeIo.js";
 import { initHub } from "./hub.js";
 import { sfx } from "./fx.js";
-import { playBed, playStinger } from "../meta/music.js";
+import { playBed, playStinger, preloadAudio } from "../meta/music.js";
 import { burstWin, burstLose } from "./juice.js";
 import { installCardHover } from "./cardHover.js";
 import { installKeywordTips } from "../data/effectTags.js";
@@ -69,6 +69,7 @@ function showScreen(name) {
     const city = document.getElementById("app")?.classList.contains("city-mode");
     playBed(city ? "city" : "hub");
   }
+  if (name === "duel") preloadAudio();
 }
 
 function setupTabs() {
@@ -113,7 +114,11 @@ async function startDuel({
     meta,
     firstPlayer
   });
-  onCreated?.(G);
+  // Brawl/rogue/gauntlet mutators must run AFTER setupDuel (it assigns EP,
+  // builds decks, draws openers) — stashing on G and runDuel fires it.
+  if (onCreated) {
+    Object.defineProperty(G, "afterSetup", { value: onCreated, enumerable: false, configurable: true, writable: true });
+  }
   lastReplay = startRecording(G);
   window.__CB && (window.__CB.currentG = G);
   window.__CB && (window.__CB.lastReplay = lastReplay);

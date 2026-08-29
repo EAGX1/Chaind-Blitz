@@ -822,7 +822,7 @@ export function makeHumanIo(G, view) {
             clearAttackArrows();
             el.classList.add("selected");
             const { foes, canDirect, blocked = [] } = targetsFn(atk);
-            const sub = promptShell(`${atk.def.name} attacks — pick a target, then confirm`, { forced: true });
+            const sub = promptShell(`${atk.def.name} attacks — click a target`, { forced: true });
             const foeEls = [];
             let pending = null;
             const paintPreview = (line) => {
@@ -860,10 +860,8 @@ export function makeHumanIo(G, view) {
                 paintPreview(prev.line);
               });
               bind(foeEl, () => {
-                if (pending && pending.targetUid === foe.uid) { commitAttack(foe.uid); return; }
                 sfx.click();
-                showAttackArrow(el, foeEl);
-                arm(foe.uid, prev.line, prev.theyDie, prev);
+                commitAttack(foe.uid);
               });
               foeEls.push(foeEl);
             }
@@ -884,8 +882,12 @@ export function makeHumanIo(G, view) {
               directBtn.addEventListener("click", () => {
                 if (pending && pending.targetUid == null) { commitAttack(null); return; }
                 sfx.click();
-                clearAttackArrows();
-                arm(null, dprev.line, dprev.lethal, dprev);
+                if (dprev.lethal) {
+                  clearAttackArrows();
+                  arm(null, dprev.line, dprev.lethal, dprev);
+                } else {
+                  commitAttack(null);
+                }
               });
               sub.appendChild(directBtn);
             }
