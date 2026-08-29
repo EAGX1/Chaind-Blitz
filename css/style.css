@@ -25,8 +25,47 @@ body {
   font-family: var(--font-body);
   overflow-x: hidden;
 }
-#app { min-height: 100vh; }
-.screen { min-height: 100vh; }
+#cb-stage {
+  width: 100%;
+  height: 100%;
+  min-height: 100dvh;
+  position: relative;
+  overflow: hidden;
+  container-type: size;
+  container-name: stage;
+  transform: var(--cb-res-transform, none);
+  transform-origin: 0 0;
+}
+html { --cb-card-scale: 1; }
+html[data-res="fill"] #cb-stage {
+  width: 100%;
+  height: 100%;
+  min-height: 100dvh;
+  transform: none;
+  outline: none;
+  box-shadow: none;
+}
+html[data-res="preset"],
+html[data-res="preset"] body {
+  overflow: hidden;
+}
+html[data-res="preset"] body {
+  position: relative;
+  height: 100dvh;
+  background: #05080f;
+}
+html[data-res="preset"] #cb-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--cb-res-w, 100%);
+  height: var(--cb-res-h, 100%);
+  min-height: 0;
+  outline: 1px solid rgba(110, 200, 255, 0.22);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+#app { min-height: 100%; height: 100%; }
+.screen { min-height: 100%; }
 .hidden { display: none !important; }
 .dim { color: var(--dim); }
 
@@ -254,7 +293,12 @@ select.cb-select, input.cb-input, textarea.cb-input {
   position: relative; overflow: hidden;
   z-index: 1;
 }
-.cb-card .card-art > svg { width: 100%; height: 100%; display: block; }
+.cb-card .card-art > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
 .cb-card .card-foil {
   position: absolute;
   inset: 0;
@@ -420,20 +464,43 @@ html[data-card-back="back_gold"] .cb-card.card-back {
 }
 html[data-card-back="back_gold"] .cb-card.card-back::after { color: #ffe27a; content: "✦"; }
 
-html[data-playmat="mat_ember"] .arena {
-  background: radial-gradient(1200px 500px at 50% 100%, rgba(255,90,30,.16), transparent 55%), var(--bg0, #070b14);
+html[data-playmat="mat_ember"] #screen-duel .board {
+  background-image:
+    radial-gradient(1200px 500px at 50% 100%, rgba(255,90,30,.22), transparent 55%),
+    linear-gradient(180deg, rgba(201, 162, 39, 0.07), transparent 14%, transparent 86%, rgba(201, 162, 39, 0.1)),
+    linear-gradient(180deg, #1a2834 0%, #101820 40%, #14180e 58%, #1c1810 100%);
+  background-size: cover, auto, auto;
+  background-position: center;
+  background-repeat: no-repeat;
 }
-html[data-playmat="mat_coliseum"] .arena {
-  background: radial-gradient(900px 420px at 50% 50%, rgba(201,162,39,.14), transparent 60%), var(--bg0, #070b14);
+html[data-playmat="mat_coliseum"] #screen-duel .board {
+  background-image:
+    radial-gradient(900px 420px at 50% 50%, rgba(201,162,39,.2), transparent 60%),
+    linear-gradient(180deg, rgba(201, 162, 39, 0.07), transparent 14%, transparent 86%, rgba(201, 162, 39, 0.1)),
+    linear-gradient(180deg, #1a2834 0%, #101820 40%, #14180e 58%, #1c1810 100%);
+  background-size: cover, auto, auto;
+  background-position: center;
+  background-repeat: no-repeat;
 }
-html[data-playmat="mat_void"] .arena {
-  background: radial-gradient(circle at 50% 50%, #0a0c12 0%, #04050a 70%);
+html[data-playmat="mat_void"] #screen-duel .board {
+  background-image:
+    radial-gradient(circle at 50% 50%, #0a0c12 0%, #04050a 70%),
+    linear-gradient(180deg, #1a2834 0%, #101820 40%, #14180e 58%, #1c1810 100%);
+  background-size: cover, auto;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 html[data-playmat="mat_custom"] .arena {
-  background-color: var(--bg0, #070b14);
-  background-image: var(--custom-mat, none);
+  background-image: none;
+}
+html[data-playmat="mat_custom"] #screen-duel .board {
+  background-color: #101820;
+  background-image:
+    linear-gradient(180deg, rgba(6, 8, 12, 0.32), rgba(6, 8, 12, 0.42)),
+    var(--custom-mat, none);
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
 }
 html[data-theme="theme_ember"] {
   --gold: #ff9d4a;

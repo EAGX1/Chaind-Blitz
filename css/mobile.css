@@ -1,6 +1,10 @@
-/* Mobile / narrow layout: stack hub + duel for max-width 720px */
+/* Mobile / narrow layout: stack hub + duel for stage width ≤ 720px */
 
 @media (max-width: 720px) {
+  /* 720px phone breakpoint — layout lives on @container stage below. */
+}
+
+@container stage (max-width: 720px) {
   .home-top {
     flex-direction: column;
     align-items: stretch;
@@ -38,20 +42,25 @@
   }
 
   #screen-duel {
-    height: 100dvh;
-    overflow: auto;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
   }
 
   .arena {
-    height: auto;
-    min-height: 100dvh;
+    --duel-side: 0px;
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     grid-template-areas: none;
     grid-template-columns: 1fr;
     grid-template-rows: none;
-    padding: 4px 6px 72px;
-    gap: 6px;
+    padding: max(4px, env(safe-area-inset-top)) 6px max(6px, env(safe-area-inset-bottom));
+    gap: 4px;
+    overflow: hidden;
+    box-sizing: border-box;
   }
 
   .opp-hud,
@@ -70,19 +79,130 @@
     min-width: 0;
     width: 100%;
     box-sizing: border-box;
+    flex: 0 0 auto;
+    padding: 6px 8px;
+    gap: 6px 8px;
+    flex-wrap: wrap;
+    align-items: center;
   }
+  #screen-duel .hud {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "avatar info counts"
+      "actions actions actions";
+    align-items: center;
+  }
+  #screen-duel .hud-avatar {
+    grid-area: avatar;
+    width: 36px;
+    height: 36px;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+  #screen-duel .hud-name { font-size: 12px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #screen-duel .hud-lp { font-size: 12px; gap: 4px; }
+  #screen-duel .hud-lp b { font-size: 18px; }
+  .ep-pip { width: 10px; height: 10px; }
+  #screen-duel .hud-info { grid-area: info; min-width: 0; }
+  #screen-duel .hud-counts {
+    grid-area: counts;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    margin-left: 0;
+    gap: 8px;
+    font-size: 11px;
+    align-items: baseline;
+    justify-content: flex-end;
+  }
+  #screen-duel .hud-actions {
+    grid-area: actions;
+    flex-direction: row;
+    margin: 0;
+    width: 100%;
+    gap: 6px;
+  }
+  #screen-duel .hud-actions .mini-btn {
+    flex: 1 1 0;
+    min-height: 40px;
+    padding: 8px 10px;
+    font-size: 12px;
+    letter-spacing: 0.6px;
+  }
+  #btn-auto,
+  #btn-emote { display: none; }
 
+  #side-panel .play-history { display: none; }
   #side-panel {
     order: 99;
-    max-height: 220px;
+    flex: 0 0 auto;
+    max-height: 52px;
+    display: flex;
+    flex-direction: column;
+    grid-template-rows: none;
   }
+  #side-panel .inspector { display: none; }
+  #side-panel .duel-log-wrap { flex: 1 1 auto; min-height: 0; }
+  #side-panel .duel-log-head { padding: 2px 6px; }
+  #side-panel .log-filter { display: none; }
+  #side-panel .duel-log { font-size: 11px; }
 
   .opp-hud { order: 1; }
-  .opp-hand { order: 2; }
+  .opp-hand {
+    order: 2;
+    min-height: 0 !important;
+    padding: 0;
+    flex: 0 0 auto;
+  }
 
   .board {
     order: 5;
-    grid-template-columns: 64px 1fr 64px;
+    flex: 1 1 0;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: clamp(32px, 4.5cqh, 44px) minmax(0, 1fr) clamp(32px, 4.5cqh, 44px);
+    gap: 4px;
+    padding: 2px;
+  }
+  #screen-duel .wells {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: 1fr;
+    height: clamp(32px, 4.5cqh, 44px);
+    min-height: 0;
+    gap: 4px;
+  }
+  #screen-duel .well-gap { display: none; }
+  .well {
+    flex-direction: row;
+    padding: 0 4px;
+    gap: 4px;
+    font-size: 9px;
+    letter-spacing: 0.4px;
+  }
+  .well b { font-size: 13px; }
+  .well i { font-size: 8px; letter-spacing: 0.3px; }
+  #mz-0::after,
+  #mz-1::after { display: none; }
+  .lane { padding: 2px 4px; gap: 2px; }
+  .lane-tag { display: none; }
+  .lane-name { font-size: 11px; letter-spacing: 0.6px; }
+  .lane-text {
+    font-size: 10px;
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .lane .lane-q { font-size: 16px; }
+  .zone.zone-selectable::after { display: none; }
+  .first-turn-banner,
+  .coach-banner {
+    font-size: 9px;
+    padding: 3px 8px;
+    max-width: calc(100% - 12px);
+    margin-top: 2px;
   }
 
   /* Karabast: dock the prompt in the board/hand gap. Do not cover MZ. */
@@ -99,22 +219,66 @@
     box-sizing: border-box;
     order: 6;
     margin: 0;
-    max-height: 40dvh;
+    max-height: 28cqh;
     overflow-y: auto;
     pointer-events: auto !important;
     animation: none !important;
+    flex: 0 0 auto;
+    padding: 8px 10px;
   }
+  .prompt-bar.chain-window { min-width: 0; }
+  .prompt-title { font-size: 12px; margin-bottom: 6px; }
+  .prompt-btn { padding: 10px 12px; min-height: 40px; }
 
   .you-hand { order: 7; }
+  #screen-duel .you-hand {
+    flex: 0 0 auto;
+    min-height: 0 !important;
+    padding: 4px 8px 2px;
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: auto;
+  }
+  #screen-duel .you-hand .cb-card { --cw: clamp(64px, 19cqw, 88px); }
   .you-hud { order: 8; }
 
   #screen-duel .phase-orb,
   .phase-orb {
-    position: fixed;
-    right: 10px;
-    bottom: 88px;
+    position: fixed !important;
+    right: max(8px, env(safe-area-inset-right));
+    bottom: max(10px, env(safe-area-inset-bottom));
     z-index: 20;
+    width: clamp(48px, 14cqw, 64px);
+    height: clamp(48px, 14cqw, 64px);
+    left: auto;
   }
+
+  /* aaa.css is imported after this file in the app bundle — beat its !important. */
+  #screen-duel .prompt-bar {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    pointer-events: auto !important;
+    z-index: 8 !important;
+    padding: 8px 10px !important;
+  }
+  #screen-duel .prompt-title { font-size: 12px; margin-bottom: 6px; }
+  #screen-duel .opp-hand .cb-card { --cw: clamp(22px, 7cqw, 36px); }
+  .phase-orb .orb-phase { font-size: 14px; }
+  .phase-orb .orb-turn { font-size: 9px; }
+
+  .card-hover-pop {
+    width: min(240px, calc(100cqw - 16px));
+    padding: 8px;
+  }
+  .card-hover-pop .cb-card { --cw: min(168px, 58cqw); }
 
   /* Karabast: 16px so iOS Safari does not zoom on focus. Desktop stays smaller. */
   .log-search,
@@ -139,6 +303,92 @@
   .hub-toast {
     top: auto;
     bottom: 16px;
-    max-width: calc(100vw - 24px);
+    max-width: calc(100cqw - 24px);
+  }
+}
+
+/* Desktop / PC: Master Duel board — wells on the sides, log on the right. */
+@media (min-width: 721px) {
+  /* 721px PC breakpoint — layout lives on @container stage below. */
+}
+
+@container stage (min-width: 721px) {
+  #screen-duel {
+    height: 100%;
+    overflow: hidden;
+  }
+  #screen-duel .arena {
+    display: grid;
+    height: 100%;
+    max-height: none;
+    flex-direction: unset;
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) var(--duel-side, 300px);
+    grid-template-areas:
+      "ohud side"
+      "ohand side"
+      "board side"
+      "yhand side"
+      "yhud side";
+    overflow: hidden;
+  }
+  #screen-duel .board {
+    display: grid;
+    grid-template-columns: minmax(52px, min(84px, 6cqw)) minmax(0, 1fr) minmax(52px, min(84px, 6cqw));
+    grid-template-rows: none;
+    flex: unset;
+  }
+  #screen-duel .wells {
+    display: grid;
+    grid-template-columns: none;
+    grid-template-rows: 1fr 1.1fr .9fr 1.1fr 1fr;
+    height: auto;
+    min-height: 0;
+  }
+  #screen-duel .well-gap { display: block; min-height: 0; }
+  #screen-duel .hud {
+    display: flex;
+    grid-template-areas: none;
+    grid-template-columns: none;
+  }
+  #screen-duel .hud-avatar { width: 46px; height: 46px; font-size: 12px; }
+  #screen-duel .hud-counts {
+    flex-direction: column;
+    margin-left: 12px;
+  }
+  #screen-duel .hud-actions {
+    flex-direction: column;
+    width: auto;
+    margin-left: 8px;
+  }
+  #screen-duel .hud-actions .mini-btn {
+    flex: none;
+    min-height: 0;
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+  #screen-duel #btn-auto,
+  #screen-duel #btn-emote { display: inline-block; }
+  #screen-duel .you-hand {
+    min-height: calc(118px * var(--ui-scale, 1) * 1.5);
+    justify-content: center;
+  }
+  #screen-duel .you-hand .cb-card { --cw: clamp(calc(96px * var(--cb-card-scale, 1)), calc(7.2cqw * var(--cb-card-scale, 1)), calc(200px * var(--cb-card-scale, 1))); }
+  #screen-duel .opp-hand .cb-card { --cw: clamp(36px, calc(3.2cqw * var(--cb-card-scale, 1)), 72px); }
+  #screen-duel .side-panel {
+    display: grid;
+    grid-template-rows: minmax(72px, 30%) auto minmax(180px, 1fr);
+    max-height: none;
+  }
+  #screen-duel .inspector { display: block; }
+  #screen-duel .play-history { display: flex; }
+  #screen-duel .log-filter { display: flex; }
+  #screen-duel .phase-orb {
+    position: absolute !important;
+    width: 86px;
+    height: 86px;
+    right: calc(var(--duel-side, 300px) + 18px);
+    bottom: 210px;
+    left: auto;
   }
 }

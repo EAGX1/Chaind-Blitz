@@ -13,7 +13,6 @@ import { loadSettings } from "./settingsStore.js";
 import { rankFieldActions, promptBarActs } from "./actionRank.js";
 import { confirmDialog } from "./confirmDialog.js";
 import { paintLocPip } from "./locPip.js";
-import { practiceCoachLine } from "./practiceCoach.js";
 import { paintCombatOverlay, clearCombatOverlay } from "./combatOverlay.js";
 import { openMulliganStage, closeMulliganStage } from "./mulliganStage.js";
 import { shouldConfirmEndMain, shouldConfirmEndBattle, unusedPlayCount, unusedEndBody } from "./unusedEnd.js";
@@ -732,18 +731,6 @@ export function makeHumanIo(G, view) {
           undo.addEventListener("click", () => { sfx.click(); cleanupAll(); resolve({ type: "undo" }); });
           opts.appendChild(undo);
         }
-        const coach = btn("COACH (practice)");
-        coach.title = "A labelled heuristic — not a search. Works in every vs-CPU duel.";
-        coach.addEventListener("click", async () => {
-          sfx.click();
-          let line = practiceCoachLine(actions);
-          try {
-            const pv = await G.io?.hint?.(p, actions);
-            if (Array.isArray(pv) && pv[0]) line = pv[0];
-          } catch { /* local line stands */ }
-          $("prompt-title").textContent = `Coach: ${line}`;
-        });
-        opts.appendChild(coach);
         opts.appendChild(endButton());
         const playable = [...byUid.keys()].map((uid) => elByUid(uid)).filter(Boolean);
         bindCycleKeys(playable, {

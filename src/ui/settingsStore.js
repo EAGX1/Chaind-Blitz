@@ -3,6 +3,15 @@
 import { loadProfile, saveProfile } from "../meta/profile.js";
 import { setLocale } from "../meta/i18n.js";
 import { FX_SPEEDS, normalizeFxSpeed, fxCssPace } from "./fxPace.js";
+import {
+  RESOLUTION_NATIVE,
+  PC_RESOLUTIONS,
+  PHONE_RESOLUTIONS,
+  isKnownResolution,
+  applyResolution,
+} from "./resolution.js";
+
+export { RESOLUTION_NATIVE, PC_RESOLUTIONS, PHONE_RESOLUTIONS };
 
 export const SETTINGS_KEY = "chaind-blitz-settings-v1";
 
@@ -15,6 +24,7 @@ export { FX_SPEEDS };
 export function defaultSettings() {
   return {
     uiScale: 1,
+    resolution: RESOLUTION_NATIVE,
     chainMode: "smart",
     board3d: false, // overlay only — 2D field stays clickable (i18n settings.board3d)
     locale: "en",
@@ -47,8 +57,10 @@ export function normalizeSettings(raw = {}) {
   const uiScale = UI_SCALES.includes(Number(raw.uiScale))
     ? Number(raw.uiScale)
     : clamp(raw.uiScale, 0.75, 1.5, d.uiScale);
+  const resolution = isKnownResolution(raw.resolution) ? raw.resolution : d.resolution;
   return {
     uiScale,
+    resolution,
     chainMode,
     board3d: !!raw.board3d,
     locale: typeof raw.locale === "string" && raw.locale ? raw.locale : d.locale,
@@ -124,5 +136,16 @@ export function applySettingsToDom(settings) {
   document.documentElement.dataset.hidePlaza = s.hidePlaza ? "1" : "0";
   document.documentElement.lang = s.locale || "en";
   setLocale(s.locale || "en");
+  applyResolution(s.resolution);
+  bindResolutionResize();
   return s;
+}
+
+let resizeBound = false;
+function bindResolutionResize() {
+  if (resizeBound || typeof window === "undefined") return;
+  resizeBound = true;
+  window.addEventListener("resize", () => {
+    applyResolution(loadSettings().resolution);
+  });
 }

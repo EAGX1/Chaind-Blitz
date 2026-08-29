@@ -39,6 +39,7 @@ export function freshProfile(opts = {}) {
     missions: { dailies: [], progress: {} },
     settings: {
       uiScale: 1,
+      resolution: "native",
       chainMode: "smart",
       board3d: false,
       locale: "en",

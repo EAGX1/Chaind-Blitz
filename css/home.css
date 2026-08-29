@@ -1,7 +1,7 @@
 /* CHAIND BLITZ — home / main menu (Master Duel adjacent) */
 
 #screen-hub {
-  min-height: 100vh;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   background:
@@ -259,20 +259,27 @@ html[data-hide-plaza="1"] #btn-to-plaza {
 }
 
 #board-3d-host {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  grid-area: board;
   z-index: 0;
   pointer-events: none;
   display: none;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 html[data-board3d="1"] #board-3d-host {
   display: block;
-  opacity: 0.58;
+  opacity: 0.72;
+}
+html[data-board3d="1"] #screen-duel .board {
+  background-color: rgba(10, 16, 24, 0.22);
 }
 html[data-board3d="1"] #board-3d-host .duel-board-3d,
 html[data-board3d="1"] #board-3d-host canvas {
   width: 100% !important;
   height: 100% !important;
+  object-fit: contain;
   pointer-events: none !important;
 }
 html[data-board3d="1"] .zone,

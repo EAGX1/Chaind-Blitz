@@ -13,6 +13,9 @@ import {
   CHAIN_MODES,
   UI_SCALES,
   FX_SPEEDS,
+  RESOLUTION_NATIVE,
+  PC_RESOLUTIONS,
+  PHONE_RESOLUTIONS,
 } from "../ui/settingsStore.js";
 import { fxSpeedLabel } from "../ui/fxPace.js";
 import { confirmDialog } from "../ui/confirmDialog.js";
@@ -257,6 +260,26 @@ export function AppChrome({ hideChrome = false }: { hideChrome?: boolean }) {
                 ))}
               </select>
             </label>
+            <label>
+              {t("settings.resolution")}
+              <select
+                value={settings.resolution || RESOLUTION_NATIVE}
+                onChange={(e) => patch({ resolution: e.target.value })}
+              >
+                <option value={RESOLUTION_NATIVE}>{t("settings.resolutionNative")}</option>
+                <optgroup label={t("settings.resolutionPc")}>
+                  {PC_RESOLUTIONS.map((r) => (
+                    <option key={r.id} value={r.id}>{r.label}</option>
+                  ))}
+                </optgroup>
+                <optgroup label={t("settings.resolutionPhone")}>
+                  {PHONE_RESOLUTIONS.map((r) => (
+                    <option key={r.id} value={r.id}>{r.label}</option>
+                  ))}
+                </optgroup>
+              </select>
+            </label>
+            <p className="cb-hint">{t("settings.resolutionHint")}</p>
             <label>
               {t("settings.chainMode")}
               <select

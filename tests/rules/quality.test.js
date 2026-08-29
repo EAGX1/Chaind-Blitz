@@ -15,7 +15,6 @@ import { FIELD_LANES } from "../../src/data/fields.js";
 import { makeAutopilot } from "../../src/ai/autopilot.js";
 import { AI_BUDGETS } from "../../src/ai/budgets.ts";
 import { shouldPromptChain } from "../../src/ui/chainPrompt.js";
-import { practiceCoachLine } from "../../src/ui/practiceCoach.js";
 import { locLabel } from "../../src/ui/locPip.js";
 import { phaseSentence } from "../../src/ui/phaseSentence.js";
 import { helpLines } from "../../src/ui/helpOverlay.js";
@@ -48,6 +47,7 @@ import { fxDelay, fxSkip, normalizeFxSpeed, fxSpeedLabel, fxCssPace } from "../.
 import { chainLinkUids } from "../../src/ui/attackArrows.js";
 import { escPauseAction } from "../../src/ui/humanIo.js";
 import { normalizeSettings } from "../../src/ui/settingsStore.js";
+import { resolutionFitTransform } from "../../src/ui/resolution.js";
 import { chainWindowTitle, chainActSource, lastChainCardName, escapeChainHtml, chainLifoCaption } from "../../src/ui/chainPicker.js";
 import { mkState, addField, addHand, addDeck, addGy, addSet, makeDriver, logText } from "./helpers.js";
 
@@ -968,15 +968,7 @@ describe("combat preview", () => {
   });
 });
 
-describe("practice coach and zone pips", () => {
-  it("prefers Contact Fusion over ending the phase", () => {
-    const line = practiceCoachLine([
-      { type: "end", label: "End M1" },
-      { type: "contactFusion", label: "Contact Fusion Pyre Wyrm" }
-    ]);
-    expect(line).toMatch(/Pyre Wyrm/);
-  });
-
+describe("zone pips", () => {
   it("labels hand / field / GY", () => {
     expect(locLabel({ loc: "hand" })).toBe("HAND");
     expect(locLabel({ loc: "mz" })).toBe("FIELD");
@@ -1402,6 +1394,36 @@ describe("twenty-third polish: FX speed, mute, chain stack, Esc, GY order", () =
     expect(s.fxSpeed).toBe(2);
   });
 
+  it("resolution setting keeps native plus common PC and phone sizes", () => {
+    expect(normalizeSettings({}).resolution).toBe("native");
+    expect(normalizeSettings({ resolution: "1280x720" }).resolution).toBe("1280x720");
+    expect(normalizeSettings({ resolution: "1366x768" }).resolution).toBe("1366x768");
+    expect(normalizeSettings({ resolution: "1440x900" }).resolution).toBe("1440x900");
+    expect(normalizeSettings({ resolution: "1920x1080" }).resolution).toBe("1920x1080");
+    expect(normalizeSettings({ resolution: "3840x2160" }).resolution).toBe("3840x2160");
+    expect(normalizeSettings({ resolution: "360x800" }).resolution).toBe("360x800");
+    expect(normalizeSettings({ resolution: "375x812" }).resolution).toBe("375x812");
+    expect(normalizeSettings({ resolution: "414x896" }).resolution).toBe("414x896");
+    expect(normalizeSettings({ resolution: "garbage" }).resolution).toBe("native");
+  });
+
+  it("4K and other oversized presets fill the window instead of shrinking UI", () => {
+    const uhd = resolutionFitTransform(3840, 2160, 1600, 900);
+    expect(uhd.scale).toBe(1);
+    expect(uhd.fill).toBe(true);
+    expect(uhd.layoutW).toBe(1600);
+    expect(uhd.layoutH).toBe(900);
+    expect(uhd.cardScale).toBeCloseTo(1.5);
+    const qhd = resolutionFitTransform(2560, 1440, 1600, 900);
+    expect(qhd.fill).toBe(true);
+    expect(qhd.scale).toBe(1);
+    const phone = resolutionFitTransform(360, 800, 1600, 900);
+    expect(phone.fill).toBe(false);
+    expect(phone.scale).toBeGreaterThan(1);
+    expect(phone.x).toBeGreaterThan(400);
+    expect(phone.y).toBeCloseTo(0);
+  });
+
   it("chain hover targets every link, not only the last", () => {
     const chain = [{ card: { uid: 1 } }, { card: { uid: 2 } }, { card: { uid: 3 } }];
     expect(chainLinkUids(chain)).toEqual([1, 2, 3]);
@@ -1493,8 +1515,31 @@ describe("phone Safari client (Karabast)", () => {
     expect(css).toMatch(/\.prompt-bar\s*\{[^}]*position:\s*relative\s*!important/);
     expect(css).toMatch(/\.prompt-bar\s*\{[^}]*top:\s*auto\s*!important/);
     expect(css).toMatch(/\.prompt-bar\s*\{[^}]*order:\s*6/);
+    expect(css).toMatch(/#screen-duel \.prompt-bar\s*\{[^}]*position:\s*relative\s*!important/);
     expect(css).toMatch(/\.you-hand\s*\{\s*order:\s*7/);
     expect(css).not.toMatch(/\.prompt-bar\s*\{[^}]*top:\s*28%/);
+    expect(css).toMatch(/\.board\s*\{[^}]*flex:\s*1 1 0/);
+    expect(css).toMatch(/#side-panel \.inspector\s*\{\s*display:\s*none/);
+    expect(css).toMatch(/#screen-duel \.hud-actions \.mini-btn[\s\S]*?min-height:\s*40px/);
+    expect(css).toMatch(/@media \(min-width:\s*721px\)/);
+    expect(css).toMatch(/@container stage \(max-width:\s*720px\)/);
+    expect(css).toMatch(/@container stage \(min-width:\s*721px\)/);
+    expect(css).toMatch(/grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/);
+    expect(css).toMatch(/--cw:\s*clamp\(/);
+  });
+});
+
+describe("duel field pads", () => {
+  it("keeps monster and spell pads at card aspect, not stretched mats", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const { fileURLToPath } = await import("node:url");
+    const { dirname, join } = await import("node:path");
+    const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
+    const css = await readFile(join(root, "css/duel.css"), "utf8");
+    expect(css).toMatch(/grid-template-columns:\s*repeat\(6,\s*minmax\(0,\s*1fr\)\)/);
+    expect(css).toMatch(/grid-template-columns:\s*subgrid/);
+    expect(css).toMatch(/#screen-duel \.zone::before[\s\S]*?aspect-ratio:\s*5\s*\/\s*7/);
+    expect(css).toMatch(/object-fit:\s*contain/);
   });
 });
 

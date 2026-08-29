@@ -2,7 +2,7 @@
 <html lang="en" data-ui-scale="1">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CHAIND BLITZ</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#0a1628">
@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="css/mobile.css">
 </head>
 <body>
+<div id="cb-stage">
 <div id="react-root"></div>
 <div id="app">
 
@@ -122,6 +123,8 @@
         <div class="hud-counts">
           <span>HAND <b id="hcount-0">0</b></span>
           <span>DECK <b id="dcount-0">0</b></span>
+        </div>
+        <div class="hud-actions">
           <button class="mini-btn" id="btn-chain-mode" title="Cycle chain prompt: Smart, Confirm, Auto, Off">CHAIN: SMART</button>
           <button class="mini-btn" id="btn-auto" title="Lets the CPU play your cards. Not pass-priority.">AI PILOT</button>
           <button class="mini-btn" id="btn-emote" title="Emotes">EMOTE</button>
@@ -181,6 +184,7 @@
       </div>
     </div>
   </section>
+</div>
 </div>
 
 <script type="module" src="/src/app/main.tsx"></script>

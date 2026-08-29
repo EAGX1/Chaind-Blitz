@@ -12,9 +12,9 @@ import { setLocale } from "../meta/i18n.js";
 
 import "../../css/style.css";
 import "../../css/duel.css";
-import "../../css/mobile.css";
 import "../../css/aaa.css";
 import "../../css/home.css";
+import "../../css/mobile.css";
 import "./chrome.css";
 import "./city/city.css";
 

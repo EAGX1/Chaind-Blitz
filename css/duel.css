@@ -1,8 +1,8 @@
 /* ============ CHAIND BLITZ — duel screen (Master Duel layout) ============ */
-#screen-duel { background: var(--bg0); height: 100vh; overflow: hidden; }
+#screen-duel { background: var(--bg0); height: 100%; overflow: hidden; }
 .arena {
-  --duel-side: 300px;
-  position: relative; height: 100vh; display: grid;
+  --duel-side: clamp(200px, 18cqw, 300px);
+  position: relative; height: 100%; display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto auto;
   grid-template-columns: minmax(0, 1fr) var(--duel-side);
   grid-template-areas:
@@ -67,6 +67,12 @@
 .ep-pip.full.ready { box-shadow: 0 0 10px rgba(245,197,66,.95); outline: 1px solid var(--gold); }
 .ep-label { font-size: 10px; color: var(--dim); margin-right: 4px; letter-spacing: 1px; }
 .hud-counts { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--dim); margin-left: 12px; }
+.hud-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-left: 8px;
+}
 
 .first-turn-banner, .coach-banner {
   grid-area: board;
@@ -112,7 +118,7 @@
   padding-top: 10px;
 }
 .you-hand .cb-card { pointer-events: auto; }
-.you-hand .cb-card { --cw: 96px; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
+#screen-duel .you-hand .cb-card { --cw: clamp(calc(96px * var(--cb-card-scale, 1)), calc(7.2cqw * var(--cb-card-scale, 1)), calc(200px * var(--cb-card-scale, 1))); cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
 .you-hand .cb-card:hover { transform: translateY(-18px) scale(1.06); z-index: 20; box-shadow: 0 12px 30px rgba(0,0,0,.7); }
 body.cb-dragging .you-hand .cb-card:hover { transform: none; box-shadow: none; }
 .you-hand .cb-card.selectable { box-shadow: 0 0 0 2px var(--teal), 0 0 18px rgba(57,208,200,.5); }
@@ -144,12 +150,12 @@ body.cb-dragging .you-hand .cb-card:hover { transform: none; box-shadow: none; }
   box-shadow: 0 0 0 2px var(--gold), 0 0 18px rgba(245,197,66,.55);
 }
 .you-hand .cb-card.selected { transform: translateY(-14px); box-shadow: 0 0 0 2px var(--gold), 0 0 22px rgba(245,197,66,.6); }
-.opp-hand .cb-card { --cw: 44px; }
+#screen-duel .opp-hand .cb-card { --cw: clamp(36px, calc(3.2cqw * var(--cb-card-scale, 1)), 72px); }
 
 /* ---- board ---- */
 .board {
   grid-area: board; display: grid;
-  grid-template-columns: minmax(52px, 84px) minmax(0, 1fr) minmax(52px, 84px);
+  grid-template-columns: minmax(52px, min(84px, 6cqw)) minmax(0, 1fr) minmax(52px, min(84px, 6cqw));
   gap: 8px; z-index: 2; min-height: 0; min-width: 0;
 }
 .wells {
@@ -172,17 +178,125 @@ body.cb-dragging .you-hand .cb-card:hover { transform: none; box-shadow: none; }
 .well-extra:hover { border-color: #c084fc; }
 .well-gy { border-color: rgba(148, 163, 184, .4); }
 .well-deck { border-style: solid; }
-.grid-zones { display: grid; grid-template-rows: 1fr 1.1fr .9fr 1.1fr 1fr; gap: 4px; min-height: 0; }
-.zone-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; min-width: 0; }
+.grid-zones {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-rows: 1fr 1.1fr .9fr 1.1fr 1fr;
+  column-gap: 6px;
+  row-gap: 4px;
+  min-height: 0;
+  min-width: 0;
+}
+.zone-row,
+.lane-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+#screen-duel .zone-row,
+#screen-duel .lane-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  justify-content: stretch;
+  align-items: stretch;
+  gap: 6px;
+  padding: 0;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+}
+#screen-duel #stz-1,
+#screen-duel #mz-1,
+#screen-duel #mz-0,
+#screen-duel #stz-0,
+#screen-duel #lanes {
+  padding: 0;
+}
 .zone {
   border: 1px solid rgba(38,51,82,.8); border-radius: 8px;
   background: rgba(13,18,32,.55);
   display: grid; place-items: center; position: relative;
   min-width: 0;
+  min-height: 0;
   transition: box-shadow .15s ease, border-color .15s ease;
 }
+/* Cell fills the 6-col track so lanes share edges. Felt pad is ::before. */
+#screen-duel .zone,
+#screen-duel #mz-0 .zone,
+#screen-duel #stz-0 .zone,
+#screen-duel #mz-1 .zone,
+#screen-duel #stz-1 .zone {
+  box-sizing: border-box;
+  justify-self: stretch;
+  align-self: stretch;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  aspect-ratio: auto;
+  flex: none;
+  min-width: 0;
+  min-height: 0;
+  container-type: size;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+#screen-duel .zone::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  box-sizing: border-box;
+  aspect-ratio: 5 / 7;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 4px;
+  border: 1px solid rgba(201, 162, 39, 0.28);
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0.05)),
+    rgba(8, 12, 18, 0.55);
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.5);
+}
+#screen-duel #mz-1 .zone::before,
+#screen-duel #stz-1 .zone::before {
+  border-color: rgba(90, 140, 180, 0.4);
+  background: linear-gradient(180deg, rgba(22, 34, 50, 0.55), rgba(8, 12, 20, 0.5));
+}
+#screen-duel #mz-0 .zone::before,
+#screen-duel #stz-0 .zone::before {
+  border-color: rgba(201, 162, 39, 0.4);
+  background: linear-gradient(180deg, rgba(32, 28, 12, 0.5), rgba(12, 14, 10, 0.55));
+}
 .zone .cb-card { --cw: 76px; pointer-events: auto; cursor: pointer; }
+#screen-duel .zone .cb-card {
+  --cw: min(92cqw, calc(92cqh / 1.45));
+  width: var(--cw);
+  height: calc(var(--cw) * 1.45);
+  position: relative;
+  z-index: 2;
+}
 .zone.locked-zone { background: repeating-linear-gradient(45deg, rgba(255,93,93,.06) 0 8px, transparent 8px 16px); border-color: rgba(255,93,93,.4); }
+#screen-duel #mz-0 .zone.locked-zone,
+#screen-duel #stz-0 .zone.locked-zone,
+#screen-duel #mz-1 .zone.locked-zone,
+#screen-duel #stz-1 .zone.locked-zone {
+  background: transparent;
+  border-color: transparent;
+}
+#screen-duel .zone.locked-zone::before {
+  background:
+    repeating-linear-gradient(45deg, rgba(255,93,93,.12) 0 8px, transparent 8px 16px),
+    linear-gradient(180deg, rgba(32, 18, 18, 0.55), rgba(12, 10, 10, 0.55));
+  border-color: rgba(255,93,93,.4);
+}
 .zone.locked-zone::after { content: "SEALED"; font-size: 9px; letter-spacing: 2px; color: var(--red); opacity: .7; }
 .zone.target-hl { box-shadow: 0 0 0 2px var(--teal), 0 0 20px rgba(57,208,200,.4); cursor: pointer; }
 .zone.target-hl-enemy { box-shadow: 0 0 0 2px var(--red), 0 0 20px rgba(255,93,93,.4); cursor: pointer; }
@@ -216,9 +330,8 @@ body.cb-dragging .you-hand .cb-card:hover { transform: none; box-shadow: none; }
   position: absolute; top: 4px; left: 6px; font-size: 9px; letter-spacing: 1px; color: var(--teal);
 }
 
-/* themed lane glows + matching zone columns */
-.lane[data-theme]::before,
-.zone[data-theme]::before {
+/* Lane glow fills the lane box. Zone glow tints the 5:7 pad — do not set inset on .zone::before. */
+.lane[data-theme]::before {
   content: "";
   position: absolute; inset: 0;
   pointer-events: none;
@@ -534,7 +647,7 @@ body.cb-dragging .you-hand .cb-card:hover { transform: none; box-shadow: none; }
 .duel-log-wrap .duel-log { flex: 1; min-height: 0; }
 .inspector { border-bottom: 1px solid var(--line); padding: 10px; overflow-y: auto; min-height: 0; }
 .inspector.inspector-pinned { outline: 1px solid var(--gold); outline-offset: -1px; }
-.inspector .cb-card { --cw: 130px; margin: 0 auto; }
+.inspector .cb-card { --cw: clamp(130px, calc(12cqw * var(--cb-card-scale, 1)), 240px); margin: 0 auto; }
 .play-history {
   display: flex;
   gap: 4px;
@@ -888,10 +1001,20 @@ html[data-board3d="1"] #board-3d-host::after {
   pointer-events: none;
 }
 #board-3d-host {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  grid-area: board;
   z-index: 0;
   pointer-events: none;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+html[data-board3d="1"] #board-3d-host .duel-board-3d,
+html[data-board3d="1"] #board-3d-host canvas {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain;
+  pointer-events: none !important;
 }
 .action-toast {
   position: absolute;
@@ -988,12 +1111,8 @@ html[data-board3d="1"] #board-3d-host::after {
   max-width: min(760px, calc(100vw - var(--duel-side, 300px) - 48px));
 }
 
-@media (max-width: 1200px) {
-  .arena { --duel-side: 240px; }
-}
 @media (max-width: 900px) {
-  .arena { --duel-side: 200px; }
-  #screen-duel .zone .cb-card { --cw: calc(64px * var(--ui-scale, 1)); }
+  #screen-duel .zone .cb-card { --cw: clamp(52px, 8cqw, 72px); }
 }
 
 /* ================= lane reveal cinematic ================= */
@@ -1052,9 +1171,18 @@ html[data-board3d="1"] #board-3d-host::after {
 }
 
 /* zone picker: free zones pulse gold when choosing where to play a card */
-.zone.zone-selectable {
-  cursor: pointer; border-color: var(--gold); z-index: 6;
+.zone.zone-selectable,
+#screen-duel #mz-0 .zone.zone-selectable,
+#screen-duel #stz-0 .zone.zone-selectable,
+#screen-duel #mz-1 .zone.zone-selectable,
+#screen-duel #stz-1 .zone.zone-selectable {
+  cursor: pointer; border-color: transparent; z-index: 6;
   pointer-events: auto;
+  animation: none;
+  box-shadow: none;
+}
+#screen-duel .zone.zone-selectable::before {
+  border-color: var(--gold);
   animation: zonePickPulse 1.1s ease-in-out infinite;
 }
 .zone.zone-drop,

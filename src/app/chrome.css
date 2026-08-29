@@ -80,8 +80,9 @@ html[data-plaza="1"] .cb-chrome {
   padding: 24px;
 }
 .cb-modal-card {
-  width: min(420px, 100%);
-  max-height: min(88vh, 900px);
+  width: min(480px, 92cqw, 100%);
+  min-width: min(320px, 100%);
+  max-height: min(88cqh, 88vh, 900px);
   overflow: auto;
   background: linear-gradient(160deg, #132338, #0b1522);
   border: 1px solid rgba(110, 200, 255, 0.3);

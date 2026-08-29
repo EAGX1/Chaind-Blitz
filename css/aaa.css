@@ -844,6 +844,7 @@ button:focus-visible,
 }
 #gameover .modal-card {
   position: relative;
+  width: min(920px, 92cqw);
   padding: 48px 72px 40px;
   border-radius: 2px;
   border: 1px solid var(--cb-gold);
@@ -906,7 +907,7 @@ button:focus-visible,
   gap: 6px;
   justify-content: center;
 }
-.go-hands .cb-card { --cw: 56px; }
+.go-hands .cb-card { --cw: clamp(96px, 9cqw, 168px); }
 #gameover .modal-actions .cb-btn.primary {
   padding: 12px 26px;
 }
