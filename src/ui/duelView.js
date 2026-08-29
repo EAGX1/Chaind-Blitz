@@ -8,7 +8,7 @@ import { installHelpOverlay } from "./helpOverlay.js";
 import { loadSettings, saveSettings, CHAIN_MODES } from "./settingsStore.js";
 import { laneTheme } from "../data/fields.js";
 import { buildCardEl, cardBackEl } from "./cardArt.js";
-import { pulsePhase } from "./juice.js";
+import { pulsePhase, splashTurn, juiceOk } from "./juice.js";
 import { sfx, fxNumberOnElement } from "./fx.js";
 import { openGyBrowser, openExtraBrowser } from "./gyBrowser.js";
 import { getHoverAnchor } from "./cardHover.js";
@@ -85,7 +85,7 @@ export function createDuelView(G) {
   // render signatures: skip DOM rebuilds for regions whose state didn't change,
   // so unchanged cards keep their elements (no entrance-animation flicker,
   // no lost hover/click state)
-  const sig = { hand: ["", ""], lanes: "", chain: "", orb: "" };
+  const sig = { hand: ["", ""], lanes: "", chain: "", orb: "", turn: "" };
   const wellsWired = { 0: false, 1: false };
   let pinnedUid = null;
   let inspectKeysWired = false;
@@ -201,12 +201,16 @@ export function createDuelView(G) {
       hintHand(rail, cards);
       return;
     }
+    const prevUids = new Set(
+      sig.hand[p].split(",").map((tok) => Number(tok.split(":")[0])).filter((n) => Number.isFinite(n) && n > 0)
+    );
     sig.hand[p] = s;
     rail.innerHTML = "";
     for (const c of cards) {
       const face = faceAll || handFaceUp(c, { seen: seenUids });
       const el = face ? buildCardEl(c, { stats: liveCardStats(G, c) }) : cardBackEl();
       el.dataset.uid = c.uid;
+      if (juiceOk() && prevUids.size && !prevUids.has(c.uid)) el.classList.add("hand-enter");
       attachInspect(el, c);
       applyPlayHint(el, G, c);
       rail.appendChild(el);
@@ -297,16 +301,21 @@ export function createDuelView(G) {
           continue; // unchanged: keep the live element
         }
         zone.dataset.sig = cardSig;
+        const prevUid = zone.dataset.cardUid || "";
         zone.innerHTML = "";
         if (c) {
           const el = buildCardEl(c, { faceDown, stats: liveCardStats(G, c) });
           el.dataset.uid = c.uid;
           if (evoReady) el.classList.add("evolve-ready");
+          if (juiceOk() && prevUid !== String(c.uid)) el.classList.add("board-enter");
           paintStatusBadges(el, G, c);
           attachInspect(el, c);
           applyPlayHint(el, G, c);
           zone.appendChild(el);
           if (c.dmg > prevDmg) fxNumberOnElement(el, `-${c.dmg - prevDmg}`, "dmg");
+          zone.dataset.cardUid = String(c.uid);
+        } else {
+          zone.dataset.cardUid = "";
         }
         zone.dataset.dmg = c ? String(c.dmg || 0) : "0";
       }
@@ -377,6 +386,18 @@ export function createDuelView(G) {
     if (hint) hint.textContent = spoken.hint;
     $("phase-orb").title = `${spoken.sentence} · click to end · F1 shortcuts`;
     $("phase-orb").classList.toggle("your-turn", G.tp === 0);
+    const arena = $("arena");
+    arena?.classList.toggle("your-turn", G.tp === 0);
+    arena?.classList.toggle("foe-turn", G.tp !== 0);
+    const live = !G.over && G.players?.every((pl) => pl.mulliganDone);
+    const turnKey = `${G.turnCount}|${G.tp}`;
+    if (live && sig.turn !== turnKey) {
+      const side = G.tp === 0 ? "you" : "foe";
+      splashTurn(side);
+      playStinger(side === "you" ? "turnYou" : "turnFoe");
+      announce(side === "you" ? "Your turn" : "Opponent's turn");
+      sig.turn = turnKey;
+    }
     const orbKey = `${G.turnCount}|${G.tp}|${G.phase}|${G.battleStep || ""}`;
     if (sig.orb && sig.orb !== orbKey) pulsePhase();
     sig.orb = orbKey;

@@ -10,7 +10,7 @@ import { buildCardEl } from "./cardArt.js";
 import { openPauseMenu } from "./pauseMenu.js";
 import { showAttackArrow, showAttackArrows, clearAttackArrows, chainLinkEls } from "./attackArrows.js";
 import { loadSettings } from "./settingsStore.js";
-import { rankFieldActions } from "./actionRank.js";
+import { rankFieldActions, promptBarActs } from "./actionRank.js";
 import { confirmDialog } from "./confirmDialog.js";
 import { paintLocPip } from "./locPip.js";
 import { practiceCoachLine } from "./practiceCoach.js";
@@ -691,17 +691,11 @@ export function makeHumanIo(G, view) {
           el.title = LOCKED_SET_REASON;
           bind(el, () => denyShake(el, LOCKED_SET_REASON));
         }
-        for (const act of actions) {
-          if (act.type === "contactFusion") {
-            const b = btn(act.label, "confirm");
-            b.addEventListener("click", () => { sfx.click(); commit(act); });
-            opts.appendChild(b);
-          }
-          if (act.type === "set" && byUid.get(act.card.uid)?.some((a) => a.type === "activate")) {
-            const b = btn(`Set ${act.card.def.name}`);
-            b.addEventListener("click", () => { sfx.click(); commit(act); });
-            opts.appendChild(b);
-          }
+        for (const act of promptBarActs(actions)) {
+          const primary = act.type === "activate" || act.type === "activateSet" || act.type === "contactFusion";
+          const b = btn(act.label || act.type, primary ? "confirm" : "");
+          b.addEventListener("click", () => { sfx.click(); commit(act); });
+          opts.appendChild(b);
         }
         function endButton() {
           const end = actions.find((a) => a.type === "end");

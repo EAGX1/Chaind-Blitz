@@ -7,7 +7,31 @@ const WIN_MS = 1600;
 const LOSE_MS = 1400;
 
 function reducedMotion() {
-  return document.documentElement.dataset.reducedMotion === "1";
+  return typeof document !== "undefined" && document.documentElement.dataset.reducedMotion === "1";
+}
+
+/** Summon/draw hops — skip when the player asked for less motion. */
+export function juiceOk() {
+  return typeof document !== "undefined" && !reducedMotion() && !fxSkip();
+}
+
+/** Master Duel–style center banner when the turn player flips. */
+export function splashTurn(side) {
+  if (typeof document === "undefined" || fxSkip()) return;
+  const layer = document.getElementById("fx-layer");
+  if (!layer) return;
+  layer.querySelector(".turn-splash")?.remove();
+  const el = document.createElement("div");
+  el.className = "turn-splash";
+  el.dataset.side = side === "you" ? "you" : "foe";
+  el.setAttribute("role", "status");
+  if (reducedMotion()) el.classList.add("is-static");
+  const b = document.createElement("b");
+  b.textContent = side === "you" ? "YOUR TURN" : "OPPONENT'S TURN";
+  el.appendChild(b);
+  layer.appendChild(el);
+  // Stay readable even when __CB_FAST / 2× zeros other waits.
+  setTimeout(() => el.remove(), reducedMotion() ? 900 : 1000);
 }
 
 /** Pulse the phase orb (and a light body flash). */

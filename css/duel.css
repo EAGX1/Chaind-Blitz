@@ -20,6 +20,15 @@
     radial-gradient(1000px 400px at 50% 0%, rgba(74,168,255,.08), transparent 60%),
     radial-gradient(1000px 400px at 50% 100%, rgba(255,122,60,.08), transparent 60%);
 }
+.arena.your-turn {
+  box-shadow: inset 0 -48px 90px rgba(201, 162, 39, 0.07);
+}
+.arena.foe-turn {
+  box-shadow: inset 0 48px 90px rgba(140, 24, 48, 0.14);
+}
+.arena.foe-turn .you-hand .cb-card {
+  filter: brightness(0.9) saturate(0.88);
+}
 
 /* ---- HUD ---- */
 .hud {
@@ -41,9 +50,14 @@
 .hud-info { display: flex; flex-direction: column; gap: 3px; }
 .hud-name { font-family: var(--font-head); font-size: 13px; letter-spacing: 2px; }
 .hud-lp { font-size: 13px; color: var(--dim); display: flex; gap: 6px; align-items: baseline; }
-.hud-lp b { font-family: var(--font-head); font-size: 20px; color: var(--txt); transition: color .2s; }
-.hud-lp b.lp-hit { color: var(--red); }
-.hud-lp b.lp-heal { color: var(--terra); }
+.hud-lp b { font-family: var(--font-head); font-size: 20px; color: var(--txt); transition: color .2s; display: inline-block; transform-origin: left center; }
+.hud-lp b.lp-hit { color: var(--red); animation: lpSlam calc(0.45s * var(--fx-pace, 1)) ease; }
+.hud-lp b.lp-heal { color: var(--terra); animation: lpSlam calc(0.45s * var(--fx-pace, 1)) ease; }
+@keyframes lpSlam {
+  0% { transform: scale(1); }
+  28% { transform: scale(1.38); }
+  100% { transform: scale(1); }
+}
 .ep-row { display: flex; gap: 3px; align-items: center; }
 .ep-pip {
   width: 12px; height: 12px; border-radius: 50%;
@@ -102,6 +116,27 @@
 .you-hand .cb-card:hover { transform: translateY(-18px) scale(1.06); z-index: 20; box-shadow: 0 12px 30px rgba(0,0,0,.7); }
 body.cb-dragging .you-hand .cb-card:hover { transform: none; box-shadow: none; }
 .you-hand .cb-card.selectable { box-shadow: 0 0 0 2px var(--teal), 0 0 18px rgba(57,208,200,.5); }
+.cb-card.hand-enter {
+  animation: handEnter calc(0.38s * var(--fx-pace, 1)) ease-out;
+}
+.opp-hand .cb-card.hand-enter {
+  animation-name: handEnterFoe;
+}
+@keyframes handEnter {
+  from { transform: translateY(28px) scale(0.86); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes handEnterFoe {
+  from { transform: translateY(-22px) scale(0.86); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.zone .cb-card.board-enter {
+  animation: boardEnter calc(0.42s * var(--fx-pace, 1)) ease-out;
+}
+@keyframes boardEnter {
+  from { transform: translateY(14px) scale(0.82); opacity: 0; filter: brightness(1.35); }
+  to { transform: none; opacity: 1; filter: none; }
+}
 .you-hand .cb-card.kb-focus,
 .zone .cb-card.kb-focus,
 .prompt-btn.kb-focus,
@@ -699,8 +734,50 @@ body.cb-dragging .you-hand .cb-card:hover { transform: none; box-shadow: none; }
 
 /* ---- fx layer ---- */
 .fx-layer { position: absolute; inset: 0; pointer-events: none; z-index: 40; overflow: hidden; }
+#screen-duel .fx-layer { z-index: 110 !important; }
 html[data-fx-skip="1"] .fx-layer,
 html[data-fx-skip="1"] .lane-banner { display: none; }
+html[data-reduced-motion="1"] .hud-lp b.lp-hit,
+html[data-reduced-motion="1"] .hud-lp b.lp-heal,
+html[data-reduced-motion="1"] .cb-card.hand-enter,
+html[data-reduced-motion="1"] .zone .cb-card.board-enter {
+  animation: none;
+}
+html[data-reduced-motion="1"] .arena.foe-turn .you-hand .cb-card {
+  filter: none;
+}
+.turn-splash {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  text-align: center;
+  pointer-events: none;
+  animation: turnSplash 0.95s ease forwards;
+}
+.turn-splash b {
+  display: block;
+  font-family: var(--font-head);
+  font-size: clamp(28px, 5vw, 54px);
+  letter-spacing: 0.16em;
+  color: var(--gold);
+  text-shadow: 0 0 28px rgba(245,197,66,.55), 0 4px 18px #000;
+}
+.turn-splash[data-side="foe"] b {
+  color: #ff8a8a;
+  text-shadow: 0 0 28px rgba(255,93,93,.45), 0 4px 18px #000;
+}
+.turn-splash.is-static {
+  animation: none;
+  opacity: 1;
+}
+@keyframes turnSplash {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.72); }
+  16% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+  68% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -58%) scale(1); }
+}
 .fx-num {
   position: absolute; font-family: var(--font-head); font-weight: 900; font-size: 30px;
   animation: fxNum calc(1s * var(--fx-pace, 1)) ease forwards; text-shadow: 0 2px 10px rgba(0,0,0,.8);

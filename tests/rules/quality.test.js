@@ -538,6 +538,18 @@ describe("Evolve vs ignition chooser order", () => {
     expect(ranked.map((a) => a.type)).toEqual(["evolve", "ignition"]);
   });
 
+  it("prompt bar lists Activate and Set for a normal spell, not Set alone", async () => {
+    const { promptBarActs } = await import("../../src/ui/actionRank.js");
+    const card = { uid: 7, def: { name: "Scroll of Greed" } };
+    const bar = promptBarActs([
+      { type: "activate", card, label: "Activate Scroll of Greed" },
+      { type: "set", card, label: "Set Scroll of Greed" },
+      { type: "end", label: "End M1" }
+    ]);
+    expect(bar.map((a) => a.type)).toEqual(["activate", "set"]);
+    expect(bar.map((a) => a.label)).toEqual(["Activate Scroll of Greed", "Set Scroll of Greed"]);
+  });
+
   it("Flame Djinn lists both evolve and ignition", () => {
     const G = mkState();
     G.tp = 0;
@@ -1363,7 +1375,7 @@ describe("seen-set, GY search, hand reorder, beds", () => {
 
   it("ships a city bed and chain/pack/win stingers", () => {
     expect(bedNames()).toEqual(expect.arrayContaining(["hub", "duel", "city"]));
-    expect(stingerNames()).toEqual(expect.arrayContaining(["win", "lose", "chain", "evolve", "fusion", "pack"]));
+    expect(stingerNames()).toEqual(expect.arrayContaining(["win", "lose", "chain", "evolve", "fusion", "pack", "turnYou", "turnFoe"]));
   });
 });
 

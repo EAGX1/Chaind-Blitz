@@ -174,7 +174,9 @@ const STINGERS = {
   fusion: [262, 392, 523, 784],
   pack: [440, 554, 659],
   summon: [330, 440, 554],
-  damage: [196, 147]
+  damage: [196, 147],
+  turnYou: [392, 523, 659],
+  turnFoe: [330, 277, 220]
 };
 
 export function bedNames() {

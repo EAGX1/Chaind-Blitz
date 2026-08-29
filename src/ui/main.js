@@ -54,9 +54,31 @@ let currentDuel = null;
 let hub = null;
 let lastReplay = null;
 
+function setInert(el, on) {
+  if (!el) return;
+  if (on) {
+    el.setAttribute("inert", "");
+    el.setAttribute("aria-hidden", "true");
+  } else {
+    el.removeAttribute("inert");
+    el.removeAttribute("aria-hidden");
+  }
+}
+
+function setGameoverOpen(open) {
+  const el = $("gameover");
+  if (!el) return;
+  el.classList.toggle("hidden", !open);
+  setInert(el, !open);
+}
+
 function showScreen(name) {
-  $("screen-hub").classList.toggle("hidden", name !== "hub");
-  $("screen-duel").classList.toggle("hidden", name !== "duel");
+  const hub = $("screen-hub");
+  const duel = $("screen-duel");
+  hub.classList.toggle("hidden", name !== "hub");
+  duel.classList.toggle("hidden", name !== "duel");
+  setInert(hub, name !== "hub");
+  setInert(duel, name !== "duel");
   document.body.dataset.screen = name;
   window.dispatchEvent(new CustomEvent("cb-screen", { detail: { screen: name } }));
   if (name === "duel") {
@@ -108,7 +130,7 @@ async function startDuel({
 
   showScreen("duel");
   playBed("duel");
-  $("gameover").classList.add("hidden");
+  setGameoverOpen(false);
   clearRevealedHands($("go-hands"));
   $("duel-log").innerHTML = "";
   $("inspector").innerHTML = `<p class="dim">Hover a card to inspect it. Press I to pin. Grey cards tell you why they cannot play.</p>`;
@@ -252,7 +274,7 @@ async function startDuel({
       youLabel: `${youName} hand`,
       foeLabel: `${foeName} hand (revealed)`
     });
-    $("gameover").classList.remove("hidden");
+    setGameoverOpen(true);
     if (aiVsAi || side === "both" || won) { sfx.victory(); playStinger("win"); }
     else { sfx.defeat(); playStinger("lose"); }
     if (won || aiVsAi || side === "both") burstWin();
@@ -303,7 +325,7 @@ function wireGameoverButtons(replay, { allowRematch = true, onSwap = null } = {}
   const rematch = $("btn-go-rematch");
   rematch.style.display = allowRematch ? "" : "none";
   rematch.onclick = () => {
-    $("gameover").classList.add("hidden");
+    setGameoverOpen(false);
     replay();
   };
   const swapBtn = $("btn-go-swap");
@@ -312,7 +334,7 @@ function wireGameoverButtons(replay, { allowRematch = true, onSwap = null } = {}
     swapBtn.style.display = showSwap ? "" : "none";
     swapBtn.onclick = showSwap
       ? () => {
-        $("gameover").classList.add("hidden");
+        setGameoverOpen(false);
         onSwap();
       }
       : null;
@@ -337,6 +359,7 @@ function wireGameoverButtons(replay, { allowRematch = true, onSwap = null } = {}
     dlBtn.onclick = () => downloadReplayJson(exportReplay(lastReplay));
   }
   $("btn-go-hub").onclick = () => {
+    setGameoverOpen(false);
     showScreen("hub");
     hub?.renderAll();
   };

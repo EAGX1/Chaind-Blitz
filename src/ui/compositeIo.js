@@ -72,7 +72,8 @@ export function makeCompositeIo(G, { humanIo, view, speed = 1, humanSide = 0 }) 
     const side = isHuman(p) ? humanIo : ai;
     try {
       const out = await side[fn](p, ...args);
-      view.renderAll();
+      // Mulligan apply happens after this returns; paint once both seats are done.
+      if (fn !== "askMulligan") view.renderAll();
       await sleep(pace(p));
       return out;
     } catch (err) {
@@ -229,6 +230,7 @@ export function makeCompositeIo(G, { humanIo, view, speed = 1, humanSide = 0 }) 
     },
 
     onMulliganDone() {
+      view.renderAll();
       window.dispatchEvent(new CustomEvent("cb-mulligan-done"));
     },
 
