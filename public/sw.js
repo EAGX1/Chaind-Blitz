@@ -1,16 +1,29 @@
-/* Cache the shell + hashed /assets/ only. Never cache /src/ (Vite HMR). */
-const CACHE = "chaind-blitz-v2";
-const PRECACHE = ["/", "/index.html", "/manifest.webmanifest"];
+/* Cache the shell + hashed assets only. Never cache /src/ (Vite HMR). */
+const CACHE = "chaind-blitz-v3";
+
+function shellRoot() {
+  try {
+    return new URL("./", self.registration.scope).pathname;
+  } catch {
+    return "/";
+  }
+}
+
+function precacheUrls() {
+  const root = shellRoot();
+  return [root, `${root}index.html`, `${root}manifest.webmanifest`];
+}
 
 function shouldCache(url) {
   if (url.origin !== self.location.origin) return false;
-  if (url.pathname.startsWith("/assets/")) return true;
-  return PRECACHE.includes(url.pathname);
+  const root = shellRoot();
+  if (url.pathname.startsWith(`${root}assets/`)) return true;
+  return precacheUrls().includes(url.pathname);
 }
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)).then(() => self.skipWaiting())
+    caches.open(CACHE).then((cache) => cache.addAll(precacheUrls())).then(() => self.skipWaiting())
   );
 });
 

@@ -1742,3 +1742,25 @@ describe("hub polish helpers", () => {
     expect(STREET_WALK.z).toBeGreaterThan(20);
   });
 });
+
+describe("GitHub Pages shell", () => {
+  it("keeps icon, manifest, and service worker on relative URLs so a project site can load", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const { fileURLToPath } = await import("node:url");
+    const { dirname, join } = await import("node:path");
+    const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
+    const html = await readFile(join(root, "index.html"), "utf8");
+    expect(html).toMatch(/href="\.\/manifest\.webmanifest"/);
+    expect(html).toMatch(/href="\.\/favicon\.svg"/);
+    expect(html).not.toMatch(/href="\/manifest\.webmanifest"/);
+    const main = await readFile(join(root, "src/app/main.tsx"), "utf8");
+    expect(main).toMatch(/import\.meta\.env\.BASE_URL/);
+    expect(main).not.toMatch(/register\("\/sw\.js"\)/);
+    const sw = await readFile(join(root, "public/sw.js"), "utf8");
+    expect(sw).toMatch(/registration\.scope/);
+    const man = JSON.parse(await readFile(join(root, "public/manifest.webmanifest"), "utf8"));
+    expect(man.start_url).toBe("./");
+    expect(man.scope).toBe("./");
+    expect(man.icons[0].src).toBe("./favicon.svg");
+  });
+});

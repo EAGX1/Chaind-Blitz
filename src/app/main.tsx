@@ -45,7 +45,7 @@ function Root() {
         });
         caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
       } else {
-        navigator.serviceWorker.register("/sw.js").catch(() => {});
+        navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {});
       }
     }
   }, []);

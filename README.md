@@ -2,6 +2,8 @@
 
 A browser TCG that fuses Yu-Gi-Oh chains, Shadowverse evolution, Marvel Snap field lanes, and a Slay-the-Spire roguelike loop.
 
+**Play on a phone or PC:** [https://eagx1.github.io/Chaind-Blitz/](https://eagx1.github.io/Chaind-Blitz/)
+
 ## Scripts
 
 - npm run dev: Vite dev server
