@@ -1,7 +1,7 @@
 // One-line labels so hub tabs explain themselves without a rulebook.
 
 export const HUB_TAB_GUIDE = {
-  play: "PLAY — gold button starts a duel. Pick a loaner on VS CPU, or Rank / Run / More for other modes.",
+  play: "PLAY — gold button starts a duel. LIVE hosts a lobby. Rank / Run / More for other modes.",
   deck: "DECK — click a card on the left to add it, click the list to remove. The circuit meter shows live combos.",
   collection: "CARDS — search, tribe, and circuit filters. Craft spends dust; owned-only is on by default.",
   shop: "SHOP — packs from your ranked pool. 100 gems for 10 cards.",

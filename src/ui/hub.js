@@ -42,6 +42,8 @@ import { validateDeck, asSavedDeck, getBanlist, setCopyLimit, banlistFromPreset,
 import { loadSettings } from "./settingsStore.js";
 import { openReplayScrubber } from "./replayScrubber.js";
 import { createAndHost, joinRoom, queueRankedPvp, queueModePvp, formatRoomCode, BACKEND_OFFLINE_REASON } from "../meta/peerNet.js";
+import { pingBackend, authName } from "../meta/backendClient.js";
+import { t } from "../meta/i18n.js";
 import { deckCurveHtml } from "./deckCurve.js";
 import { deckCircuits, deckComboLine, suggestedGlueForDeck, CIRCUITS, comboTagsFor, circuitClass } from "../data/comboTags.js";
 import { serializeDeckList, parseDeckList, drawOpeningHand, openingSeatNote } from "./deckList.js";
@@ -267,6 +269,15 @@ export function initHub(ctx) {
         </section>
         <div class="home-grid">
           <article class="home-tile featured">
+            <span class="home-tag">LIVE</span>
+            <h3>${t("live.title")}</h3>
+            <p>${t("live.hint")}</p>
+            <div class="home-tile-row">
+              <button class="home-cta" id="btn-live-host">${t("live.host")}</button>
+              <button class="cb-btn" id="btn-live-join">${t("live.join")}</button>
+            </div>
+          </article>
+          <article class="home-tile featured">
             <span class="home-tag">CPU</span>
             <h3>VS CPU</h3>
             <p>Pick your loaner and a foe.</p>
@@ -365,6 +376,8 @@ export function initHub(ctx) {
       });
     });
     $("btn-puzzle-day")?.addEventListener("click", () => ctx.startPuzzleOfTheDay?.());
+    $("btn-live-host")?.addEventListener("click", () => openLiveDesk({ autoHost: "pvp" }));
+    $("btn-live-join")?.addEventListener("click", () => openLiveDesk());
     $("ava-b").value = "control_counters";
     $("btn-ava").addEventListener("click", () => ctx.startAiVsAi($("ava-a").value, $("ava-b").value));
     $("btn-rogue").addEventListener("click", () => ctx.startRogue());
@@ -1051,29 +1064,7 @@ export function initHub(ctx) {
     if (sel && [...sel.options].some((o) => o.value === selected)) sel.value = selected;
     sel?.addEventListener("change", () => saveSessionRankedToken(sel.value));
     $("btn-queue").addEventListener("click", () => queueRanked(sel?.value));
-    $("btn-queue-pvp")?.addEventListener("click", async () => {
-      const customNames = Object.keys(profile.decks);
-      const t = sel?.value || pickRankedToken({ loaners: shippedLoaners(), starters: STARTERS, customNames });
-      const result = tryQueueDeck(t, { ...queueCtx(), ranked: true });
-      const el = $("ranked-door-msg");
-      if (!result.ok) {
-        refuseDoor("ranked-door-msg", result.error);
-        return;
-      }
-      if (el) el.textContent = "Searching for a ranked opponent…";
-      const session = await queueRankedPvp({
-        name: profile.name || "Duelist",
-        deck: result.deck,
-        extra: result.extra || []
-      });
-      if (!session.ok) {
-        if (el) el.textContent = session.reason || BACKEND_OFFLINE_REASON;
-        return;
-      }
-      if (el) el.textContent = session.waiting ? "Waiting for another ranked queue…" : "Match found.";
-      const ok = await ctx.startPeerDuel?.(session, true);
-      if (!ok && el) el.textContent = "No opponent (backend dropped or queue timed out).";
-    });
+    $("btn-queue-pvp")?.addEventListener("click", () => startRankedPvpQueue($("ranked-door-msg")));
   }
 
   /* ================= MODES (draft/cube/sealed/highlander/tourney/brawl/hotseat) ================= */
@@ -1127,12 +1118,136 @@ export function initHub(ctx) {
     }
     if (host && session.code) {
       window.__CB_PVP_CODE = session.code;
+      const big = $("live-code-big");
+      if (big) { big.hidden = false; big.textContent = session.code; }
       note(`Room ${session.code} — wait for a guest, then you both build.`);
     } else {
       note(session.waiting ? "Waiting for another player…" : "Match found.");
     }
     const ok = await ctx.startPeerDuel?.(session, false);
     if (!ok) note("No opponent (backend dropped or timed out).");
+  }
+
+  async function hostLobby(kind, noteEl) {
+    const note = (m) => { if (noteEl) noteEl.textContent = m; };
+    const list = activePvpList();
+    note("Opening room…");
+    const session = await createAndHost({
+      name: profile.name || "Host",
+      kind,
+      deck: kind === "pvp" ? list.deck : [],
+      extra: kind === "pvp" ? list.extra : []
+    });
+    if (!session.ok) { note(session.reason || BACKEND_OFFLINE_REASON); return; }
+    window.__CB_PVP_CODE = session.code;
+    const big = $("live-code-big");
+    if (big && session.code) {
+      big.hidden = false;
+      big.textContent = session.code;
+    }
+    note(kind === "pvp"
+      ? `Room ${session.code} — wait for a guest, then the duel starts.`
+      : `Room ${session.code} — wait for a guest, then you both build.`);
+    const ok = await ctx.startPeerDuel?.(session, false);
+    if (!ok) note("Guest never joined (or backend dropped).");
+  }
+
+  async function joinLobby(rawCode, kind, noteEl) {
+    const note = (m) => { if (noteEl) noteEl.textContent = m; };
+    const list = activePvpList();
+    const code = formatRoomCode(rawCode);
+    if (code.length < 4) { note("Enter a room code."); return; }
+    note(`Joining ${code}…`);
+    const session = await joinRoom(code, {
+      name: profile.name || "Guest",
+      kind,
+      deck: kind === "pvp" ? list.deck : [],
+      extra: kind === "pvp" ? list.extra : []
+    });
+    if (!session.ok) { note(session.reason || BACKEND_OFFLINE_REASON); return; }
+    const ok = await ctx.startPeerDuel?.(session, false);
+    if (!ok) note("Could not start the room duel.");
+  }
+
+  async function startRankedPvpQueue(noteEl) {
+    const note = (m) => { if (noteEl) noteEl.textContent = m; };
+    const customNames = Object.keys(profile.decks);
+    const token = $("ranked-you")?.value
+      || pickRankedToken({ loaners: shippedLoaners(), starters: STARTERS, customNames });
+    const result = tryQueueDeck(token, { ...queueCtx(), ranked: true });
+    if (!result.ok) { note(result.error); return; }
+    saveSessionRankedToken(token);
+    note("Searching for a ranked opponent…");
+    const session = await queueRankedPvp({
+      name: profile.name || "Duelist",
+      deck: result.deck,
+      extra: result.extra || []
+    });
+    if (!session.ok) { note(session.reason || BACKEND_OFFLINE_REASON); return; }
+    note(session.waiting ? "Waiting for another ranked queue…" : "Match found.");
+    const ok = await ctx.startPeerDuel?.(session, true);
+    if (!ok) note("No opponent (backend dropped or queue timed out).");
+  }
+
+  function openLiveDesk(opts = {}) {
+    document.getElementById("live-desk")?.remove();
+    const modal = document.createElement("div");
+    modal.className = "cb-modal";
+    modal.id = "live-desk";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-label", t("live.title"));
+    const signed = authName();
+    modal.innerHTML = `
+      <div class="cb-modal-card wide live-desk-card">
+        <div class="row" style="justify-content:space-between;align-items:center;gap:8px;">
+          <h2 style="margin:0;">${t("live.title")}</h2>
+          <button type="button" class="cb-btn" data-act="close">${t("common.close")}</button>
+        </div>
+        <p class="dim">${t("live.hint")}</p>
+        <p class="dim" id="live-desk-status">${signed ? `${t("account.signedIn")}: ${signed}` : ""}</p>
+        <p class="live-code-big" id="live-code-big" hidden></p>
+        <div class="row" style="flex-wrap:wrap;gap:8px;margin-top:12px;">
+          <select class="cb-select" id="live-kind">
+            <option value="pvp">CONSTRUCTED</option>
+            <option value="draft">DRAFT</option>
+            <option value="sealed">SEALED</option>
+          </select>
+          <button type="button" class="cb-btn primary" id="live-host">${t("live.host")}</button>
+        </div>
+        <div class="row" style="flex-wrap:wrap;gap:8px;margin-top:8px;">
+          <input class="cb-input" id="live-code" maxlength="6" placeholder="ROOM CODE" style="width:8em;text-transform:uppercase;" autocomplete="off">
+          <button type="button" class="cb-btn" id="live-join">${t("live.join")}</button>
+        </div>
+        <div class="row" style="flex-wrap:wrap;gap:8px;margin-top:14px;">
+          <button type="button" class="cb-btn" id="live-ranked">${t("live.ranked")}</button>
+          <button type="button" class="cb-btn" id="live-draft">${t("live.draft")}</button>
+          <button type="button" class="cb-btn" id="live-sealed">${t("live.sealed")}</button>
+          <button type="button" class="cb-btn" id="live-account">${t("account.title")}</button>
+        </div>
+        <p class="dim" id="live-desk-msg" style="margin-top:10px;"></p>
+      </div>`;
+    document.body.appendChild(modal);
+    const msg = $("live-desk-msg");
+    const status = $("live-desk-status");
+    pingBackend().then((h) => {
+      if (!status) return;
+      const line = h?.ok ? t("live.online") : t("pvp.offline");
+      status.textContent = signed ? `${line} · ${t("account.signedIn")}: ${signed}` : line;
+    });
+    const kindOf = () => $("live-kind")?.value || "pvp";
+    $("live-host").addEventListener("click", () => hostLobby(kindOf(), msg));
+    $("live-join").addEventListener("click", () => joinLobby($("live-code").value, kindOf(), msg));
+    $("live-ranked").addEventListener("click", () => startRankedPvpQueue(msg));
+    $("live-draft").addEventListener("click", () => launchLimitedPvp("draft", {}, msg));
+    $("live-sealed").addEventListener("click", () => launchLimitedPvp("sealed", {}, msg));
+    $("live-account").addEventListener("click", () => {
+      window.dispatchEvent(new CustomEvent("cb-open-settings"));
+    });
+    const close = () => modal.remove();
+    modal.querySelector("[data-act=close]").addEventListener("click", close);
+    modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+    if (opts.autoHost) hostLobby(opts.autoHost, msg);
+    $("live-code")?.focus();
   }
 
   const MODE_TABS = [
@@ -1515,40 +1630,9 @@ export function initHub(ctx) {
         </div>
         <p class="dim" id="pvp-msg" style="margin-top:10px;"></p>
       </div>`;
-    const note = (m) => { const el = $("pvp-msg"); if (el) el.textContent = m; };
     const pvpKind = () => $("pvp-kind")?.value || "pvp";
-    $("btn-pvp-host").addEventListener("click", async () => {
-      const kind = pvpKind();
-      note("Opening room…");
-      const session = await createAndHost({
-        name: profile.name || "Host",
-        kind,
-        deck: kind === "pvp" ? list.deck : [],
-        extra: kind === "pvp" ? list.extra : []
-      });
-      if (!session.ok) { note(session.reason || BACKEND_OFFLINE_REASON); return; }
-      window.__CB_PVP_CODE = session.code;
-      note(kind === "pvp"
-        ? `Room ${session.code} — wait for a guest, then the duel starts.`
-        : `Room ${session.code} — wait for a guest, then you both build.`);
-      const ok = await ctx.startPeerDuel?.(session, false);
-      if (!ok) note("Guest never joined (or backend dropped).");
-    });
-    $("btn-pvp-join").addEventListener("click", async () => {
-      const code = formatRoomCode($("pvp-code").value);
-      if (code.length < 4) { note("Enter a room code."); return; }
-      const kind = pvpKind();
-      note(`Joining ${code}…`);
-      const session = await joinRoom(code, {
-        name: profile.name || "Guest",
-        kind,
-        deck: kind === "pvp" ? list.deck : [],
-        extra: kind === "pvp" ? list.extra : []
-      });
-      if (!session.ok) { note(session.reason || BACKEND_OFFLINE_REASON); return; }
-      const ok = await ctx.startPeerDuel?.(session, false);
-      if (!ok) note("Could not start the room duel.");
-    });
+    $("btn-pvp-host").addEventListener("click", () => hostLobby(pvpKind(), $("pvp-msg")));
+    $("btn-pvp-join").addEventListener("click", () => joinLobby($("pvp-code").value, pvpKind(), $("pvp-msg")));
   }
 
   /* ---- hotseat (local two-player) ---- */
@@ -2033,6 +2117,7 @@ export function initHub(ctx) {
     refreshWallet,
     queueRanked,
     pvpBuildDeck,
+    openLiveDesk,
     renderers: {
       play: renderPlay,
       deck: renderDeck,

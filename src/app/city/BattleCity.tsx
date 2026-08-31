@@ -398,6 +398,14 @@ export function BattleCity({
           {plazaCta?.kind === "quick"
             ? <button type="button" className="city-dock-btn" onClick={() => onOpenKiosk("puzzle")}>TODAY</button>
             : <button type="button" className="city-dock-btn" onClick={onQuickDuel}>QUICK DUEL</button>}
+          <button
+            type="button"
+            className="city-live"
+            title={t("live.hint")}
+            onClick={() => window.dispatchEvent(new CustomEvent("cb-open-lobbies"))}
+          >
+            {t("live.dock")}
+          </button>
           {BUILDINGS.map((b) => (
             <button key={b.id} type="button" className="city-dock-btn" onClick={() => onEnterBuilding(b.id)}>
               {b.short}

@@ -313,7 +313,8 @@
     0 16px 48px rgba(0, 0, 0, 0.65),
     0 0 0 1px rgba(0, 0, 0, 0.45);
 }
-.city-quick {
+.city-quick,
+.city-live {
   font-family: Orbitron, sans-serif;
   font-size: 13px;
   font-weight: 800;
@@ -330,9 +331,20 @@
     inset 0 -1px 0 rgba(0, 0, 0, 0.28),
     0 0 18px rgba(201, 162, 39, 0.32);
 }
-.city-quick:hover { filter: brightness(1.08); }
+.city-live {
+  background: linear-gradient(180deg, #b8e4f0, #3aa0c8 55%, #1a5a72);
+  border-color: #7ec8e3;
+  color: #061018;
+  box-shadow:
+    inset 0 1px 0 rgba(220, 245, 255, 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28),
+    0 0 18px rgba(58, 160, 200, 0.35);
+}
+.city-quick:hover,
+.city-live:hover { filter: brightness(1.08); }
 .city-dock-btn,
-.city-quick {
+.city-quick,
+.city-live {
   flex: 0 1 auto;
   white-space: nowrap;
 }

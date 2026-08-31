@@ -218,6 +218,15 @@ html[data-hide-plaza="1"] #btn-to-plaza {
 }
 
 .home-tile.featured { border-color: rgba(201, 162, 39, 0.4); grid-column: span 2; }
+
+.live-desk-card { width: min(520px, 94vw); }
+.live-code-big {
+  font-family: Orbitron, sans-serif;
+  font-size: 28px;
+  letter-spacing: 0.28em;
+  color: #f0d78c;
+  margin: 8px 0 0;
+}
 .home-tile h3 {
   font-family: Orbitron, sans-serif;
   font-size: 16px;

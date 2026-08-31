@@ -751,6 +751,9 @@ function boot() {
     startRoomSeedCpu,
     startPeerDuel: launchPeerSession
   });
+  window.addEventListener("cb-open-lobbies", () => {
+    hub?.openLiveDesk?.();
+  });
   window.addEventListener("cb-join-room", async (ev) => {
     const code = ev.detail?.code;
     if (!code) return;

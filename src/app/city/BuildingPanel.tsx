@@ -228,6 +228,13 @@ export function BuildingPanel(props: Props) {
           <button
             type="button"
             className="cb-btn"
+            onClick={() => window.dispatchEvent(new CustomEvent("cb-open-lobbies"))}
+          >
+            HOST LOBBY
+          </button>
+          <button
+            type="button"
+            className="cb-btn"
             disabled={!canClaim(profile)}
             onClick={() => {
               const r = claimToday(profile);
