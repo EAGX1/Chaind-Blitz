@@ -698,6 +698,19 @@ describe("Labs stacked boards", () => {
     expect(legalContactFusions(G, 0).some((o) => o.fusion.id === "fusion_pyre_wyrm")).toBe(true);
     expect(legalMainActions(G, 0).some((a) => a.type === "contactFusion")).toBe(true);
   });
+
+  it("Contact Fusion stays legal on a full board when materials are on field", () => {
+    const G = mkState(1);
+    G.cardDb = CARD_DB;
+    G.phase = "M1";
+    G.tp = 0;
+    for (let z = 0; z < 6; z++) addField(G, 0, z < 3 ? "moss_sprite" : "ward_sentinel", z, { summonedTurn: 0 });
+    const fusion = makeCard("fusion_grove_titan", CARD_DB.fusion_grove_titan, 0);
+    fusion.loc = "extra";
+    P(G, 0).extra.push(fusion);
+    expect(legalContactFusions(G, 0).some((o) => o.fusion.id === "fusion_grove_titan")).toBe(true);
+    expect(legalMainActions(G, 0).some((a) => a.type === "contactFusion")).toBe(true);
+  });
 });
 
 describe("five-window Damage Step", () => {

@@ -206,10 +206,16 @@ export function scoreMainAct(G, p, act, { tier = "normal", depth = 2 } = {}) {
       const maxMat = Math.max(0, ...mats.map((m) => m.def?.atk || 0));
       const maxCost = Math.max(0, ...mats.map((m) => m.def?.cost || 0));
       const rush = fus.keywords?.includes("rush");
-      if (maxCost <= 1) return 1.2;
-      if (!rush && after < theirN) return 1.5;
-      if (fusAtk <= maxMat && !rush) return 1.8;
-      let s = 5.2 + (rush ? 1.4 : 0) + Math.max(0, fusAtk - maxMat) * 0.12;
+      const ward = fus.keywords?.includes("ward");
+      // Skip two 1-drops into a same-size body that cannot swing. Rush Extra
+      // (Staple Knight) and tall Ward bosses (Grove Titan) are real upgrades.
+      if (maxCost <= 1 && !rush && !ward && fusAtk <= maxMat) return 1.2;
+      if (!rush && after < theirN && !ward && fusAtk < 5) return 1.5;
+      if (fusAtk <= maxMat && !rush && !ward) return 1.8;
+      // Two 3-drops into a 5-ATK Rush Extra is a trap; fox+knight into Drake is not.
+      if (rush && fusAtk <= 5 && mats.every((m) => (m.def?.cost || 0) >= 3)) return 2.2;
+      const boss = fusAtk >= 6 || (ward && (fus.def || 0) >= 6);
+      let s = (boss ? 8.6 : 5.2) + (rush ? 1.4 : 0) + Math.max(0, fusAtk - maxMat) * 0.12;
       if (depth <= 1) s *= 0.35;
       if (depth >= 3) s += 1.8;
       return s;

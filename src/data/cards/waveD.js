@@ -46,9 +46,6 @@ export const grove_chanter = M("grove_chanter", "Grove Chanter", "Terra", 2, 1, 
     triggers: [must("chant_heal", "Heal 1", evSelfSummon, rHeal(1))]
   });
 
-export const quartz_brute = M("quartz_brute", "Quartz Brute", "Neutral", 3, 3, 3, "N",
-  "A patient beater.");
-
 export const wind_cutter = M("wind_cutter", "Wind Cutter", "Neutral", 2, 2, 1, "R",
   "Rush. Fanfare: if you have 3 or fewer cards in hand, draw 1.",
   {
@@ -88,7 +85,7 @@ export const pyre_pact = S("pyre_pact", "Pyre Pact", "normal", 1, 1, "N",
 
 export const WAVE_D_CARDS = [
   spark_channeler, ember_lancer, frost_sentry, tide_skimmer,
-  moss_bulwark, grove_chanter, quartz_brute, wind_cutter, ash_courier,
+  moss_bulwark, grove_chanter, wind_cutter, ash_courier,
   chain_spark, still_ward, pyre_pact
 ];
 

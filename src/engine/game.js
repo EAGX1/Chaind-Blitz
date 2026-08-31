@@ -321,16 +321,15 @@ export function legalMainActions(G, p) {
       });
     }
   }
-  // Contact Fusion from Extra (Special Summon — never consumes NS)
-  if (mzFree) {
-    for (const opt of legalContactFusions(G, p)) {
-      acts.push({
-        type: "contactFusion",
-        fusion: opt.fusion,
-        materials: opt.materials,
-        label: `Contact Fusion ${opt.fusion.def.name}`
-      });
-    }
+  // Contact Fusion from Extra (Special Summon — never consumes NS).
+  // Materials leave first, so a full board can still fuse (same as Tribute).
+  for (const opt of legalContactFusions(G, p)) {
+    acts.push({
+      type: "contactFusion",
+      fusion: opt.fusion,
+      materials: opt.materials,
+      label: `Contact Fusion ${opt.fusion.def.name}`
+    });
   }
   acts.push({ type: "end", label: `End ${G.phase}` });
   return acts;
@@ -672,7 +671,9 @@ export async function battlePhase(G) {
   // Battle Step repeats until the turn player passes to End Step.
   // Open: declare an attack, activate SS2+ as CL1, or end Battle.
   // After each Damage Step the game returns here (not to End Step).
+  let battleLoops = 0;
   while (!G.over) {
+    if (++battleLoops > 24) break;
     G.battleStep = "battle";
     log(G, "— Battle Phase: Battle Step —", "phase");
     const tp = G.tp;
@@ -1006,7 +1007,12 @@ export async function mainPhaseLoop(G) {
   const tp = G.tp;
   G._mainUndo = null;
   G._canUndo = false;
+  let steps = 0;
   while (!G.over) {
+    if (++steps > 64) {
+      log(G, "Main Phase action cap — ending the phase.", "system");
+      return;
+    }
     const actions = legalMainActions(G, tp);
     const pick = await G.io.chooseMain(tp, actions);
     if (pick?.type === "undo") {

@@ -34,50 +34,47 @@ export const STARTERS = {
     id: "ignis", name: "Ignis Rush",
     desc: "Burn fast, evolve faster. Ember Spark answers threats; Fever Pitch ends games.",
     deck: [
-      ...Array(2).fill("ember_fox"), ...Array(2).fill("cinder_knight"),
-      ...Array(3).fill("flame_djinn"), ...Array(2).fill("pyro_hydra"),
-      "inferno_titan", ...Array(3).fill("ash_prophet"), ...Array(2).fill("lava_giant"),
-      ...Array(3).fill("swift_falcon"), "rush_swarmling",
-      "doomblade_novice",
-      ...Array(2).fill("ember_spark"), ...Array(2).fill("fever_pitch"),
-      "flame_banner", ...Array(2).fill("burning_lance"),
-      "spark_raider",
+      ...Array(3).fill("ember_fox"), ...Array(3).fill("cinder_knight"),
+      ...Array(2).fill("flame_djinn"), ...Array(3).fill("swift_falcon"),
+      ...Array(3).fill("rush_swarmling"), ...Array(2).fill("ash_prophet"),
+      "pyro_hydra", "spark_raider", "doomblade_novice", "nimbus_knight",
+      ...Array(3).fill("ember_spark"), ...Array(2).fill("fever_pitch"),
+      ...Array(2).fill("burning_lance"), "flame_banner",
       ...STARTER_STAPLES, ...STARTER_COMBO
     ],
-    extra: ["fusion_pyre_wyrm", "fusion_ember_drake", "fusion_tempo_ace"]
+    extra: ["fusion_pyre_wyrm", "fusion_ember_drake", "fusion_tempo_ace", "fusion_rush_general"]
   },
   abyss: {
     id: "abyss", name: "Abyss Control",
     desc: "Snares, freezes and counters. Win the long game behind walls of ice.",
     deck: [
-      ...Array(2).fill("tide_caller"), ...Array(2).fill("frost_mage"),
-      ...Array(2).fill("abyss_warden"), ...Array(2).fill("deep_serpent"),
-      ...Array(2).fill("kraken"), ...Array(3).fill("tide_priestess"), ...Array(3).fill("depths_lurker"),
-      "scav_wisp", ...Array(2).fill("oracle_eel"),
-      ...Array(2).fill("tidal_snare"), "moonwell",
-      ...Array(2).fill("deep_freeze"),
-      "riptide", "tide_cutter",
+      ...Array(3).fill("tide_caller"), ...Array(3).fill("frost_mage"),
+      ...Array(2).fill("abyss_warden"), ...Array(2).fill("ambush_stalker"),
+      ...Array(2).fill("tide_priestess"), ...Array(2).fill("depths_lurker"),
+      ...Array(2).fill("oracle_eel"), "scav_wisp", "drain_leech",
+      ...Array(3).fill("tidal_snare"), ...Array(2).fill("deep_freeze"),
+      "moonwell", "riptide", "tide_cutter",
       ...Array(2).fill("null_seal"),
       ...STARTER_STAPLES, ...STARTER_COMBO
     ],
-    extra: ["fusion_abyss_leviathan"]
+    extra: ["fusion_abyss_leviathan", "fusion_veil_lock", "fusion_tide_hydra", "fusion_grave_tyrant"]
   },
   terra: {
     id: "terra", name: "Terra Midrange",
     desc: "Grow wide, evolve tall. The grove provides, the grove protects.",
     deck: [
-      ...Array(2).fill("moss_sprite"), ...Array(2).fill("dawn_pixie"),
+      ...Array(3).fill("moss_sprite"), ...Array(2).fill("dawn_pixie"),
       ...Array(2).fill("thorn_archer"), ...Array(2).fill("stoneback"),
-      ...Array(2).fill("grove_elder"), "wolf_alpha",
+      ...Array(2).fill("grove_elder"), ...Array(2).fill("wolf_alpha"),
       "world_turtle", ...Array(2).fill("seed_sage"),
-      ...Array(2).fill("shield_sprite"), ...Array(2).fill("gem_golem"),
+      ...Array(2).fill("shield_sprite"), "gem_golem",
       ...Array(2).fill("root_snare"),
       ...Array(2).fill("stone_skin"), "wild_call",
-      ...Array(2).fill("verdant_rebuke"), "scroll_greed",
+      "verdant_rebuke", "overgrowth",
       ...Array(2).fill("null_seal"),
       ...STARTER_STAPLES, ...STARTER_COMBO
     ],
-    extra: ["fusion_grove_titan", "fusion_choice_shield", "fusion_root_colossus"]
+    extra: ["fusion_grove_titan", "fusion_choice_shield", "fusion_root_colossus", "fusion_worldroot"]
   },
   meta: {
     id: "meta", name: "Meta Staples",

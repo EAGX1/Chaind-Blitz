@@ -32,6 +32,7 @@ const rec = Object.fromEntries(pool.map((d) => [d.id, { name: d.name, w: 0, l: 0
 let errors = 0;
 let n = 0;
 const total = pool.length * (pool.length - 1);
+const t0 = Date.now();
 
 for (let i = 0; i < pool.length; i++) {
   for (let j = 0; j < pool.length; j++) {
@@ -47,10 +48,12 @@ for (let i = 0; i < pool.length; i++) {
       else { rec[a.id].d++; rec[b.id].d++; }
     } catch (e) {
       errors++;
-      console.error(`ERROR ${a.id} vs ${b.id}: ${e.message}`);
+      process.stderr.write(`ERROR ${a.id} vs ${b.id}: ${e.message}\n`);
     }
     n++;
-    if (n % 200 === 0) console.error(`… ${n}/${total}`);
+    if (n % 50 === 0) {
+      process.stderr.write(`… ${n}/${total} ${(Date.now() - t0) / 1000 | 0}s\n`);
+    }
   }
 }
 
@@ -64,5 +67,8 @@ for (const s of ranked) {
   console.log(`${s.name.padEnd(24)} ${String(s.w).padStart(3)}W-${String(s.l).padStart(3)}L-${s.d}D  ${wr}%  avgT ${(s.turns / Math.max(1, s.games)).toFixed(1)}`);
 }
 console.log(`\nErrors: ${errors}`);
-console.log("\nLOSERS:", ranked.filter((s) => s.wr < 0.42).map((s) => `${s.id}:${(s.wr * 100).toFixed(0)}%`).join(", "));
-console.log("WINNERS:", ranked.filter((s) => s.wr > 0.58).map((s) => `${s.id}:${(s.wr * 100).toFixed(0)}%`).join(", "));
+const low = ranked.filter((s) => s.wr < 0.40);
+const high = ranked.filter((s) => s.wr > 0.60);
+console.log("BELOW 40%:", low.map((s) => `${s.id}:${(s.wr * 100).toFixed(0)}%`).join(", ") || "(none)");
+console.log("ABOVE 60%:", high.map((s) => `${s.id}:${(s.wr * 100).toFixed(0)}%`).join(", ") || "(none)");
+console.log(`Elapsed: ${((Date.now() - t0) / 1000).toFixed(1)}s`);

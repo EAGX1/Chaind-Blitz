@@ -324,7 +324,9 @@ const thorn_archer = M("thorn_archer", "Thorn Archer", "Terra", 2, 2, 2, "N",
   "Evolve: destroy 1 Set card.",
   { evolveEffect: { text: "Destroy a Set card", targets: [tSetSpell()], resolve: rDestroyTarget(0) } });
 
-const stoneback = M("stoneback", "Stoneback Tortoise", "Terra", 3, 1, 6, "N", "An ancient shell.");
+const stoneback = M("stoneback", "Stoneback Tortoise", "Terra", 3, 1, 6, "N",
+  "Ward. An ancient shell that the enemy must break first.",
+  { keywords: ["ward"] });
 
 const grove_elder = M("grove_elder", "Grove Elder", "Terra", 4, 3, 4, "SR",
   "Continuous: your Terra monsters get +1/+1.",

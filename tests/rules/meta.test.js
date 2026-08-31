@@ -221,7 +221,7 @@ describe("campaign start + dev account", () => {
   it("choosing Ignis grants that list only and saves the deck", () => {
     const p = freshProfile({ starter: "ignis" });
     expect(p.starterId).toBe("ignis");
-    expect(p.collection.ember_fox).toBe(2);
+    expect(p.collection.ember_fox).toBe(3);
     expect(p.collection.sigil_courier).toBe(1);
     expect(p.decks["Ignis Rush"].main).toHaveLength(40);
     expect(p.collection.tide_caller || 0).toBe(0);
@@ -239,7 +239,7 @@ describe("campaign start + dev account", () => {
     saveProfile(p);
     const loaded = loadProfile();
     expect(loaded.collection.ember_fox || 0).toBe(0);
-    expect(loaded.collection.moss_sprite).toBe(2);
+    expect(loaded.collection.moss_sprite).toBe(3);
     expect(loaded.starterId).toBe("terra");
   });
 

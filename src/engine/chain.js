@@ -236,7 +236,9 @@ export async function responseWindow(G, { startPlayer, initialLinks = [], summon
    game flow uses after events. */
 export async function checkAndRespond(G, { startPlayer = null, offerFast = true, damageStep = null, battleWindow = null } = {}) {
   startPlayer ??= G.tp;
+  let windows = 0;
   while (true) {
+    if (++windows > 48) return;
     const trigs = collectTriggers(G);
     const initial = [];
     if (trigs.length) {

@@ -1468,7 +1468,7 @@ export function initHub(ctx) {
       <b>promotion series</b>: you queue ranked duels one at a time and need 2 wins before 2 losses.
       Ranked is for your own collection (starters and custom lists); the ladder <b>soft-resets two tiers</b> each monthly season.
       Your <b>card pool grows with your tier</b> — Bronze 60, Silver unlocks the 1000 Neutral generics (any-deck staples) plus Wave C / Silver / combo core,
-      then Gold, Platinum, and Diamond (full catalog, 1330). Master is prestige: the pool is already complete.</p>
+      then Gold, Platinum, and Diamond (full catalog, 1329). Master is prestige: the pool is already complete.</p>
       <p>Packs drop cards only from your unlocked pool. Dismantle 3 cards of a rarity to craft any 1 card of that rarity (10 CP in, 30 CP out).</p>
       <p><b>Advanced</b> limits Starfall, Lightning Tempest, Both Boards, Scream Home, Research Burn, Empty Sky, and Tactic Choice to 1 copy. Unlimited is 3.</p>`],
     ["MODES", `
