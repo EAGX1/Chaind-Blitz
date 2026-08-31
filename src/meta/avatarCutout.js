@@ -119,8 +119,9 @@ function canvasFromImageData(imageData) {
   return c;
 }
 
-export const STARTER_AVATAR_SRC = "/avatars/starter-duelist.png";
-export const STARTER_AVATAR_ASPECT = 510 / 768;
+export const STARTER_AVATAR_FILE = "avatars/starter-duelist.png";
+export const STARTER_AVATAR_ASPECT = 363 / 768;
+export const STARTER_AVATAR_SRC = `./${STARTER_AVATAR_FILE}`;
 
 export function starterAvatarUrl() {
   return STARTER_AVATAR_SRC;

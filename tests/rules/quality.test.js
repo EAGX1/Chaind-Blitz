@@ -396,8 +396,13 @@ describe("PNG character cutout", () => {
     expect(loadCustomAvatar()).toEqual({ url: "data:image/png;base64,xx", aspect: 0.5 });
   });
 
-  it("ships a hover-disc starter PNG and punches chroma green", () => {
-    expect(STARTER_AVATAR_SRC).toBe("/avatars/starter-duelist.png");
+  it("ships a hover-disc starter PNG and punches chroma green", async () => {
+    const { existsSync } = await import("node:fs");
+    const { fileURLToPath } = await import("node:url");
+    const { dirname, join } = await import("node:path");
+    const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
+    expect(STARTER_AVATAR_SRC).toBe("./avatars/starter-duelist.png");
+    expect(existsSync(join(root, "public/avatars/starter-duelist.png"))).toBe(true);
     expect(isChromaGreen(0, 255, 0)).toBe(true);
     expect(isChromaGreen(240, 230, 200)).toBe(false);
     const data = new Uint8ClampedArray([0, 255, 0, 255, 20, 40, 180, 255]);
