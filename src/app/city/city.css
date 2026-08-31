@@ -718,10 +718,13 @@ body:has(#app.classic-mode) .city-poi-html,
   bottom: 88px;
   width: min(280px, 42vw);
   pointer-events: auto;
-  padding: 8px 10px;
-  background: linear-gradient(180deg, rgba(255, 252, 245, 0.92), rgba(255, 248, 232, 0.82));
+  padding: 8px 10px 10px;
+  background: rgba(255, 252, 245, 0.96);
   border-bottom: 2px solid #c9a227;
-  font-size: 12px;
+  box-shadow: 0 8px 22px rgba(20, 30, 40, 0.18);
+  font-family: Rajdhani, sans-serif;
+  font-size: 13px;
+  color: #1a2430;
 }
 .city-chat-title {
   margin: 0 0 4px;
@@ -736,7 +739,25 @@ body:has(#app.classic-mode) .city-poi-html,
   overflow: auto;
   margin-bottom: 6px;
 }
-.city-chat-log p { margin: 0 0 2px; }
+.city-chat-log p {
+  margin: 0 0 3px;
+  color: #1a2430;
+  line-height: 1.35;
+}
+.city-chat-log b {
+  color: #6a5410;
+  font-weight: 700;
+}
+.city-chat .cb-input {
+  width: 100%;
+  background: #fff8ee;
+  color: #1a2430;
+  border: 1px solid rgba(40, 30, 18, 0.28);
+}
+.city-chat .cb-input::placeholder {
+  color: #6a5c48;
+  opacity: 1;
+}
 .city-peer-name {
   font-size: 11px;
   font-family: Rajdhani, sans-serif;
