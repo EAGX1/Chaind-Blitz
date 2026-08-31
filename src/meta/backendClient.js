@@ -20,12 +20,40 @@ export function backendUrl() {
   return backendCandidates()[0];
 }
 
+const TOKEN_KEY = "cb-auth-token";
+const NAME_KEY = "cb-auth-name";
+
+export function authToken() {
+  if (typeof localStorage === "undefined") return "";
+  return localStorage.getItem(TOKEN_KEY) || "";
+}
+
+export function authName() {
+  if (typeof localStorage === "undefined") return "";
+  return localStorage.getItem(NAME_KEY) || "";
+}
+
+export function setAuth(token, name) {
+  if (typeof localStorage === "undefined") return;
+  if (token) localStorage.setItem(TOKEN_KEY, token);
+  else localStorage.removeItem(TOKEN_KEY);
+  if (name) localStorage.setItem(NAME_KEY, name);
+  else localStorage.removeItem(NAME_KEY);
+}
+
+function headers(extra = {}) {
+  const h = { "Content-Type": "application/json", ...extra };
+  const tok = authToken();
+  if (tok) h.Authorization = `Bearer ${tok}`;
+  return h;
+}
+
 async function tryFetch(path, opts = {}) {
   for (const base of backendCandidates()) {
     try {
       const res = await fetch(`${base}${path}`, {
         ...opts,
-        headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
+        headers: headers(opts.headers || {}),
       });
       if (!res.ok) continue;
       return await res.json();
@@ -34,6 +62,62 @@ async function tryFetch(path, opts = {}) {
     }
   }
   return null;
+}
+
+async function tryFetchStatus(path, opts = {}) {
+  for (const base of backendCandidates()) {
+    try {
+      const res = await fetch(`${base}${path}`, {
+        ...opts,
+        headers: headers(opts.headers || {}),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok) return { ok: true, ...body };
+      return { ok: false, error: body.error || res.statusText };
+    } catch {
+      /* try next */
+    }
+  }
+  return { ok: false, error: "backend offline" };
+}
+
+export async function registerAccount(name, password) {
+  const out = await tryFetchStatus("/v1/register", {
+    method: "POST",
+    body: JSON.stringify({ name, password })
+  });
+  if (out.ok && out.token) setAuth(out.token, out.name);
+  return out;
+}
+
+export async function loginAccount(name, password) {
+  const out = await tryFetchStatus("/v1/login", {
+    method: "POST",
+    body: JSON.stringify({ name, password })
+  });
+  if (out.ok && out.token) setAuth(out.token, out.name);
+  return out;
+}
+
+export async function logoutAccount() {
+  await tryFetch("/v1/logout", { method: "POST", body: "{}" });
+  setAuth("", "");
+}
+
+export async function fetchMe() {
+  return tryFetch("/v1/me");
+}
+
+export function setBackendUrl(url) {
+  if (typeof localStorage === "undefined") return;
+  const v = String(url || "").replace(/\/$/, "");
+  if (v) localStorage.setItem("cb-backend-url", v);
+  else localStorage.removeItem("cb-backend-url");
+}
+
+export function savedBackendUrl() {
+  if (typeof localStorage === "undefined") return "";
+  return localStorage.getItem("cb-backend-url") || "";
 }
 
 export async function cloudPush(deviceId, profile) {

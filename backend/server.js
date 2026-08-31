@@ -12,10 +12,12 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocketServer } from "ws";
+import { createAccountStore, bearerToken } from "./accounts.js";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const DATA = join(__dir, "data");
 const PORT = Number(process.env.PORT || 8787);
+const HOST = process.env.HOST || "0.0.0.0";
 
 if (!existsSync(DATA)) mkdirSync(DATA, { recursive: true });
 
@@ -25,7 +27,10 @@ const files = {
   rooms: join(DATA, "rooms.json"),
   banlist: join(DATA, "banlist.json"),
   telemetry: join(DATA, "telemetry.jsonl"),
+  accounts: join(DATA, "accounts.json"),
 };
+
+const accounts = createAccountStore(files.accounts);
 
 function load(path, fallback) {
   try {
@@ -53,7 +58,7 @@ function json(res, code, body) {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
   });
   res.end(raw);
 }
@@ -79,23 +84,51 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://localhost:${PORT}`);
   try {
     if (url.pathname === "/health") {
-      return json(res, 200, { ok: true, offlineFallback: true });
+      return json(res, 200, { ok: true, offlineFallback: true, accounts: true, host: HOST });
     }
 
-    // Cloud save — opt-in device id
-    if (url.pathname === "/v1/save" && req.method === "POST") {
+    if (url.pathname === "/v1/register" && req.method === "POST") {
       const body = await readBody(req);
-      const deviceId = String(body.deviceId || "").slice(0, 64);
-      if (!deviceId || !body.profile) return json(res, 400, { error: "deviceId + profile required" });
-      const saves = load(files.saves, {});
-      saves[deviceId] = { profile: body.profile, updatedAt: new Date().toISOString() };
-      save(files.saves, saves);
+      const out = accounts.register(body.name, body.password);
+      return json(res, out.ok ? 200 : 400, out);
+    }
+    if (url.pathname === "/v1/login" && req.method === "POST") {
+      const body = await readBody(req);
+      const out = accounts.login(body.name, body.password);
+      return json(res, out.ok ? 200 : 401, out);
+    }
+    if (url.pathname === "/v1/logout" && req.method === "POST") {
+      accounts.logout(bearerToken(req));
       return json(res, 200, { ok: true });
     }
-    if (url.pathname.startsWith("/v1/save/") && req.method === "GET") {
-      const deviceId = decodeURIComponent(url.pathname.slice("/v1/save/".length));
+    if (url.pathname === "/v1/me" && req.method === "GET") {
+      const me = accounts.userFromToken(bearerToken(req));
+      if (!me) return json(res, 401, { error: "not signed in" });
+      return json(res, 200, { ok: true, ...me });
+    }
+
+    function saveKey(req, body) {
+      const me = accounts.userFromToken(bearerToken(req));
+      if (me) return `user:${me.id}`;
+      return String(body?.deviceId || "").slice(0, 64);
+    }
+
+    // Cloud save — account token when signed in, else opt-in device id
+    if (url.pathname === "/v1/save" && req.method === "POST") {
+      const body = await readBody(req);
+      const key = saveKey(req, body);
+      if (!key || !body.profile) return json(res, 400, { error: "account or deviceId + profile required" });
       const saves = load(files.saves, {});
-      const row = saves[deviceId];
+      saves[key] = { profile: body.profile, updatedAt: new Date().toISOString() };
+      save(files.saves, saves);
+      return json(res, 200, { ok: true, key });
+    }
+    if (url.pathname.startsWith("/v1/save/") && req.method === "GET") {
+      const me = accounts.userFromToken(bearerToken(req));
+      const deviceId = decodeURIComponent(url.pathname.slice("/v1/save/".length));
+      const key = me ? `user:${me.id}` : deviceId;
+      const saves = load(files.saves, {});
+      const row = saves[key];
       if (!row) return json(res, 404, { error: "not found" });
       return json(res, 200, row);
     }
@@ -171,9 +204,9 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`Chaind Blitz optional backend on http://localhost:${PORT}`);
-  console.log("Offline play does not need this server.");
+server.listen(PORT, HOST, () => {
+  console.log(`Chaind Blitz optional backend on http://${HOST === "0.0.0.0" ? "localhost" : HOST}:${PORT}`);
+  console.log("Bind 0.0.0.0 so LAN / Docker can reach it. Offline play does not need this server.");
 });
 
 /* ---- Plaza WebSocket presence ---- */
@@ -232,7 +265,7 @@ wss.on("connection", (socket) => {
 /* ---- Live duel rooms (Host/Join + ranked queue) ---- */
 const duelWss = new WebSocketServer({ noServer: true });
 const liveRooms = new Map();
-let rankedWait = null;
+const waitQueues = { ranked: null, draft: null, sealed: null };
 
 function sendJson(ws, obj) {
   if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj));
@@ -242,19 +275,25 @@ function roomCode() {
   return randomBytes(3).toString("hex").toUpperCase().slice(0, 6);
 }
 
-function ensureRoom(code, seed) {
+function ensureRoom(code, seed, kind = "pvp") {
   const id = String(code || roomCode()).toUpperCase().slice(0, 6);
   if (!liveRooms.has(id)) {
     liveRooms.set(id, {
       code: id,
+      kind,
       seed: seed ?? Math.floor(Math.random() * 2 ** 31),
       seats: [null, null],
       decks: [null, null],
       extras: [[], []],
-      names: ["Host", "Guest"]
+      names: ["Host", "Guest"],
+      buildingSent: false
     });
   }
   return liveRooms.get(id);
+}
+
+function needsBuild(kind) {
+  return kind === "draft" || kind === "sealed";
 }
 
 function tryStart(room) {
@@ -262,6 +301,7 @@ function tryStart(room) {
   if (!room.decks[0] || !room.decks[1]) return;
   const payload = {
     type: "start",
+    kind: room.kind || "pvp",
     code: room.code,
     seed: room.seed,
     host: { name: room.names[0], deck: room.decks[0], extra: room.extras[0] },
@@ -271,10 +311,57 @@ function tryStart(room) {
   sendJson(room.seats[1], payload);
 }
 
+function tryBuild(room) {
+  if (!needsBuild(room.kind)) return;
+  if (room.buildingSent) return;
+  if (!room.seats[0] || !room.seats[1]) return;
+  room.buildingSent = true;
+  for (let i = 0; i < 2; i++) {
+    sendJson(room.seats[i], {
+      type: "build",
+      kind: room.kind,
+      seed: room.seed,
+      seat: i,
+      code: room.code
+    });
+  }
+}
+
 function seatOf(room, ws) {
   if (room.seats[0] === ws) return 0;
   if (room.seats[1] === ws) return 1;
   return -1;
+}
+
+function takeSeat(room, socket, seat, msg) {
+  room.seats[seat] = socket;
+  room.names[seat] = String(msg.name || (seat === 0 ? "Host" : "Guest")).slice(0, 24);
+  if (needsBuild(room.kind)) {
+    room.decks[seat] = null;
+    room.extras[seat] = [];
+  } else {
+    room.decks[seat] = Array.isArray(msg.deck) ? msg.deck : [];
+    room.extras[seat] = Array.isArray(msg.extra) ? msg.extra : [];
+  }
+  socket._cbRoom = room;
+}
+
+function pairQueue(kind, entry, socket) {
+  const waiter = waitQueues[kind];
+  if (waiter && waiter.ws.readyState === 1 && waiter.ws !== socket) {
+    waitQueues[kind] = null;
+    const room = ensureRoom(roomCode(), Math.floor(Math.random() * 2 ** 31), kind);
+    takeSeat(room, waiter.ws, 0, waiter);
+    takeSeat(room, socket, 1, entry);
+    sendJson(waiter.ws, { type: "matched", kind, code: room.code, seed: room.seed, seat: 0 });
+    sendJson(socket, { type: "matched", kind, code: room.code, seed: room.seed, seat: 1 });
+    tryBuild(room);
+    tryStart(room);
+    return room;
+  }
+  waitQueues[kind] = entry;
+  sendJson(socket, { type: "queued", kind, code: "", seed: null, seat: 0 });
+  return null;
 }
 
 duelWss.on("connection", (socket) => {
@@ -283,48 +370,37 @@ duelWss.on("connection", (socket) => {
     let msg;
     try { msg = JSON.parse(String(buf)); } catch { return; }
     if (msg.type === "host") {
-      room = ensureRoom(msg.code, msg.seed);
-      room.seats[0] = socket;
-      room.names[0] = String(msg.name || "Host").slice(0, 24);
-      room.decks[0] = Array.isArray(msg.deck) ? msg.deck : [];
-      room.extras[0] = Array.isArray(msg.extra) ? msg.extra : [];
+      const kind = String(msg.kind || "pvp");
+      room = ensureRoom(msg.code, msg.seed, kind);
+      room.kind = kind;
       if (msg.seed != null) room.seed = Number(msg.seed) || room.seed;
-      sendJson(socket, { type: "hosted", code: room.code, seed: room.seed, seat: 0 });
+      takeSeat(room, socket, 0, msg);
+      sendJson(socket, { type: "hosted", kind, code: room.code, seed: room.seed, seat: 0 });
+      tryBuild(room);
       tryStart(room);
     } else if (msg.type === "join") {
       const code = String(msg.code || "").toUpperCase().slice(0, 6);
-      room = liveRooms.get(code) || ensureRoom(code, msg.seed);
-      room.seats[1] = socket;
-      room.names[1] = String(msg.name || "Guest").slice(0, 24);
-      room.decks[1] = Array.isArray(msg.deck) ? msg.deck : [];
-      room.extras[1] = Array.isArray(msg.extra) ? msg.extra : [];
-      sendJson(socket, { type: "joined", code: room.code, seed: room.seed, seat: 1 });
+      room = liveRooms.get(code) || ensureRoom(code, msg.seed, msg.kind || "pvp");
+      takeSeat(room, socket, 1, msg);
+      sendJson(socket, { type: "joined", kind: room.kind, code: room.code, seed: room.seed, seat: 1 });
+      tryBuild(room);
       tryStart(room);
     } else if (msg.type === "queue") {
+      const kind = String(msg.kind || (msg.ranked ? "ranked" : "pvp"));
       const entry = {
         ws: socket,
         name: String(msg.name || "Duelist").slice(0, 24),
         deck: Array.isArray(msg.deck) ? msg.deck : [],
-        extra: Array.isArray(msg.extra) ? msg.extra : []
+        extra: Array.isArray(msg.extra) ? msg.extra : [],
+        kind
       };
-      if (rankedWait && rankedWait.ws.readyState === 1 && rankedWait.ws !== socket) {
-        const other = rankedWait;
-        rankedWait = null;
-        room = ensureRoom(roomCode(), Math.floor(Math.random() * 2 ** 31));
-        room.seats[0] = other.ws;
-        room.seats[1] = socket;
-        room.names = [other.name, entry.name];
-        room.decks = [other.deck, entry.deck];
-        room.extras = [other.extra, entry.extra];
-        other.ws._cbRoom = room;
-        socket._cbRoom = room;
-        sendJson(other.ws, { type: "matched", code: room.code, seed: room.seed, seat: 0 });
-        sendJson(socket, { type: "matched", code: room.code, seed: room.seed, seat: 1 });
-        tryStart(room);
-      } else {
-        rankedWait = entry;
-        sendJson(socket, { type: "queued", code: "", seed: null, seat: 0 });
-      }
+      room = pairQueue(kind, entry, socket) || room;
+    } else if (msg.type === "ready" && room) {
+      const seat = seatOf(room, socket);
+      if (seat < 0) return;
+      room.decks[seat] = Array.isArray(msg.deck) ? msg.deck : [];
+      room.extras[seat] = Array.isArray(msg.extra) ? msg.extra : [];
+      tryStart(room);
     } else if (msg.type === "pick" && room) {
       const from = seatOf(room, socket);
       const other = from === 0 ? room.seats[1] : room.seats[0];
@@ -332,7 +408,9 @@ duelWss.on("connection", (socket) => {
     }
   });
   socket.on("close", () => {
-    if (rankedWait && rankedWait.ws === socket) rankedWait = null;
+    for (const k of Object.keys(waitQueues)) {
+      if (waitQueues[k]?.ws === socket) waitQueues[k] = null;
+    }
     if (!room) return;
     const other = room.seats[0] === socket ? room.seats[1] : room.seats[0];
     sendJson(other, { type: "peer-left" });

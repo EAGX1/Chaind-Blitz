@@ -4,6 +4,7 @@
 import { laneTheme } from "../data/fields.js";
 import { sfxDestination, playSample } from "../meta/music.js";
 import { fxDelay, fxSkip } from "./fxPace.js";
+import { laneName, laneText } from "../meta/cardLocale.js";
 
 const fxLayer = () => document.getElementById("fx-layer");
 
@@ -60,8 +61,8 @@ export function fxLaneBanner(index, def) {
   el.dataset.theme = laneTheme(def?.id);
   el.innerHTML = `
     <div class="lane-banner-tag">FIELD LANE ${index + 1}</div>
-    <div class="lane-banner-name">${def.name}</div>
-    <div class="lane-banner-text">${def.text}</div>`;
+    <div class="lane-banner-name">${laneName(def)}</div>
+    <div class="lane-banner-text">${laneText(def)}</div>`;
   layer.appendChild(el);
   setTimeout(() => el.remove(), fxDelay(2400) || 1);
 }

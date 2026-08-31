@@ -41,7 +41,7 @@ import {
 import { validateDeck, asSavedDeck, getBanlist, setCopyLimit, banlistFromPreset, EXTRA_MAX, copyLimit, isExtraCard, banlistSummary, activeFormat } from "../meta/banlist.js";
 import { loadSettings } from "./settingsStore.js";
 import { openReplayScrubber } from "./replayScrubber.js";
-import { createAndHost, joinRoom, queueRankedPvp, formatRoomCode, BACKEND_OFFLINE_REASON } from "../meta/peerNet.js";
+import { createAndHost, joinRoom, queueRankedPvp, queueModePvp, formatRoomCode, BACKEND_OFFLINE_REASON } from "../meta/peerNet.js";
 import { deckCurveHtml } from "./deckCurve.js";
 import { deckCircuits, deckComboLine, suggestedGlueForDeck, CIRCUITS, comboTagsFor, circuitClass } from "../data/comboTags.js";
 import { serializeDeckList, parseDeckList, drawOpeningHand, openingSeatNote } from "./deckList.js";
@@ -1078,6 +1078,63 @@ export function initHub(ctx) {
 
   /* ================= MODES (draft/cube/sealed/highlander/tourney/brawl/hotseat) ================= */
   let modesView = "draft";
+  let pvpBuildWait = null;
+  const sealedBuilder = { deck: [] };
+
+  function openModesTab() {
+    document.querySelector('[data-tab="modes"]')?.click();
+  }
+
+  function pvpBuildDeck(kind, seed, seat) {
+    return new Promise((resolve) => {
+      pvpBuildWait = { kind, resolve };
+      const mix = (Number(seed) ^ ((Number(seat) + 1) * 0x9e3779b9)) >>> 0;
+      if (kind === "sealed") {
+        profile.modes.sealed = newSealed(mix, poolForTier(profile.rank.tier));
+        profile.modes.sealed.pvp = true;
+        sealedBuilder.deck = [];
+        modesView = "sealed";
+      } else {
+        const cube = kind === "cube";
+        const key = cube ? "cube" : "draft";
+        profile.modes[key] = newDraft(mix, { cube });
+        profile.modes[key].pvp = true;
+        rollDraftChoices(profile.modes[key]);
+        modesView = key;
+      }
+      ctx.save();
+      openModesTab();
+      renderModes();
+    });
+  }
+
+  function finishPvpBuild(deck, extra = []) {
+    const wait = pvpBuildWait;
+    pvpBuildWait = null;
+    wait?.resolve?.({ deck, extra });
+  }
+
+  async function launchLimitedPvp(kind, { host = false } = {}, noteEl) {
+    const note = (m) => { if (noteEl) noteEl.textContent = m; };
+    note(host ? "Opening room…" : "Searching for opponent…");
+    const opts = { name: profile.name || "Duelist", kind };
+    const session = host
+      ? await createAndHost(opts)
+      : await queueModePvp(kind, opts);
+    if (!session.ok) {
+      note(session.reason || BACKEND_OFFLINE_REASON);
+      return;
+    }
+    if (host && session.code) {
+      window.__CB_PVP_CODE = session.code;
+      note(`Room ${session.code} — wait for a guest, then you both build.`);
+    } else {
+      note(session.waiting ? "Waiting for another player…" : "Match found.");
+    }
+    const ok = await ctx.startPeerDuel?.(session, false);
+    if (!ok) note("No opponent (backend dropped or timed out).");
+  }
+
   const MODE_TABS = [
     ["draft", "DRAFT"], ["cube", "CUBE DRAFT"], ["sealed", "SEALED"],
     ["highlander", "HIGHLANDER"], ["tourney", "TOURNAMENT"], ["brawl", "TAVERN BRAWL"],
@@ -1088,7 +1145,7 @@ export function initHub(ctx) {
     const panel = $("panel-modes");
     panel.innerHTML = `
       <div class="panel-head"><h2>GAME MODES</h2>
-        <p class="dim" style="font-size:11px;">CPU modes stay offline. Host/Join uses the optional local backend.</p>
+        <p class="dim" style="font-size:11px;">CPU modes stay offline. Draft, sealed, ranked, and Host/Join can use the optional backend.</p>
       </div>
       <div class="modes-nav">
         ${MODE_TABS.map(([k, label]) => `<button class="cb-btn mode-nav-btn ${modesView === k ? "active" : ""}" data-mode="${k}">${label}</button>`).join("")}
@@ -1122,7 +1179,12 @@ export function initHub(ctx) {
             ? "Pick 1 of 3 from the curated power Cube, 40 times. Bombs and counter spells everywhere — degenerate decks guaranteed."
             : "Pick 1 of 3 from the Bronze pool, 40 times, max 3 copies each. Then survive a 3-round gauntlet with escalating foe LP."}</p>
           <p class="dim">Gauntlet rewards: ${GAUNTLET_REWARDS.map((r) => `${r.wins}W=${r.gems}g${r.packs ? `+${r.packs}p` : ""}`).join(" · ")}</p>
-          <button class="cb-btn primary" id="btn-draft-start">${st ? "START NEW DRAFT" : "START DRAFT"}</button>
+          <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px;">
+            <button class="cb-btn primary" id="btn-draft-start">${st ? "START NEW DRAFT" : "START DRAFT"}</button>
+            ${cube ? "" : `<button class="cb-btn" id="btn-draft-pvp">QUEUE DRAFT · PVP</button>
+            <button class="cb-btn" id="btn-draft-host">HOST DRAFT ROOM</button>`}
+          </div>
+          <p class="dim" id="draft-pvp-msg" style="margin-top:10px;"></p>
         </div>`;
       $("btn-draft-start").addEventListener("click", () => {
         profile.modes[key] = newDraft(Math.floor(Math.random() * 2 ** 31), { cube });
@@ -1131,6 +1193,11 @@ export function initHub(ctx) {
         sfx.chain();
         renderModes();
       });
+      if (!cube) {
+        const msg = $("draft-pvp-msg");
+        $("btn-draft-pvp").addEventListener("click", () => launchLimitedPvp("draft", {}, msg));
+        $("btn-draft-host").addEventListener("click", () => launchLimitedPvp("draft", { host: true }, msg));
+      }
       return;
     }
 
@@ -1156,6 +1223,28 @@ export function initHub(ctx) {
           renderModes();
         });
         grid.appendChild(el);
+      });
+      return;
+    }
+
+    if (st.pvp) {
+      box.innerHTML = `
+        <div class="mode-intro">
+          <h3>DRAFT PVP — ${st.pvpSent ? "WAITING FOR OPPONENT" : "DECK READY"}</h3>
+          <p class="dim">${st.pvpSent
+            ? "Your list is locked. The duel starts when both players send."
+            : "Send this 40. The duel starts when both players lock."}</p>
+          ${st.pvpSent
+            ? ""
+            : `<button class="cb-btn primary" id="btn-pvp-send">SEND DECK — WAIT FOR OPPONENT</button>`}
+          <div class="deck-list-scroll tall" id="draft-deck-list" style="margin-top:14px;max-width:420px;"></div>
+        </div>`;
+      renderDeckCounts($("draft-deck-list"), draftDeck(st));
+      $("btn-pvp-send")?.addEventListener("click", () => {
+        st.pvpSent = true;
+        ctx.save();
+        finishPvpBuild(draftDeck(st), []);
+        renderModes();
       });
       return;
     }
@@ -1193,8 +1282,6 @@ export function initHub(ctx) {
   }
 
   /* ---- sealed ---- */
-  const sealedBuilder = { deck: [] };
-
   function renderSealedDetail(box) {
     const st = profile.modes.sealed;
     if (!st) {
@@ -1202,8 +1289,13 @@ export function initHub(ctx) {
         <div class="mode-intro">
           <h3>SEALED DECK</h3>
           <p>Crack ${6} packs from your tier pool, then build a ${SEALED_DECK_SIZE}-card deck from only what you open.
-          Take it through the 3-round gauntlet.</p>
-          <button class="cb-btn primary" id="btn-sealed-open">OPEN 6 PACKS</button>
+          Take it through the 3-round gauntlet, or queue sealed PvP.</p>
+          <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px;">
+            <button class="cb-btn primary" id="btn-sealed-open">OPEN 6 PACKS</button>
+            <button class="cb-btn" id="btn-sealed-pvp">QUEUE SEALED · PVP</button>
+            <button class="cb-btn" id="btn-sealed-host">HOST SEALED ROOM</button>
+          </div>
+          <p class="dim" id="sealed-pvp-msg" style="margin-top:10px;"></p>
         </div>`;
       $("btn-sealed-open").addEventListener("click", () => {
         profile.modes.sealed = newSealed(Math.floor(Math.random() * 2 ** 31), poolForTier(profile.rank.tier));
@@ -1212,6 +1304,11 @@ export function initHub(ctx) {
         sfx.victory();
         renderModes();
       });
+      {
+        const msg = $("sealed-pvp-msg");
+        $("btn-sealed-pvp").addEventListener("click", () => launchLimitedPvp("sealed", {}, msg));
+        $("btn-sealed-host").addEventListener("click", () => launchLimitedPvp("sealed", { host: true }, msg));
+      }
       return;
     }
 
@@ -1221,7 +1318,7 @@ export function initHub(ctx) {
         <div class="mode-intro wide">
           <h3>SEALED — build ${SEALED_DECK_SIZE} from ${st.pool.length}</h3>
           <p class="dim" id="sealed-status">${err ? `${sealedBuilder.deck.length}/${SEALED_DECK_SIZE} — ${err}` : "Deck legal!"}</p>
-          <button class="cb-btn primary" id="btn-sealed-lock" ${err ? "disabled" : ""}>LOCK DECK & ENTER GAUNTLET</button>
+          <button class="cb-btn primary" id="btn-sealed-lock" ${err ? "disabled" : ""}>${st.pvp ? "LOCK DECK & SEND" : "LOCK DECK & ENTER GAUNTLET"}</button>
           <div class="deck-editor">
             <div class="deck-pool"><h3>SEALED POOL</h3><div class="card-grid" id="sealed-pool-grid"></div></div>
             <div class="deck-list"><h3>DECK</h3><div class="deck-list-scroll" id="sealed-deck-list"></div></div>
@@ -1262,10 +1359,25 @@ export function initHub(ctx) {
       $("btn-sealed-lock").addEventListener("click", () => {
         if (sealedDeckValid(st, sealedBuilder.deck)) return;
         st.deck = sealedBuilder.deck.slice();
+        if (st.pvp) {
+          st.pvpSent = true;
+          finishPvpBuild(st.deck, []);
+        }
         ctx.save();
         sfx.chain();
         renderModes();
       });
+      return;
+    }
+
+    if (st.pvp) {
+      box.innerHTML = `
+        <div class="mode-intro">
+          <h3>SEALED PVP — WAITING FOR OPPONENT</h3>
+          <p class="dim">Your sealed list is locked. The duel starts when both players send.</p>
+          <div class="deck-list-scroll tall" id="sealed-deck-summary" style="margin-top:14px;max-width:420px;"></div>
+        </div>`;
+      renderDeckCounts($("sealed-deck-summary"), st.deck);
       return;
     }
 
@@ -1390,8 +1502,13 @@ export function initHub(ctx) {
       <div class="mode-intro">
         <h3>HOST / JOIN</h3>
         <p>Two browsers, one optional backend (<code>npm run backend</code>). Airplane mode still plays vs CPU.</p>
-        <p class="dim">Using <b>${list.name}</b> (active list or starter).</p>
+        <p class="dim">Constructed uses <b>${list.name}</b>. Draft and sealed build after both seats fill.</p>
         <div class="row" style="margin-top:14px;flex-wrap:wrap;gap:8px;">
+          <select class="cb-select" id="pvp-kind">
+            <option value="pvp">CONSTRUCTED</option>
+            <option value="draft">DRAFT</option>
+            <option value="sealed">SEALED</option>
+          </select>
           <button class="cb-btn primary" id="btn-pvp-host">HOST ROOM</button>
           <input class="cb-input" id="pvp-code" maxlength="6" placeholder="ROOM CODE" style="width:8em;text-transform:uppercase;">
           <button class="cb-btn" id="btn-pvp-join">JOIN</button>
@@ -1399,27 +1516,34 @@ export function initHub(ctx) {
         <p class="dim" id="pvp-msg" style="margin-top:10px;"></p>
       </div>`;
     const note = (m) => { const el = $("pvp-msg"); if (el) el.textContent = m; };
+    const pvpKind = () => $("pvp-kind")?.value || "pvp";
     $("btn-pvp-host").addEventListener("click", async () => {
+      const kind = pvpKind();
       note("Opening room…");
       const session = await createAndHost({
         name: profile.name || "Host",
-        deck: list.deck,
-        extra: list.extra
+        kind,
+        deck: kind === "pvp" ? list.deck : [],
+        extra: kind === "pvp" ? list.extra : []
       });
       if (!session.ok) { note(session.reason || BACKEND_OFFLINE_REASON); return; }
       window.__CB_PVP_CODE = session.code;
-      note(`Room ${session.code} — wait for a guest, then the duel starts.`);
+      note(kind === "pvp"
+        ? `Room ${session.code} — wait for a guest, then the duel starts.`
+        : `Room ${session.code} — wait for a guest, then you both build.`);
       const ok = await ctx.startPeerDuel?.(session, false);
       if (!ok) note("Guest never joined (or backend dropped).");
     });
     $("btn-pvp-join").addEventListener("click", async () => {
       const code = formatRoomCode($("pvp-code").value);
       if (code.length < 4) { note("Enter a room code."); return; }
+      const kind = pvpKind();
       note(`Joining ${code}…`);
       const session = await joinRoom(code, {
         name: profile.name || "Guest",
-        deck: list.deck,
-        extra: list.extra
+        kind,
+        deck: kind === "pvp" ? list.deck : [],
+        extra: kind === "pvp" ? list.extra : []
       });
       if (!session.ok) { note(session.reason || BACKEND_OFFLINE_REASON); return; }
       const ok = await ctx.startPeerDuel?.(session, false);
@@ -1908,6 +2032,7 @@ export function initHub(ctx) {
     renderAll,
     refreshWallet,
     queueRanked,
+    pvpBuildDeck,
     renderers: {
       play: renderPlay,
       deck: renderDeck,

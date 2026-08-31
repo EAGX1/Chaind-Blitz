@@ -5,6 +5,7 @@
 import { CARD_DB } from "../data/cards/index.js";
 import { buildCardEl } from "./cardArt.js";
 import { comboTagsFor, comboPartnersFor, CIRCUITS, circuitClass } from "../data/comboTags.js";
+import { cardText } from "../meta/cardLocale.js";
 
 const POP_ID = "card-hover-pop";
 let pop = null;
@@ -47,7 +48,7 @@ function fillDock(def) {
   dock.appendChild(card);
   const text = document.createElement("p");
   text.className = "card-hover-text";
-  text.textContent = def.text || "No effect text.";
+  text.textContent = cardText(def) || "No effect text.";
   dock.appendChild(text);
   const tags = comboTagsFor(def.id);
   if (tags.enables.length || tags.pays.length) {

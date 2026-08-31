@@ -23,6 +23,7 @@ import { CARD_DB } from "../data/cards/index.js";
 import { comboTagsFor, comboPartnersFor, CIRCUITS, circuitClass } from "../data/comboTags.js";
 import { announce, installAnnounceRepeat } from "./liveAnnounce.js";
 import { harvestSeen, handFaceUp } from "./seenSet.js";
+import { laneName, laneText, cardName } from "../meta/cardLocale.js";
 import { watchDrag, reorderHandList } from "./dragPlay.js";
 import { playStinger } from "../meta/music.js";
 
@@ -368,7 +369,7 @@ export function createDuelView(G) {
           last.lanesRevealed[i] = true;
           sfx.lane();
         }
-        el.innerHTML = `<span class="lane-tag">LANE ${i + 1}</span><div class="lane-inner"><div class="lane-name">${lane.def.name}</div><div class="lane-text">${lane.def.text}</div></div>`;
+        el.innerHTML = `<span class="lane-tag">LANE ${i + 1}</span><div class="lane-inner"><div class="lane-name">${laneName(lane.def)}</div><div class="lane-text">${laneText(lane.def)}</div></div>`;
         el.style.cursor = "pointer";
         el.title = "Click for who this lane is modifying";
         el.addEventListener("click", () => showLaneBreakdown(lane, i));
@@ -626,7 +627,7 @@ export function createDuelView(G) {
         if (!c || !c.faceup) continue;
         const printed = `${c.def.atk}/${c.def.def}`;
         const live = `${getATK(G, c)}/${getDEF(G, c)}`;
-        rows.push(`<li><b>${p === 0 ? "You" : "Foe"}</b> Z${z + 1} ${c.def.name}: printed ${printed} → now ${live}</li>`);
+        rows.push(`<li><b>${p === 0 ? "You" : "Foe"}</b> Z${z + 1} ${cardName(c.def)}: printed ${printed} → now ${live}</li>`);
       }
     }
     const modal = document.createElement("div");
@@ -634,8 +635,8 @@ export function createDuelView(G) {
     modal.className = "cb-modal";
     modal.innerHTML = `
       <div class="cb-modal-card">
-        <h2 style="margin:0 0 8px;">${lane.def.name}</h2>
-        <p class="dim">${lane.def.text}</p>
+        <h2 style="margin:0 0 8px;">${laneName(lane.def)}</h2>
+        <p class="dim">${laneText(lane.def)}</p>
         <p style="font-size:12px;margin:10px 0 6px;">Monsters in zones ${z0 + 1}–${z1 + 1}</p>
         ${rows.length ? `<ul class="lane-break-list">${rows.join("")}</ul>` : `<p class="dim">No face-up monsters in this lane right now.</p>`}
         <button type="button" class="cb-btn" data-close>CLOSE</button>

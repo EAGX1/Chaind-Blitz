@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { formatRoomCode, serializePick, applyPick, wrapIoPeer, BACKEND_OFFLINE_REASON } from "../../src/meta/peerNet.js";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { formatRoomCode, serializePick, applyPick, wrapIoPeer, queueModePvp, BACKEND_OFFLINE_REASON } from "../../src/meta/peerNet.js";
+import { cardName, cardText } from "../../src/meta/cardLocale.js";
+import { CARD_DB } from "../../src/data/cards/index.js";
+import { createAccountStore } from "../../backend/accounts.js";
 import { backendCandidates, DEFAULT_URL } from "../../src/meta/backendClient.js";
 import { LOCALES, t, setLocale, EN, ES, JA } from "../../src/meta/i18n.js";
 import { shippedLoaners, loanerById } from "../../src/data/loaners.js";
@@ -69,6 +75,44 @@ describe("expand loaners", () => {
       expect(validateDeck({ main: d.deck, extra: d.extra }).ok, id).toBe(true);
     }
     expect(shippedLoaners().length).toBeGreaterThanOrEqual(45);
+  });
+});
+
+describe("card locale overlay", () => {
+  it("translates names and GY phrasing in ES and JA", () => {
+    const def = CARD_DB.jestling;
+    expect(def).toBeTruthy();
+    setLocale("en");
+    expect(cardName(def)).toBe(def.name);
+    expect(cardText(def)).toContain("GY");
+    setLocale("es");
+    expect(cardName(def)).toMatch(/Diablillo/);
+    expect(cardText(def)).toMatch(/Cementerio/);
+    setLocale("ja");
+    expect(cardName(def)).toMatch(/インプ/);
+    expect(cardText(def)).toMatch(/墓地/);
+    setLocale("en");
+    expect(cardName(def)).toBe(def.name);
+  });
+});
+
+describe("accounts store", () => {
+  it("registers, logs in, and rejects a taken name", () => {
+    const file = join(mkdtempSync(join(tmpdir(), "cb-acct-")), "accounts.json");
+    const store = createAccountStore(file);
+    const reg = store.register("Ada", "secret1");
+    expect(reg.ok).toBe(true);
+    expect(store.userFromToken(reg.token).name).toBe("Ada");
+    expect(store.login("ada", "secret1").ok).toBe(true);
+    expect(store.login("ada", "nope").ok).toBe(false);
+    expect(store.register("Ada", "secret1").error).toMatch(/taken/i);
+  });
+});
+
+describe("pvp mode queue helper", () => {
+  it("exports queueModePvp for ranked, draft, and sealed", () => {
+    expect(typeof queueModePvp).toBe("function");
+    expect(formatRoomCode("draft1")).toBe("DRAFT1");
   });
 });
 

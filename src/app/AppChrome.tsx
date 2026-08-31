@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AI_BUDGETS, type AiTier } from "../ai/budgets";
 import { ThreeBackdrop } from "./ThreeBackdrop";
-import { cloudPull, cloudPush, deviceId, fetchBanlist } from "../meta/backendClient.js";
+import { cloudPull, cloudPush, deviceId, fetchBanlist, registerAccount, loginAccount, logoutAccount, authName, savedBackendUrl, setBackendUrl } from "../meta/backendClient.js";
 import { bindSettings, applyVolumes, playBed } from "../meta/music.js";
 import { exportSaveJson, importSaveJson } from "../meta/backups.js";
 import { t, setLocale, LOCALES } from "../meta/i18n.js";
@@ -40,6 +40,8 @@ export function AppChrome({ hideChrome = false }: { hideChrome?: boolean }) {
   const [cloudMsg, setCloudMsg] = useState("");
   const [backupMsg, setBackupMsg] = useState("");
   const [devMsg, setDevMsg] = useState("");
+  const [acctMsg, setAcctMsg] = useState("");
+  const [acctName, setAcctName] = useState(() => (typeof localStorage !== "undefined" ? authName() : ""));
 
   useEffect(() => {
     const s = applySettingsToDom(settings);
@@ -264,6 +266,55 @@ export function AppChrome({ hideChrome = false }: { hideChrome?: boolean }) {
                 }}
               />
             </label>
+            <label>
+              {t("settings.backendUrl")}
+              <input
+                className="cb-input"
+                defaultValue={savedBackendUrl()}
+                placeholder="http://192.168.0.12:8787"
+                onBlur={(e) => setBackendUrl(e.target.value.trim())}
+              />
+            </label>
+            <p className="cb-hint">Optional public or LAN backend. Empty = this origin, then localhost. CPU still works offline.</p>
+            <p className="cb-hint">{t("account.title")}{acctName ? ` — ${t("account.signedIn")}: ${acctName}` : ""}</p>
+            <label>
+              {t("settings.displayName")}
+              <input className="cb-input" id="cb-acct-name" defaultValue={acctName} maxLength={24} />
+            </label>
+            <label>
+              {t("account.password")}
+              <input className="cb-input" id="cb-acct-pass" type="password" autoComplete="current-password" />
+            </label>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button type="button" className="cb-btn" onClick={async () => {
+                const name = (document.getElementById("cb-acct-name") as HTMLInputElement)?.value?.trim();
+                const password = (document.getElementById("cb-acct-pass") as HTMLInputElement)?.value || "";
+                const out = await registerAccount(name, password);
+                setAcctMsg(out.ok ? t("account.signedIn") : (out.error || t("pvp.offline")));
+                if (out.ok) {
+                  setAcctName(out.name || name || "");
+                  patch({ cloudSync: true });
+                }
+              }}>{t("account.register")}</button>
+              <button type="button" className="cb-btn" onClick={async () => {
+                const name = (document.getElementById("cb-acct-name") as HTMLInputElement)?.value?.trim();
+                const password = (document.getElementById("cb-acct-pass") as HTMLInputElement)?.value || "";
+                const out = await loginAccount(name, password);
+                setAcctMsg(out.ok ? t("account.signedIn") : (out.error || t("pvp.offline")));
+                if (out.ok) {
+                  setAcctName(out.name || name || "");
+                  patch({ cloudSync: true });
+                }
+              }}>{t("account.login")}</button>
+              {acctName ? (
+                <button type="button" className="cb-btn" onClick={async () => {
+                  await logoutAccount();
+                  setAcctName("");
+                  setAcctMsg("");
+                }}>{t("account.logout")}</button>
+              ) : null}
+            </div>
+            {acctMsg && <p className="cb-hint">{acctMsg}</p>}
             <label>
               AI difficulty
               <select

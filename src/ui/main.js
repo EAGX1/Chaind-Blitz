@@ -473,6 +473,25 @@ function startRoomDuel(opts) {
 
 async function launchPeerSession(session, ranked) {
   if (!session?.ok || !session.peer) return false;
+  const kind = session.kind || (ranked ? "ranked" : "pvp");
+  if (kind === "draft" || kind === "sealed") {
+    const build = await session.peer.waitBuild(120000);
+    if (!build) {
+      disconnectPeer();
+      return false;
+    }
+    if (!hub?.pvpBuildDeck) {
+      disconnectPeer();
+      return false;
+    }
+    const built = await hub.pvpBuildDeck(build.kind || kind, build.seed, build.seat ?? session.seat);
+    if (build.seat === 0 || build.seat === 1) session.seat = build.seat;
+    if (!built?.deck?.length) {
+      disconnectPeer();
+      return false;
+    }
+    session.peer.send({ type: "ready", deck: built.deck, extra: built.extra || [] });
+  }
   const start = await session.peer.waitStart();
   if (!start) {
     disconnectPeer();
@@ -488,7 +507,7 @@ async function launchPeerSession(session, ranked) {
     guestExtra: start.guest?.extra || [],
     hostName: start.host?.name || "HOST",
     guestName: start.guest?.name || "GUEST",
-    mode: ranked ? "ranked" : "pvp"
+    mode: ranked || kind === "ranked" ? "ranked" : kind
   });
   return true;
 }

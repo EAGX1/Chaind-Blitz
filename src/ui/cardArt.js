@@ -4,6 +4,7 @@ import { enableCardTilt } from "./tiltFoil.js";
 import { monsterLevel } from "../engine/state.js";
 import { fxStripHtml, linkifyCardText } from "../data/effectTags.js";
 import { comboTagsFor, CIRCUITS, circuitClass } from "../data/comboTags.js";
+import { cardName, cardText } from "../meta/cardLocale.js";
 
 const PALETTES = {
   Ignis: ["#ffb37c", "#ff7a3c", "#7a1f00", "#2b0d00"],
@@ -231,12 +232,12 @@ export function buildCardEl(card, { faceDown = false, stats = null, count = null
   el.innerHTML = `
     <div class="card-head">
       ${costPip}
-      <div class="card-name">${def.name}</div>
+      <div class="card-name">${cardName(def)}</div>
       <div class="card-rarity r-${rarity}" title="${rarity} rarity">${rarity}</div>
     </div>
     <div class="card-art">${artSvg(def)}${foilLayer}${fxStripHtml(def, 3)}</div>
     <div class="card-type">${typeLine}</div>
-    <div class="card-text">${linkifyCardText(def.text || "")}</div>
+    <div class="card-text">${linkifyCardText(cardText(def) || "")}</div>
     ${isSpell ? "" : `<div class="card-stats"><span class="atk">${atk}</span><span class="def${wounded ? " wounded" : ""}" title="${defTitle}">${hp}</span></div>`}
     ${card.evolved ? `<div class="evolve-pip">EVO</div>` : ""}
     ${!isSpell && wounded ? `<div class="dmg-pip" title="Damage taken">-${card.dmg}</div>` : ""}

@@ -36,6 +36,8 @@ function makeSession(ws) {
   const closeCbs = new Set();
   let startWait = null;
   let startPayload = null;
+  let buildWait = null;
+  let buildPayload = null;
   let closed = false;
 
   function flush() {
@@ -54,6 +56,12 @@ function makeSession(ws) {
       startWait = null;
       return;
     }
+    if (msg.type === "build") {
+      buildPayload = msg;
+      buildWait?.(msg);
+      buildWait = null;
+      return;
+    }
     if (msg.type === "pick") {
       inbox.push(msg);
       flush();
@@ -62,6 +70,9 @@ function makeSession(ws) {
   ws.addEventListener("close", () => {
     closed = true;
     startWait?.(null);
+    buildWait?.(null);
+    startWait = null;
+    buildWait = null;
     while (waiters.length) waiters.shift()(null);
     for (const cb of closeCbs) {
       try { cb(); } catch { /* ignore */ }
@@ -92,9 +103,22 @@ function makeSession(ws) {
     },
     waitStart(ms = 120000) {
       if (startPayload) return Promise.resolve(startPayload);
+      if (closed) return Promise.resolve(null);
       return new Promise((resolve) => {
-        const t = setTimeout(() => resolve(null), ms);
+        const t = setTimeout(() => {
+          if (startWait) { startWait = null; resolve(null); }
+        }, ms);
         startWait = (msg) => { clearTimeout(t); resolve(msg); };
+      });
+    },
+    waitBuild(ms = 120000) {
+      if (buildPayload) return Promise.resolve(buildPayload);
+      if (closed) return Promise.resolve(null);
+      return new Promise((resolve) => {
+        const t = setTimeout(() => {
+          if (buildWait) { buildWait = null; resolve(null); }
+        }, ms);
+        buildWait = (msg) => { clearTimeout(t); resolve(msg); };
       });
     },
     close() {
@@ -147,11 +171,13 @@ async function handshake(ws, role, payload) {
   session.code = hello.code || payload.code || "";
   session.seed = hello.seed ?? payload.seed ?? null;
   session.seat = hello.seat ?? (role === "join" ? 1 : 0);
+  session.kind = hello.kind || payload.kind || "pvp";
   return {
     ok: true,
     code: session.code,
     seed: session.seed,
     seat: session.seat,
+    kind: session.kind,
     waiting: hello.type === "queued",
     peer: session
   };
@@ -185,6 +211,7 @@ export async function createAndHost(opts = {}) {
     code,
     seed,
     name,
+    kind: opts.kind || "pvp",
     deck: opts.deck || [],
     extra: opts.extra || []
   });
@@ -194,18 +221,24 @@ export async function joinRoom(code, opts = {}) {
   return attach("join", {
     code: formatRoomCode(code),
     name: String(opts.name || "Guest").slice(0, 24),
+    kind: opts.kind || "pvp",
+    deck: opts.deck || [],
+    extra: opts.extra || []
+  });
+}
+
+export async function queueModePvp(kind, opts = {}) {
+  return attach("queue", {
+    kind: kind || "ranked",
+    ranked: kind === "ranked",
+    name: String(opts.name || "Duelist").slice(0, 24),
     deck: opts.deck || [],
     extra: opts.extra || []
   });
 }
 
 export async function queueRankedPvp(opts = {}) {
-  return attach("queue", {
-    ranked: true,
-    name: String(opts.name || "Duelist").slice(0, 24),
-    deck: opts.deck || [],
-    extra: opts.extra || []
-  });
+  return queueModePvp("ranked", opts);
 }
 
 export function serializePick(method, pick, args) {
