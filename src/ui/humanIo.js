@@ -96,6 +96,7 @@ function ensurePauseKeys() {
 
 export function makeHumanIo(G, view) {
   let pendingCancel = null;
+  let suppressEndUntil = 0;
   ensurePauseKeys();
   // card elements persist across renders now, so prompt-bound click handlers
   // must be tracked and removed explicitly or they'd accumulate/fire twice
@@ -537,7 +538,9 @@ export function makeHumanIo(G, view) {
     async chooseMain(p, actions) {
       return new Promise((resolve) => {
         if (p === 0) G._passUntilMyTurn = false;
-        const opts = promptShell(`${G.phase} — glowing card to play · drag onto a zone · Tab / Enter / E end`);
+        const opts = promptShell(G.phase === "M2"
+          ? "MAIN 2 — leftover plays, then end the turn · Tab / Enter / E"
+          : `${G.phase} — glowing card to play · drag onto a zone · Tab / Enter / E end`);
         const byUid = new Map();
         for (const act of actions) {
           if (!act.card) continue;
@@ -545,7 +548,7 @@ export function makeHumanIo(G, view) {
           byUid.get(act.card.uid).push(act);
         }
         const preferredOf = (acts) => {
-          const order = ["summon", "activate", "activateSet", "evolve", "ignition", "contactFusion", "ambushSet", "set"];
+          const order = ["summon", "activate", "activateSet", "evolve", "quick", "ignition", "contactFusion", "ambushSet", "set"];
           for (const t of order) {
             const hit = acts.find((a) => a.type === t);
             if (hit) return hit;
@@ -707,6 +710,7 @@ export function makeHumanIo(G, view) {
           let ending = false;
           const tryEnd = async () => {
             if (busy || ending) return;
+            if (G.phase === "M2" && Date.now() < suppressEndUntil) return;
             ending = true;
             if (shouldConfirmEndMain(actions) && !isTeachDuel(G)) {
               const ok = await confirmDialog({
@@ -723,7 +727,7 @@ export function makeHumanIo(G, view) {
             cleanupAll();
             resolve(end);
           };
-          const b = btn(`END ${G.phase} ▶`, "confirm");
+          const b = btn(G.phase === "M2" ? "END M2 ▶" : `END ${G.phase} ▶`, "confirm");
           b.addEventListener("click", () => { tryEnd(); });
           const orb = $("phase-orb");
           if (orb) {
@@ -750,9 +754,16 @@ export function makeHumanIo(G, view) {
       });
     },
 
-    async askAttack(p, attackers, targetsFn) {
+    async askAttack(p, attackers, targetsFn, battleActs = []) {
       return new Promise((resolve) => {
-        const opts = promptShell("BATTLE — drag onto a target, or click · Tab / Enter / E");
+        const fastActs = Array.isArray(battleActs) ? battleActs : [];
+        const opts = promptShell(attackers.length
+          ? (fastActs.length
+            ? "BATTLE STEP — attack, activate a Quick, or END BATTLE"
+            : "BATTLE STEP — declare an attack · Tab / Enter / E")
+          : (fastActs.length
+            ? "BATTLE STEP — activate a Quick, or END BATTLE for Main 2"
+            : "BATTLE STEP — END BATTLE for Main 2"));
         const atkEls = [];
         const hintAtk = teachAttackHint(G, attackers);
         for (const atk of attackers) {
@@ -894,7 +905,7 @@ export function makeHumanIo(G, view) {
             if (directBtn) cycle.push(directBtn);
             cycle.push(confirmAtk);
             bindCycleKeys(cycle, { onBack: () => cancel.click() });
-            async function retry() { return await api.askAttack(p, attackers, targetsFn); }
+            async function retry() { return await api.askAttack(p, attackers, targetsFn, battleActs); }
           });
         }
         const atkUids = new Set(attackers.map((a) => a.uid));
@@ -906,6 +917,20 @@ export function makeHumanIo(G, view) {
           el.classList.add("target-illegal");
           el.title = why;
           bind(el, () => denyShake(el, why));
+        }
+        const actBtns = [];
+        for (const act of fastActs) {
+          const uid = act.card?.uid;
+          const el = uid != null ? elByUid(uid) : null;
+          const sharesAttacker = uid != null && atkUids.has(uid);
+          if (el && !sharesAttacker) {
+            el.classList.add("selectable", "chain-legal");
+            bind(el, () => { sfx.click(); cleanupAll(); resolve(act); });
+          }
+          const b = btn(`Activate ${act.card?.def?.name || "card"}`, "confirm");
+          b.addEventListener("click", () => { sfx.click(); cleanupAll(); resolve(act); });
+          opts.appendChild(b);
+          actBtns.push(b);
         }
         const end = btn("END BATTLE", "pass");
         let endingBp = false;
@@ -924,6 +949,7 @@ export function makeHumanIo(G, view) {
           sfx.click();
           clearAttackArrows();
           cleanupAll();
+          suppressEndUntil = Date.now() + 450;
           resolve(null);
         };
         end.addEventListener("click", () => { tryEndBattle(); });
@@ -933,7 +959,7 @@ export function makeHumanIo(G, view) {
           orb.classList.add("clickable");
           bind(orb, () => { tryEndBattle(); });
         }
-        bindCycleKeys(atkEls, { onEnd: () => end.click() });
+        bindCycleKeys([...atkEls, ...actBtns], { onEnd: () => end.click() });
         cancellable(resolve, null);
       });
     },

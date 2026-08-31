@@ -8,7 +8,7 @@ import { installHelpOverlay } from "./helpOverlay.js";
 import { loadSettings, saveSettings, CHAIN_MODES } from "./settingsStore.js";
 import { laneTheme } from "../data/fields.js";
 import { buildCardEl, cardBackEl } from "./cardArt.js";
-import { pulsePhase, splashTurn, juiceOk } from "./juice.js";
+import { pulsePhase, splashTurn, splashPhase, juiceOk } from "./juice.js";
 import { sfx, fxNumberOnElement } from "./fx.js";
 import { openGyBrowser, openExtraBrowser } from "./gyBrowser.js";
 import { getHoverAnchor } from "./cardHover.js";
@@ -61,7 +61,22 @@ function coachTip(G) {
     return "First turn: no Battle Phase and no Main Phase 2 — even Rush.";
   }
   if (G.phase === "BP") {
-    return "Battle: click an attacker, then a target or Direct Attack. Combat is ATK vs ATK. Illegal targets stay visible with a reason.";
+    if (G.battleStep === "declare") {
+      return "Attack declaration: chain a Set or Quick, or Pass. Then the Damage Step opens.";
+    }
+    if (G.battleStep === "start") {
+      return "Battle Start Step: activate a Quick if you have one, then Battle Step.";
+    }
+    if (G.battleStep === "end") {
+      return "Battle End Step: last chance for a Quick, then Main Phase 2.";
+    }
+    return "Battle Step: click an attacker, activate a Quick, or End Battle. After each attack you return here — then Main 2.";
+  }
+  if (G.phase === "M2") {
+    if (canEvolveNow(G, G.tp) && G.tp === 0) {
+      return "Main 2 — Evolve is still legal. Play leftover cards, then the orb ends the turn.";
+    }
+    return "Main Phase 2: play leftover cards, then click the orb to end the turn — not another Battle.";
   }
   if (G.phase === "M1" || G.phase === "M2") {
     const pl = P(G, G.tp);
@@ -399,7 +414,13 @@ export function createDuelView(G) {
       sig.turn = turnKey;
     }
     const orbKey = `${G.turnCount}|${G.tp}|${G.phase}|${G.battleStep || ""}`;
-    if (sig.orb && sig.orb !== orbKey) pulsePhase();
+    if (sig.orb && sig.orb !== orbKey) {
+      pulsePhase();
+      if (G.phase === "M2") {
+        splashPhase(G.tp === 0 ? "MAIN PHASE 2" : "FOE MAIN 2");
+        announce(G.tp === 0 ? "Main Phase 2" : "Opponent Main Phase 2");
+      }
+    }
     sig.orb = orbKey;
     let banner = $("first-turn-banner");
     if (!banner) {

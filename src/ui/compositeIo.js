@@ -128,11 +128,11 @@ export function makeCompositeIo(G, { humanIo, view, speed = 1, humanSide = 0 }) 
       view.renderAll();
       return wrap(p, "chooseMain")(actions);
     },
-    async askAttack(p, attackers, targetsFn) {
+    async askAttack(p, attackers, targetsFn, battleActs) {
       view.renderAll();
-      if (isHuman(p)) return wrap(p, "askAttack")(attackers, targetsFn);
+      if (isHuman(p)) return wrap(p, "askAttack")(attackers, targetsFn, battleActs);
       try {
-        const choice = await ai.askAttack(p, attackers, targetsFn);
+        const choice = await ai.askAttack(p, attackers, targetsFn, battleActs);
         const telegraph = window.__CB_SETTINGS?.cpuIntent !== false;
         if (telegraph) {
           const intent = describeCpuIntent(G, choice);

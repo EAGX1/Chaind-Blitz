@@ -293,7 +293,7 @@ export function AppChrome({ hideChrome = false }: { hideChrome?: boolean }) {
             </label>
             <p className="cb-hint">
               {settings.chainMode === "smart"
-                ? "Smart skips empty and low-threat windows. Confirm always asks."
+                ? "Smart skips empty windows on your turn. It still asks when a Set trap or Quick Effect can answer on theirs, and on counters."
                 : settings.chainMode === "confirm"
                   ? "Confirm asks every time you have a legal response."
                   : settings.chainMode === "auto" || settings.chainMode === "off"

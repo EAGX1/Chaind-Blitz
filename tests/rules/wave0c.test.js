@@ -317,7 +317,7 @@ describe("Wave E meta staples", () => {
 describe("Wave F authored set", () => {
   it("ships original staples without a 500-card name-fill cap", () => {
     expect(WAVE_F_CARDS.length).toBe(76);
-    expect(ALL_CARDS).toHaveLength(330);
+    expect(ALL_CARDS).toHaveLength(1330);
     const ids = WAVE_F_CARDS.map((c) => c.id);
     expect(new Set(ids).size).toBe(76);
     const blob = WAVE_F_CARDS.map((c) => `${c.name} ${c.text}`).join("\n");

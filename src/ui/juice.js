@@ -34,6 +34,24 @@ export function splashTurn(side) {
   setTimeout(() => el.remove(), reducedMotion() ? 900 : 1000);
 }
 
+/** Center banner when Main Phase 2 opens after Battle. */
+export function splashPhase(label) {
+  if (typeof document === "undefined" || fxSkip()) return;
+  const layer = document.getElementById("fx-layer");
+  if (!layer) return;
+  layer.querySelector(".turn-splash")?.remove();
+  const el = document.createElement("div");
+  el.className = "turn-splash";
+  el.dataset.kind = "phase";
+  el.setAttribute("role", "status");
+  if (reducedMotion()) el.classList.add("is-static");
+  const b = document.createElement("b");
+  b.textContent = label || "MAIN PHASE 2";
+  el.appendChild(b);
+  layer.appendChild(el);
+  setTimeout(() => el.remove(), reducedMotion() ? 900 : 1100);
+}
+
 /** Pulse the phase orb (and a light body flash). */
 export function pulsePhase() {
   if (reducedMotion() || fxSkip()) return;

@@ -56,7 +56,15 @@ export function teachStep(G) {
   if (G.phase === "M1" && isFirstTurnNoBattle(G)) {
     return {
       id: "endFirst",
-      tip: "First turn: no Battle Phase. Click the golden orb to end the turn."
+      tip: "First turn: no Battle Phase and no Main Phase 2. Click the golden orb to end the turn."
+    };
+  }
+  if (G.phase === "M2") {
+    const combo = comboLiveTip(G);
+    return {
+      id: "main2",
+      tip: combo
+        || "Main Phase 2: play leftover cards, then click the orb to end the turn — Battle is already over."
     };
   }
   if (G.phase === "M1" || G.phase === "M2") {
@@ -70,7 +78,9 @@ export function teachStep(G) {
   if (G.phase === "BP") {
     return {
       id: "attack",
-      tip: "Battle: click an attacker, then a target — combat compares ATK against ATK, and wounds stick. A blue WARD badge must be attacked first."
+      tip: G.battleStep === "declare"
+        ? "Attack declaration window: chain a Set or Quick, or Pass — then Damage Step."
+        : "Battle Step: declare an attack, activate a Quick-Play / trap, or End Battle. After damage you return here."
     };
   }
   return { id: "phase", tip: "Click the golden orb to advance the phase." };

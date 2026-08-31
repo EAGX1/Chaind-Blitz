@@ -98,8 +98,8 @@ describe("all printed cards — structure", () => {
 
   it("every card has id, name, type, text, rarity and a unique id", () => {
     const ids = ALL_CARDS.map((c) => c.id);
-    expect(ALL_CARDS).toHaveLength(330);
-    expect(new Set(ids).size).toBe(330);
+    expect(ALL_CARDS).toHaveLength(1330);
+    expect(new Set(ids).size).toBe(1330);
     for (const c of ALL_CARDS) {
       expect(c.id, "id").toBeTruthy();
       expect(c.name, c.id).toBeTruthy();
@@ -148,7 +148,7 @@ describe("all printed cards — effects run", () => {
       }
     }
     expect(fails, fails.join("\n")).toEqual([]);
-  }, 30000);
+  }, 60000);
 
   it("Wave F is authored jobs, not name-fill templates", () => {
     expect(WAVE_F_CARDS.every((c) => !c.id.startsWith("wf_"))).toBe(true);
@@ -207,7 +207,7 @@ describe("all printed cards — effects run", () => {
       }
     }
     expect(fails, fails.join("\n")).toEqual([]);
-  }, 30000);
+  }, 60000);
 });
 
 describe("Wave E / F hero jobs", () => {

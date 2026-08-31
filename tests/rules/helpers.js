@@ -76,8 +76,8 @@ export function makeDriver(handlers = {}) {
       if (handlers.chooseMain) return handlers.chooseMain(p, actions);
       return actions.find((a) => a.type === "end");
     },
-    async askAttack(p, attackers, targetsFn) {
-      if (handlers.askAttack) return handlers.askAttack(p, attackers, targetsFn);
+    async askAttack(p, attackers, targetsFn, battleActs) {
+      if (handlers.askAttack) return handlers.askAttack(p, attackers, targetsFn, battleActs);
       return null;
     },
     async askMulligan() { return []; },

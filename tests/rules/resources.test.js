@@ -153,6 +153,107 @@ describe("first-turn no attack (Yu-Gi-Oh)", () => {
     expect(phases.filter((x) => x.startsWith("1:"))).toEqual(["1:M1"]);
   });
 
+  it("logs Draw, Standby, Main 1, Battle Start/Battle/End, Main 2, and End Phase", async () => {
+    const G = mkState(1);
+    G.io = makeDriver({
+      chooseMain: (_p, actions) => {
+        if (G.turnCount >= 3) {
+          G.over = true;
+          G.winner = 0;
+          G.winReason = "test stop";
+        }
+        return actions.find((a) => a.type === "end");
+      },
+      askAttack: () => null
+    });
+    G.setup = { decks: [mk40("gem_golem"), mk40("shield_sprite")], firstPlayer: 0 };
+    await runDuel(G);
+    const msgs = G.log.map((l) => l.msg).join("\n");
+    expect(msgs).toMatch(/Draw Phase — opening draw skipped/);
+    expect(msgs).toMatch(/Standby Phase/);
+    expect(msgs).toMatch(/Main Phase 1/);
+    expect(msgs).toMatch(/Main Phase 2 is skipped/);
+    expect(msgs).toMatch(/End Phase/);
+    expect(msgs).toMatch(/— Draw Phase —/);
+    expect(msgs).toMatch(/Battle Phase: Start Step/);
+    expect(msgs).toMatch(/Battle Phase: Battle Step/);
+    expect(msgs).toMatch(/Battle Phase: End Step/);
+    expect(msgs).toMatch(/Main Phase 2 —/);
+  });
+
+  it("Battle Step can activate a Quick-Play as CL1, then still reach End Step", async () => {
+    const G = mkState(1);
+    G.tp = 0;
+    G.turnCount = 3;
+    G.phase = "BP";
+    G.firstPlayer = 1;
+    addField(G, 0, "ember_fox", 0, { summonedTurn: 3 });
+    const foe = addField(G, 1, "gem_golem", 0, { summonedTurn: 0 });
+    addHand(G, 0, "ember_spark");
+    let activated = false;
+    G.io = makeDriver({
+      askAttack(_p, _attackers, _tf, acts) {
+        if (!activated) {
+          const hit = (acts || []).find((a) => a.card?.id === "ember_spark");
+          if (hit) {
+            activated = true;
+            return hit;
+          }
+        }
+        return null;
+      },
+      choose(_p, req) {
+        if (req.uids) {
+          const i = req.uids.indexOf(foe.uid);
+          return [i >= 0 ? i : 0];
+        }
+        return [0];
+      }
+    });
+    await battlePhase(G);
+    expect(activated).toBe(true);
+    expect(foe.dmg).toBe(2);
+    const msgs = G.log.map((l) => l.msg).join("\n");
+    expect(msgs).toMatch(/Battle Phase: Start Step/);
+    expect(msgs).toMatch(/Battle Phase: Battle Step/);
+    expect(msgs).toMatch(/Battle Phase: End Step/);
+  });
+
+  it("enters Main Phase 2 after a declared attack", async () => {
+    const G = mkState(1);
+    const mains = [];
+    let attacked = false;
+    G.io = makeDriver({
+      chooseMain: (p, actions) => {
+        mains.push(`${G.turnCount}:${G.phase}:${p}`);
+        if (G.turnCount === 1 && G.phase === "M1" && p === 0) {
+          const s = actions.find((a) => a.type === "summon" && a.card?.id === "ember_fox");
+          if (s) return { ...s, zone: 0 };
+        }
+        if (G.turnCount >= 3 && G.phase === "M2" && p === 0) {
+          G.over = true;
+          G.winner = 0;
+          G.winReason = "test stop";
+        }
+        return actions.find((a) => a.type === "end");
+      },
+      askAttack: (p, attackers) => {
+        if (p === 0 && !attacked && attackers.length) {
+          attacked = true;
+          return { attackerUid: attackers[0].uid, targetUid: null };
+        }
+        return null;
+      }
+    });
+    G.setup = { decks: [mk40("ember_fox"), mk40("shield_sprite")], firstPlayer: 0 };
+    await runDuel(G);
+    expect(attacked).toBe(true);
+    expect(mains).toContain("3:M2:0");
+    const msgs = G.log.map((l) => l.msg).join("\n");
+    expect(msgs).toMatch(/Your Main Phase 2/);
+    expect(msgs).toMatch(/Attack declaration window/);
+  });
+
   it("gives the second player 3 EP and the first player 2", () => {
     const G = mkState(1);
     setupDuel(G, { decks: [mk40("ember_fox"), mk40("ember_fox")], firstPlayer: 0 });

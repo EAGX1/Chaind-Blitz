@@ -107,6 +107,22 @@ describe("chain Smart vs Confirm", () => {
     expect(shouldPromptChain("smart", 0, legalQuick, [], { damageCalc: true })).toBe(true);
   });
 
+  it("Smart asks for Set traps and monster Quicks on the opponent's turn", () => {
+    const legalSetQuick = [{ type: "set", speed: 2, card: { def: { spell: { speed: 2, subtype: "quick" } } } }];
+    const legalHandTrap = [{ type: "hand", speed: 2, card: { def: { handTrap: true, spell: { speed: 2 } } } }];
+    expect(shouldPromptChain("smart", 0, legalSetQuick, [], { turnPlayer: 1 })).toBe(true);
+    expect(shouldPromptChain("smart", 0, legalSetQuick, [], { turnPlayer: 0 })).toBe(false);
+    expect(shouldPromptChain("smart", 0, legalQuick, [], { turnPlayer: 1 })).toBe(true);
+    expect(shouldPromptChain("smart", 0, legalQuick, [], { turnPlayer: 0 })).toBe(false);
+    expect(shouldPromptChain("smart", 0, legalHandTrap, [], { turnPlayer: 1 })).toBe(true);
+  });
+
+  it("Smart asks every legal response in the attack declaration window", () => {
+    const legalSetQuick = [{ type: "set", speed: 2, card: { def: { spell: { speed: 2, subtype: "quick" } } } }];
+    expect(shouldPromptChain("smart", 0, legalSetQuick, [], { battleWindow: "declare", turnPlayer: 0 })).toBe(true);
+    expect(shouldPromptChain("auto", 0, legalSetQuick, [], { battleWindow: "declare" })).toBe(false);
+  });
+
   it("Auto and Off never ask", () => {
     expect(shouldPromptChain("auto", 0, legalCounter, [{ controller: 1 }], {})).toBe(false);
     expect(shouldPromptChain("off", 0, legalCounter, [{ controller: 1 }], {})).toBe(false);
@@ -1054,6 +1070,7 @@ describe("remaining HP and phase sentence", () => {
   it("Main 1 is a sentence, Battle names the Damage Step window", () => {
     expect(phaseSentence({ phase: "M1" }).sentence).toMatch(/play a card or end/i);
     expect(phaseSentence({ phase: "BP", battleStep: "dsStart" }).sentence).toMatch(/Damage Step/i);
+    expect(phaseSentence({ phase: "BP", battleStep: "declare" }).sentence).toMatch(/attack declaration/i);
     expect(phaseSentence({ phase: "BP" }).hint).toBe("ATK");
   });
 
@@ -1534,6 +1551,7 @@ describe("Master Duel chain picker", () => {
     expect(lastChainCardName([])).toBe("");
     expect(chainWindowTitle([]).plain).toMatch(/Chain another card or effect/);
     expect(chainWindowTitle([], { damageStep: "dsDuring" }).plain).toMatch(/DAMAGE STEP/);
+    expect(chainWindowTitle([], { battleWindow: "declare" }).plain).toMatch(/ATTACK DECLARATION/);
     const dsNamed = chainWindowTitle([{ card: { def: { name: "Surge Imp" } } }], { damageStep: "dsDuring" });
     expect(dsNamed.plain).toMatch(/DAMAGE STEP/);
     expect(dsNamed.plain).toMatch(/Surge Imp/);

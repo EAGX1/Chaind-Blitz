@@ -33,14 +33,15 @@ function activationOk(G, card, ctx, fromHand) {
   const specs = eff?.targets || (def.quick?.targets) || [];
   for (const spec of specs) {
     if (spec.optional) continue;
-    if (legalTargets(G, spec, { controller: card.controller }).length === 0) return false;
+    if (legalTargets(G, spec, { controller: card.controller, card }).length === 0) return false;
   }
   return true;
 }
 
-function quickUsable(G, card) {
+export function quickUsable(G, card) {
   card._quickTurns ||= {};
   const q = card.def.quick;
+  if (!q) return false;
   if (q.oncePerTurn !== false && card._quickTurns.used === G.turnCount) return false;
   return true;
 }
@@ -64,9 +65,10 @@ export function legalFastEffects(G, p, ctx) {
   }
   if (ctx.summonCtx) return acts; // summon-negation window: counters only
 
-  // Quick-Play spells from hand — YOUR turn only (default)
+  // Quick-Play spells from hand — YOUR turn only (not hand traps; those answer)
   if (G.tp === p && canAnswerSpeed) {
     for (const c of pl.hand) {
+      if (c.def?.handTrap || c.def?.spell?.handTrap) continue;
       if (c.def?.spell?.speed === 2 && activationOk(G, c, ctx, true)) {
         acts.push({ type: "hand", card: c, speed: 2 });
       }
@@ -87,10 +89,10 @@ export function legalFastEffects(G, p, ctx) {
     }
   }
 
-  // Monster Quick Effects (SS2)
+  // Monster Quick Effects (SS2) — same target/condition gate as spells
   if (canAnswerSpeed) {
     for (const c of pl.mz) {
-      if (c?.faceup && c.def.quick && !c.negated && quickUsable(G, c)) {
+      if (c?.faceup && c.def.quick && !c.negated && quickUsable(G, c) && activationOk(G, c, ctx, false)) {
         acts.push({ type: "quick", card: c, speed: 2 });
       }
     }
@@ -129,15 +131,26 @@ async function payCostAndTarget(G, card, effDef, kind) {
   return link;
 }
 
+function undoFailedActivation(G, act, card, wasFaceup) {
+  if (act.type === "hand") {
+    const pl = P(G, card.controller);
+    card.loc = "hand";
+    card.zone = -1;
+    card.faceup = false;
+    if (!pl.hand.includes(card)) pl.hand.push(card);
+    return;
+  }
+  if (act.type === "set") card.faceup = wasFaceup;
+}
+
 export async function performActivation(G, act) {
   const card = act.card;
   const p = card.controller;
   let effDef, kind;
+  const wasFaceup = card.faceup;
   if (act.type === "quick") {
     effDef = { ...card.def.quick, speed: 2 };
     kind = "monsterEffect";
-    card._quickTurns ||= {};
-    card._quickTurns.used = G.turnCount;
   } else {
     effDef = { ...card.def.spell };
     kind = "spell";
@@ -148,7 +161,14 @@ export async function performActivation(G, act) {
     }
   }
   const link = await payCostAndTarget(G, card, effDef, kind);
-  if (!link) return null;
+  if (!link) {
+    undoFailedActivation(G, act, card, wasFaceup);
+    return null;
+  }
+  if (act.type === "quick") {
+    card._quickTurns ||= {};
+    card._quickTurns.used = G.turnCount;
+  }
   link.speed = act.speed;
   log(G, `${p === 0 ? "You" : "AI"} activate ${card.def.name} (Chain Link ${G.chain.length + 1}).`, "chain");
   pushEvents(G, [{ type: kind === "spell" ? "spellActivated" : "effectActivated", card, player: p }]);
@@ -183,7 +203,7 @@ export function makeTriggerLink(G, f, clNum = 1) {
 /* ================= response windows =================
    startPlayer is asked first; priority alternates; two consecutive passes end
    the build. Triggers (already SEGOC-ordered) occupy CL1..n before fast effects. */
-export async function responseWindow(G, { startPlayer, initialLinks = [], summonCtx = null, damageStep = null }) {
+export async function responseWindow(G, { startPlayer, initialLinks = [], summonCtx = null, damageStep = null, battleWindow = null }) {
   G.chain = [...initialLinks];
   let passes = 0;
   let cur = startPlayer;
@@ -191,7 +211,7 @@ export async function responseWindow(G, { startPlayer, initialLinks = [], summon
     const last = G.chain[G.chain.length - 1] || null;
     const ctx = { responseToSpeed: last ? last.speed : 0, lastLink: last, summonCtx, damageStep };
     const legal = legalFastEffects(G, cur, ctx);
-    const extra = { summonCtx, damageStep, damageCalc: damageStep === "dsDuring" };
+    const extra = { summonCtx, damageStep, damageCalc: damageStep === "dsDuring", turnPlayer: G.tp, battleWindow };
     const pick = await G.io.askChain(cur, legal, G.chain, extra);
     if (pick == null) {
       passes++;
@@ -214,7 +234,7 @@ export async function responseWindow(G, { startPlayer, initialLinks = [], summon
 /* Full post-event protocol: collect triggers (SEGOC), open the response window,
    and repeat while chains keep resolving. This is the ONLY entry point the
    game flow uses after events. */
-export async function checkAndRespond(G, { startPlayer = null, offerFast = true, damageStep = null } = {}) {
+export async function checkAndRespond(G, { startPlayer = null, offerFast = true, damageStep = null, battleWindow = null } = {}) {
   startPlayer ??= G.tp;
   while (true) {
     const trigs = collectTriggers(G);
@@ -227,7 +247,7 @@ export async function checkAndRespond(G, { startPlayer = null, offerFast = true,
       }
     }
     if (initial.length === 0 && !offerFast) return;
-    const had = await responseWindow(G, { startPlayer, initialLinks: initial, summonCtx: null, damageStep });
+    const had = await responseWindow(G, { startPlayer, initialLinks: initial, summonCtx: null, damageStep, battleWindow });
     if (!had) {
       if (flushLaneSummons(G)) continue;
       return;

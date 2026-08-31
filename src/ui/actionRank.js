@@ -1,6 +1,6 @@
 /** Field click: Evolve first so glow matches the click. Set is not in this list — it lives on the prompt bar. */
 export function rankFieldActions(acts) {
-  const order = ["evolve", "summon", "activate", "activateSet", "ignition", "contactFusion", "ambushSet"];
+  const order = ["evolve", "summon", "activate", "activateSet", "quick", "ignition", "contactFusion", "ambushSet"];
   return (acts || [])
     .filter((a) => a.type !== "set" && a.type !== "end")
     .slice()

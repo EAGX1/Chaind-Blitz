@@ -51,6 +51,18 @@ export function chainWindowTitle(chain, extra = {}) {
   const cl = (chain?.length || 0) + 1;
   const body = namedActivateCopy(name, cl);
   const ds = extra.damageStep;
+  if (extra.battleWindow === "declare") {
+    const prefix = "ATTACK DECLARATION — respond?";
+    return name ? withPrefix(prefix, body) : { plain: prefix, html: null };
+  }
+  if (extra.battleWindow === "start") {
+    const prefix = "BATTLE START STEP — activate a Quick?";
+    return name ? withPrefix(prefix, body) : { plain: prefix, html: null };
+  }
+  if (extra.battleWindow === "end") {
+    const prefix = "BATTLE END STEP — activate a Quick?";
+    return name ? withPrefix(prefix, body) : { plain: prefix, html: null };
+  }
   if (DS_TITLE[ds]) return name ? withPrefix(DS_TITLE[ds], body) : { plain: DS_TITLE[ds], html: null };
   if (extra.damageCalc) {
     const prefix = "DAMAGE CALCULATION — use an effect?";

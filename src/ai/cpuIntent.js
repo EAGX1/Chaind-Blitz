@@ -98,6 +98,26 @@ function wipeNeed(tier) {
   return tier === "easy" ? 4 : 2;
 }
 
+/** Fire a Quick-Play from hand in open Main — slightly above Set so the CPU uses the YGO window. */
+function scoreQuickFromHand(G, p, d, tier) {
+  if (d.id === "helix_shot") return 7.5 + (tier === "hard" ? 0.4 : 0);
+  if (d.id === "twin_cut") return enemySetCount(G, p) ? 8 : 1;
+  if (d.id === "equal_cut") {
+    return monstersOf(G, p).length < monstersOf(G, opp(p)).length ? 8.2 : 1;
+  }
+  if (d.id === "ember_spark" || d.id === "root_snare") {
+    return monstersOf(G, opp(p)).length ? 6.2 : 0;
+  }
+  if (d.id === "shatter_sigil" || d.id === "riptide") {
+    return enemySetCount(G, p) ? 6.5 : 1;
+  }
+  if (d.id === "tidal_snare") return 2;
+  if (d.id === "call_fallen") {
+    return P(G, p).gy.some((c) => c.def.type === "monster" && c.def.cost >= 4) ? 7 : 0;
+  }
+  return 5.6;
+}
+
 /** Main-phase heuristic. Live duels use this — not a search. */
 export function scoreMainAct(G, p, act, { tier = "normal", depth = 2 } = {}) {
   if (act.type === "undo") return -99;
@@ -142,6 +162,7 @@ export function scoreMainAct(G, p, act, { tier = "normal", depth = 2 } = {}) {
       if (d.id === "scroll_greed") return 4.2;
       if (d.id === "moonwell") return P(G, p).lp <= 10 ? 6 : 0;
       if (d.id === "tactic_choice") return 6.6;
+      if (d.spell?.subtype === "quick") return scoreQuickFromHand(G, p, d, tier);
       return 5;
     }
     case "set": {
@@ -169,6 +190,11 @@ export function scoreMainAct(G, p, act, { tier = "normal", depth = 2 } = {}) {
       return d.spell?.subtype === "continuous" ? 5 : 3;
     }
     case "ignition": return 6;
+    case "quick": {
+      if (!d) return 3;
+      if (d.id === "spark_channeler") return monstersOf(G, opp(p)).length ? 4.8 : 0;
+      return 4.2;
+    }
     case "contactFusion": {
       const fus = act.fusion?.def;
       const mats = act.materials || [];

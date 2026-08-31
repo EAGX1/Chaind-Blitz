@@ -284,7 +284,7 @@ export function legalTargets(G, spec, ctx) {
     if (spec.what === "setSpell" || spec.what === "faceupSpell" || spec.what === "anySpell" || spec.what === "any") {
       for (const c of P(G, p).stz) {
         if (!c) continue;
-        if (spec.what === "setSpell" && c.faceup) continue;
+        if (spec.what === "setSpell" && (c.faceup || c === ctx.card)) continue;
         if (spec.what === "faceupSpell" && !c.faceup) continue;
         if (!spec.filter || spec.filter(G, c, ctx)) out.push(c);
       }

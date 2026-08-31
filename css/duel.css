@@ -889,6 +889,12 @@ html[data-reduced-motion="1"] .arena.foe-turn .you-hand .cb-card {
   color: #ff8a8a;
   text-shadow: 0 0 28px rgba(255,93,93,.45), 0 4px 18px #000;
 }
+.turn-splash[data-kind="phase"] b {
+  font-size: clamp(22px, 4vw, 40px);
+  letter-spacing: 0.12em;
+  color: var(--teal);
+  text-shadow: 0 0 28px rgba(80,220,200,.45), 0 4px 18px #000;
+}
 .turn-splash.is-static {
   animation: none;
   opacity: 1;

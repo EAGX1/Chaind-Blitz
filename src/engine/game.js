@@ -1,5 +1,5 @@
 // Game orchestrator: duel setup, turn loop (DP SP M1 BP M2 EP), main-phase
-// action loop, battle phase with a single damage-calc window, evolution, Field Lane
+// action loop, Yu-Gi-Oh Battle Phase windows, evolution, Field Lane
 // reveals, hand limit, win conditions.
 
 import {
@@ -14,7 +14,7 @@ import {
 } from "./ops.js";
 import {
   checkAndRespond, summonNegationWindow, performActivation,
-  responseWindow, resolveChain
+  responseWindow, resolveChain, quickUsable, legalFastEffects
 } from "./chain.js";
 import { clearTriggerFlags } from "./triggers.js";
 import { legalContactFusions, contactFusionSummon } from "./fusion.js";
@@ -113,6 +113,8 @@ export function labsGoalMet(G) {
 
 export function checkLabsGoal(G) {
   if (!G.meta?.labs || G.over) return false;
+  // Battle-phase beats (Ward, Ambush, Damage Step) must not cut Main 2 short.
+  if (G.phase === "BP") return false;
   if (!labsGoalMet(G)) return false;
   G.over = true;
   G.winner = 0;
@@ -160,11 +162,13 @@ export function cannotPlayReason(G, p, card) {
   if (sp.condition && !sp.condition(G, card, {})) return "Its activation condition is not met.";
   for (const spec of sp.targets || []) {
     if (spec.optional) continue;
-    if (legalTargets(G, spec, { controller: card.controller }).length === 0) {
+    if (legalTargets(G, spec, { controller: card.controller, card }).length === 0) {
       return "No legal targets right now.";
     }
   }
-  if (sp.subtype === "quick") return "No legal targets right now (or it was Set this turn).";
+  if (sp.subtype === "quick") {
+    return "No legal targets — Quick-Plays from hand need a target, or a free zone to Set.";
+  }
   return "Cannot be activated right now.";
 }
 
@@ -271,10 +275,16 @@ export function legalMainActions(G, p) {
       }
     } else if (d.type === "spell" && d.spell) {
       const sp = d.spell;
+      const handTrap = !!(d.handTrap || sp.handTrap);
       if (sp.subtype === "normal" && spellActivatable(G, c, true)) {
         acts.push({ type: "activate", card: c, label: `Activate ${d.name}` });
       }
       if (sp.subtype === "continuous" && stzFree && spellActivatable(G, c, true)) {
+        acts.push({ type: "activate", card: c, label: `Activate ${d.name}` });
+      }
+      // YGO: Quick-Play from hand on YOUR turn as CL1 (SS2). Hand traps stay
+      // response-only — they are not a Main Phase "Activate".
+      if (sp.subtype === "quick" && !handTrap && spellActivatable(G, c, true)) {
         acts.push({ type: "activate", card: c, label: `Activate ${d.name}` });
       }
       if (stzFree) {
@@ -295,9 +305,12 @@ export function legalMainActions(G, p) {
     if (!c?.faceup) continue;
     if (c.def.ignition && !c.negated) {
       c._ignTurns ||= {};
-      if (c._ignTurns.used !== G.turnCount) {
+      if (c._ignTurns.used !== G.turnCount && effectActivatable(G, c, c.def.ignition)) {
         acts.push({ type: "ignition", card: c, label: `${d0(c)} effect: ${c.def.ignition.text}` });
       }
+    }
+    if (c.def.quick && !c.negated && quickUsable(G, c) && effectActivatable(G, c, c.def.quick)) {
+      acts.push({ type: "quick", card: c, label: `${d0(c)} Quick: ${c.def.quick.text}` });
     }
     if (canEvolveNow(G, p) && !c.evolved) {
       const free = P(G, p).freeEvolvePending;
@@ -324,13 +337,17 @@ export function legalMainActions(G, p) {
 }
 const d0 = (c) => c.def.name;
 
-function spellActivatable(G, card, fromHand) {
-  const sp = card.def.spell;
-  if (!sp) return false;
-  if (sp.condition && !sp.condition(G, card, {})) return false;
-  for (const spec of sp.targets || []) {
+function spellActivatable(G, card, _fromHand) {
+  return effectActivatable(G, card, card.def.spell);
+}
+
+function effectActivatable(G, card, eff) {
+  if (!eff) return false;
+  if (typeof eff.cost?.can === "function" && !eff.cost.can(G, card)) return false;
+  if (eff.condition && !eff.condition(G, card, {})) return false;
+  for (const spec of eff.targets || []) {
     if (spec.optional) continue;
-    if (legalTargets(G, spec, { controller: card.controller }).length === 0) return false;
+    if (legalTargets(G, spec, { controller: card.controller, card }).length === 0) return false;
   }
   return true;
 }
@@ -352,17 +369,29 @@ async function performMainAction(G, act, p) {
       card.faceup = true;
       const link = await activateSpellLink(G, card, p);
       if (link) await finishSingleActivation(G, link, p);
+      else card.faceup = false;
+      return;
+    }
+    case "quick": {
+      const link = await performActivation(G, { type: "quick", card, speed: 2 });
+      if (link) await finishSingleActivation(G, link, p);
       return;
     }
     case "ignition": {
-      card._ignTurns.used = G.turnCount;
       const eff = card.def.ignition;
+      if (!eff) return;
       const link = { card, controller: p, kind: "monsterEffect", speed: 1, def: eff, targets: [], negated: false, ev: null };
-      if (eff.cost?.pay) await eff.cost.pay(G, card, link);
       if (eff.targets?.length) {
         const picked = await chooseTargets(G, p, eff.targets, { controller: p, card }, `${card.def.name}: choose target(s)`);
-        if (picked) link.targets = picked;
+        if (picked === null) return;
+        link.targets = picked;
       }
+      if (eff.cost?.pay) {
+        const paid = await eff.cost.pay(G, card, link);
+        if (paid === false) return;
+      }
+      card._ignTurns ||= {};
+      card._ignTurns.used = G.turnCount;
       log(G, `${p === 0 ? "You" : "AI"} activate ${card.def.name}'s effect.`, "chain");
       pushEvents(G, [{ type: "effectActivated", card, player: p }]);
       await finishSingleActivation(G, link, p);
@@ -622,26 +651,53 @@ export function attackTargets(G, attacker) {
   return { foes: all, canDirect: all.length === 0, blocked: [] };
 }
 
+function isBattleFastPick(choice) {
+  const t = choice?.type;
+  return t === "hand" || t === "set" || t === "quick" || t === "handQuick";
+}
+
 export async function battlePhase(G) {
   if (isFirstTurnNoBattle(G)) {
     log(G, "First turn — the going-first player cannot attack.", "phase");
     return;
   }
+
+  // YGO Start Step: open game state, turn player priority, then NTP.
   G.battleStep = "start";
-  await checkAndRespond(G, { startPlayer: opp(G.tp) });
+  log(G, "— Battle Phase: Start Step —", "phase");
+  pushEvents(G, [{ type: "phase", phase: "BP", battleStep: "start", player: G.tp }]);
+  await checkAndRespond(G, { startPlayer: G.tp, battleWindow: "start" });
+  if (G.over) return;
+
+  // Battle Step repeats until the turn player passes to End Step.
+  // Open: declare an attack, activate SS2+ as CL1, or end Battle.
+  // After each Damage Step the game returns here (not to End Step).
   while (!G.over) {
+    G.battleStep = "battle";
+    log(G, "— Battle Phase: Battle Step —", "phase");
     const tp = G.tp;
     const attackers = monstersOf(G, tp).filter((m) => canAttack(G, m));
-    if (!attackers.length) break;
-    const choice = await G.io.askAttack(tp, attackers, (a) => attackTargets(G, a));
-    if (!choice) break;
+    const fast = legalFastEffects(G, tp, {
+      responseToSpeed: 0, lastLink: null, summonCtx: null, damageStep: null
+    });
+    const choice = await G.io.askAttack(tp, attackers, (a) => attackTargets(G, a), fast);
+    if (!choice || choice.type === "end") break;
+    if (isBattleFastPick(choice)) {
+      const link = await performActivation(G, choice);
+      if (link) await finishSingleActivation(G, link, tp);
+      continue;
+    }
     const attacker = attackers.find((a) => a.uid === choice.attackerUid);
     if (!attacker || !canAttack(G, attacker)) continue;
     await conductAttack(G, attacker, choice.targetUid ?? null);
     checkLabsGoal(G);
   }
+  if (G.over) return;
+
   G.battleStep = "end";
-  await checkAndRespond(G, { startPlayer: opp(G.tp) });
+  log(G, "— Battle Phase: End Step —", "phase");
+  pushEvents(G, [{ type: "phase", phase: "BP", battleStep: "end", player: G.tp }]);
+  await checkAndRespond(G, { startPlayer: G.tp, battleWindow: "end" });
   G.battleStep = null;
 }
 
@@ -682,7 +738,9 @@ export async function conductAttack(G, attacker, targetUid, replayDepth = 0) {
 
     log(G, `${attacker.def.name} attacks ${target ? target.def.name : "directly"}!`, "attack");
     pushEvents(G, [{ type: "attackDeclared", card: attacker, target, player: p }]);
-    await checkAndRespond(G, { startPlayer: opp(p) });
+    G.battleStep = "declare";
+    log(G, "— Battle Step: Attack declaration window —", "phase");
+    await checkAndRespond(G, { startPlayer: opp(p), battleWindow: "declare" });
     if (G.over) return;
     if (attacker.loc !== "mz") { log(G, "The attacker left the field — the attack ends.", "warn"); return; }
 
@@ -874,7 +932,11 @@ export async function runDuel(G) {
     }
 
     G.phase = "DP";
-    if (!(tp === G.firstPlayer && G.turnCount === 1)) drawCards(G, tp, 1, { phaseDraw: true });
+    const skipDraw = tp === G.firstPlayer && G.turnCount === 1;
+    log(G, skipDraw
+      ? "— Draw Phase — opening draw skipped (going first)."
+      : "— Draw Phase —", "phase");
+    if (!skipDraw) drawCards(G, tp, 1, { phaseDraw: true });
     if (pl.bonusDrawNextTurn > 0) {
       const n = pl.bonusDrawNextTurn;
       pl.bonusDrawNextTurn = 0;
@@ -882,8 +944,11 @@ export async function runDuel(G) {
       log(G, `Comeback bonus: draw ${n}.`, "system");
     }
     if (G.over) break;
+    await checkAndRespond(G, { startPlayer: tp });
+    if (G.over) break;
 
     G.phase = "SP";
+    log(G, "— Standby Phase —", "phase");
     pushEvents(G, [{ type: "phase", phase: "SP", player: tp }]);
     await checkAndRespond(G, { startPlayer: tp });
     if (G.over) break;
@@ -893,20 +958,26 @@ export async function runDuel(G) {
     await mainPhaseLoop(G);
     if (G.over) break;
 
-    G.phase = "BP";
-    await battlePhase(G);
-    if (G.over) break;
-
     // YGO: no Battle Phase on the first turn ⇒ no Main Phase 2 either.
+    // Do not paint BP on the orb for that skip — it reads as "I battled, then
+    // the turn ended" and Main 2 looks missing.
     if (isFirstTurnNoBattle(G)) {
+      log(G, "First turn — the going-first player cannot attack.", "phase");
       log(G, "First turn — Main Phase 2 is skipped (no Battle Phase).", "phase");
     } else {
+      G.phase = "BP";
+      await battlePhase(G);
+      if (G.over) break;
+
       G.phase = "M2";
+      log(G, `— Turn ${G.turnCount} · ${tp === 0 ? "Your" : "AI's"} Main Phase 2 —`, "phase");
       await mainPhaseLoop(G);
+      checkLabsGoal(G);
       if (G.over) break;
     }
 
     G.phase = "EP";
+    log(G, "— End Phase —", "phase");
     pushEvents(G, [{ type: "turnEnd", player: tp }]);
     clearTurnLocks(G);
     for (const lane of G.lanes) {

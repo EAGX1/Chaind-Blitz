@@ -1413,8 +1413,9 @@ export function initHub(ctx) {
       <p>Your side: <b>6 monster zones</b> and <b>6 spell zones</b>. Deck and GY sit on your <b>right</b>; Extra Deck and Banished on your <b>left</b> — the foe is mirrored.
       Between the boards lie <b>3 Field Lanes</b> that reshape the duel as turns pass.</p>`],
     ["TURN STRUCTURE", `
-      <p>Every turn runs the classic six phases: <b>DP</b> (draw) → <b>SP</b> (standby) → <b>M1</b> (main 1) →
-      <b>BP</b> (battle: declare, damage step, end) → <b>M2</b> (main 2) → <b>EP</b> (end; hand limit 6, discards happen here).</p>
+      <p>Every turn runs the classic six phases: <b>Draw Phase</b> → <b>Standby Phase</b> → <b>Main Phase 1</b> →
+      <b>Battle Phase</b> (Start Step, Battle Step, Damage Step with all five windows, End Step) →
+      <b>Main Phase 2</b> → <b>End Phase</b> (hand limit 6).</p>
       <p>The player who goes first <b>cannot attack on their first turn</b> — Battle Phase <i>and</i> Main Phase 2 are skipped, even for Rush.
       They also skip the opening Draw Phase (the starting hand is already 5). The second player may attack on their first turn.</p>
       <p>Fast effects can be activated in the windows between phases, at every chain, and on every summon. The phase orb on the right advances the turn.</p>`],
@@ -1466,8 +1467,8 @@ export function initHub(ctx) {
       <p>Ranked climbs Bronze → Silver → Gold → Platinum → Diamond → Master, 100 LP per tier. Hitting 100 LP starts a
       <b>promotion series</b>: you queue ranked duels one at a time and need 2 wins before 2 losses.
       Ranked is for your own collection (starters and custom lists); the ladder <b>soft-resets two tiers</b> each monthly season.
-      Your <b>card pool grows with your tier</b> — Bronze 60, Silver 186 (Wave C + Silver + staples + combo core), Gold 208 (Wave D + Gold),
-      Platinum 254 (Wave E + Extra + Platinum), Diamond 330 (Wave F — full catalog). Master is prestige: the pool is already complete.</p>
+      Your <b>card pool grows with your tier</b> — Bronze 60, Silver unlocks the 1000 Neutral generics (any-deck staples) plus Wave C / Silver / combo core,
+      then Gold, Platinum, and Diamond (full catalog, 1330). Master is prestige: the pool is already complete.</p>
       <p>Packs drop cards only from your unlocked pool. Dismantle 3 cards of a rarity to craft any 1 card of that rarity (10 CP in, 30 CP out).</p>
       <p><b>Advanced</b> limits Starfall, Lightning Tempest, Both Boards, Scream Home, Research Burn, Empty Sky, and Tactic Choice to 1 copy. Unlimited is 3.</p>`],
     ["MODES", `
