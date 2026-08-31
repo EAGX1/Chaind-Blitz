@@ -19,10 +19,10 @@ const GREETERS: {
   yaw: number;
   kind: "vendor" | "stylist" | "keeper" | "marshal";
 }[] = [
-  { id: "vendor", poi: "pack_shop", x: -5.55, z: -2.35, yaw: 0.55, kind: "vendor" },
-  { id: "stylist", poi: "boutique", x: 5.55, z: -2.35, yaw: -0.55, kind: "stylist" },
-  { id: "keeper", poi: "solo_gates", x: -5.55, z: 6.15, yaw: 2.55, kind: "keeper" },
-  { id: "marshal", poi: "coliseum", x: 5.55, z: 6.15, yaw: -2.55, kind: "marshal" },
+  { id: "vendor", poi: "pack_shop", x: -6.35, z: -8, yaw: Math.PI / 2, kind: "vendor" },
+  { id: "stylist", poi: "boutique", x: 6.35, z: -8, yaw: -Math.PI / 2, kind: "stylist" },
+  { id: "keeper", poi: "solo_gates", x: -6.35, z: 10, yaw: Math.PI / 2, kind: "keeper" },
+  { id: "marshal", poi: "coliseum", x: 6.35, z: 10, yaw: -Math.PI / 2, kind: "marshal" },
 ];
 
 function Shadow() {

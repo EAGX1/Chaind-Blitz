@@ -452,6 +452,16 @@
   border-color: #e8c35a;
   box-shadow: 0 0 14px rgba(201, 162, 39, 0.28);
 }
+.city-poi-label.is-far {
+  padding: 3px 10px 4px;
+  min-width: 0;
+  background: rgba(255, 252, 245, 0.9);
+  border-top-width: 2px;
+}
+.city-poi-label.is-far b {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
 .city-root.has-panel .battle-city {
   filter: brightness(0.42);
 }

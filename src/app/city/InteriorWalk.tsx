@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { t } from "../../meta/i18n.js";
 
 type Props = {
   buildingId: string;
@@ -247,7 +248,7 @@ export function InteriorWalk({ buildingId, label, onOpenDesk, onExit }: Props) {
         {near ? (
           <button type="button" className="city-enter-cta" onClick={onOpenDesk}>OPEN COUNTER</button>
         ) : (
-          <button type="button" className="cb-btn" onClick={onExit}>BACK TO PLAZA</button>
+          <button type="button" className="cb-btn" onClick={onExit}>{t("city.back")}</button>
         )}
       </div>
     </div>

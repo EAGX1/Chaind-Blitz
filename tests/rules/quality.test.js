@@ -1730,4 +1730,15 @@ describe("hub polish helpers", () => {
     const { getPlazaTextures } = await import("../../src/app/city/plazaTextures.ts");
     expect(getPlazaTextures()).toBe(null);
   });
+
+  it("street shops sit on sidewalks and face the road", async () => {
+    const { BUILDINGS, KIOSKS, streetYaw, STREET_WALK } = await import("../../src/app/city/buildings.ts");
+    for (const b of BUILDINGS) {
+      expect(Math.abs(b.position[0])).toBeGreaterThan(8);
+      expect(Math.abs(streetYaw(b.position[0], b.position[2]))).toBeCloseTo(Math.PI / 2, 5);
+    }
+    expect(KIOSKS.every((k) => Math.abs(k.position[0]) > 4)).toBe(true);
+    expect(STREET_WALK.x).toBeGreaterThan(8);
+    expect(STREET_WALK.z).toBeGreaterThan(20);
+  });
 });

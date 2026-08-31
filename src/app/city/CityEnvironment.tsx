@@ -1,6 +1,6 @@
 /**
- * Battle City plaza — textured low-poly town square.
- * Procedural plaza plus optional GLTF props and a drei HDRI when motion is on.
+ * Battle City street — textured low-poly shopping avenue.
+ * Procedural street plus optional GLTF props and a drei HDRI when motion is on.
  */
 import { useMemo, useRef, type RefObject } from "react";
 import { ContactShadows, Environment } from "@react-three/drei";
@@ -9,6 +9,7 @@ import * as THREE from "three";
 import { sampleWorld, tickClock } from "./plazaTime";
 import { getPlazaTextures, type PlazaTextures } from "./plazaTextures";
 import { OptionalCityGltf } from "./OptionalCityGltf";
+import { CityStreet } from "./CityStreet";
 
 function useTex() {
   return useMemo(() => getPlazaTextures(), []);
@@ -77,94 +78,6 @@ function Tree({
   );
 }
 
-function FramedWindow({
-  position,
-  tex,
-}: {
-  position: [number, number, number];
-  tex: PlazaTextures;
-}) {
-  const glass = useRef<THREE.MeshStandardMaterial>(null);
-  useFrame(() => {
-    if (glass.current) glass.current.emissiveIntensity = 0.06 + sampleWorld().window * 1.1;
-  });
-  return (
-    <group position={position}>
-      <mesh>
-        <planeGeometry args={[0.72, 0.82]} />
-        <meshStandardMaterial ref={glass} color="#7ec8e8" emissive="#f0d78c" emissiveIntensity={0.08} roughness={0.18} />
-      </mesh>
-      <mesh position={[0, 0.44, 0.03]}>
-        <boxGeometry args={[0.82, 0.07, 0.07]} />
-        <meshStandardMaterial map={tex.wood} />
-      </mesh>
-      <mesh position={[0, -0.44, 0.03]}>
-        <boxGeometry args={[0.82, 0.07, 0.07]} />
-        <meshStandardMaterial map={tex.wood} />
-      </mesh>
-      <mesh position={[-0.38, 0, 0.03]}>
-        <boxGeometry args={[0.07, 0.9, 0.07]} />
-        <meshStandardMaterial map={tex.wood} />
-      </mesh>
-      <mesh position={[0.38, 0, 0.03]}>
-        <boxGeometry args={[0.07, 0.9, 0.07]} />
-        <meshStandardMaterial map={tex.wood} />
-      </mesh>
-      <mesh position={[0, 0, 0.04]}>
-        <boxGeometry args={[0.05, 0.82, 0.04]} />
-        <meshStandardMaterial map={tex.wood} />
-      </mesh>
-    </group>
-  );
-}
-
-function TownHouse({
-  a, r, w, h, d, roofKey, tex,
-}: {
-  a: number;
-  r: number;
-  w: number;
-  h: number;
-  d: number;
-  roofKey: "clay" | "teal" | "slate" | "amber";
-  tex: PlazaTextures;
-}) {
-  const x = Math.cos(a) * r;
-  const z = Math.sin(a) * r;
-  const roofs = { clay: tex.roofClay, teal: tex.roofTeal, slate: tex.roofSlate, amber: tex.roofAmber };
-  return (
-    <group position={[x, 0, z]} rotation={[0, -a + Math.PI / 2, 0]}>
-      <mesh position={[0, 0.18, 0]} receiveShadow>
-        <boxGeometry args={[w + 0.18, 0.36, d + 0.18]} />
-        <meshStandardMaterial map={tex.brick} roughness={0.82} />
-      </mesh>
-      <mesh position={[0, h / 2 + 0.18, 0]} castShadow receiveShadow>
-        <boxGeometry args={[w, h, d]} />
-        <meshStandardMaterial map={tex.plaster} roughness={0.78} />
-      </mesh>
-      <mesh position={[0, h + 0.95, 0]} rotation={[0, Math.PI / 4, 0]} castShadow>
-        <coneGeometry args={[Math.max(w, d) * 0.66, 1.85, 4]} />
-        <meshStandardMaterial map={roofs[roofKey]} roughness={0.55} />
-      </mesh>
-      <mesh position={[w * 0.28, h + 1.15, -d * 0.12]} castShadow>
-        <boxGeometry args={[0.38, 0.9, 0.38]} />
-        <meshStandardMaterial map={tex.brick} roughness={0.8} />
-      </mesh>
-      <mesh position={[0, 0.95, d / 2 + 0.04]} castShadow>
-        <boxGeometry args={[0.62, 1.35, 0.08]} />
-        <meshStandardMaterial map={tex.wood} roughness={0.7} />
-      </mesh>
-      <mesh position={[0, 1.55, d / 2 + 0.08]}>
-        <boxGeometry args={[0.08, 0.08, 0.08]} />
-        <meshStandardMaterial color="#c9a227" metalness={0.6} roughness={0.3} />
-      </mesh>
-      {[-w * 0.28, w * 0.28].map((wx) => (
-        <FramedWindow key={wx} position={[wx, h * 0.58, d / 2 + 0.03]} tex={tex} />
-      ))}
-    </group>
-  );
-}
-
 function Cloud({ x, y, z, s }: { x: number; y: number; z: number; s: number }) {
   const ref = useRef<THREE.Group>(null);
   useFrame((_, dt) => {
@@ -197,7 +110,7 @@ function Fountain({ tex }: { tex: PlazaTextures }) {
     water.current.emissiveIntensity = 0.18 + Math.sin(clock.elapsedTime * 2.1) * 0.07;
   });
   return (
-    <group>
+    <group position={[0, 0, -21.4]}>
       <mesh position={[0, 0.18, 0]} receiveShadow castShadow>
         <cylinderGeometry args={[2.35, 2.55, 0.36, 24]} />
         <meshStandardMaterial map={tex.brick} roughness={0.7} />
@@ -265,54 +178,34 @@ function DuelTable({ x, z, tex }: { x: number; z: number; tex: PlazaTextures }) 
   );
 }
 
-const HOUSES: { a: number; r: number; w: number; h: number; d: number; roofKey: "clay" | "teal" | "slate" | "amber" }[] = [
-  { a: 0.2, r: 24, w: 5.2, h: 6.5, d: 3.6, roofKey: "clay" },
-  { a: 0.55, r: 25.5, w: 4.2, h: 8, d: 3.2, roofKey: "teal" },
-  { a: 0.95, r: 24, w: 5.8, h: 5.5, d: 3.8, roofKey: "amber" },
-  { a: 1.35, r: 26, w: 3.8, h: 9, d: 3.0, roofKey: "clay" },
-  { a: 1.75, r: 24.5, w: 5.0, h: 7, d: 3.5, roofKey: "slate" },
-  { a: 2.15, r: 25, w: 4.6, h: 6, d: 3.3, roofKey: "clay" },
-  { a: 2.55, r: 24, w: 5.4, h: 8.5, d: 3.6, roofKey: "teal" },
-  { a: 2.95, r: 26, w: 3.6, h: 10, d: 2.8, roofKey: "amber" },
-  { a: 3.35, r: 24.5, w: 5.6, h: 6.2, d: 3.7, roofKey: "clay" },
-  { a: 3.75, r: 25.5, w: 4.4, h: 7.5, d: 3.2, roofKey: "slate" },
-  { a: 4.15, r: 24, w: 5.2, h: 5.8, d: 3.5, roofKey: "teal" },
-  { a: 4.55, r: 26, w: 3.9, h: 9.2, d: 3.0, roofKey: "clay" },
-  { a: 4.95, r: 24.5, w: 5.0, h: 6.8, d: 3.4, roofKey: "amber" },
-  { a: 5.35, r: 25, w: 4.8, h: 8, d: 3.3, roofKey: "slate" },
-  { a: 5.75, r: 24, w: 5.5, h: 7.2, d: 3.6, roofKey: "clay" },
-  { a: 6.1, r: 25.5, w: 4.0, h: 9.5, d: 3.1, roofKey: "teal" },
-];
-
 const TREES: [number, number, number, number, number][] = [
-  [-12.5, -1.5, 1.08, 0.72, 1],
-  [12.5, -1.2, 0.98, 0.58, 2],
-  [-12.2, 3.5, 1.18, 0.82, 3],
-  [12.4, 3.8, 1.02, 0.48, 4],
-  [-2.5, -13.5, 1.12, 0.78, 5],
-  [2.8, -13.2, 0.92, 0.4, 6],
-  [-14, 12, 1.22, 0.22, 7],
-  [14, 12.2, 1.08, 0.55, 8],
-  [0, 15.5, 1.18, 0.7, 9],
-  [-15.5, -8, 1.02, 0.28, 10],
-  [15.5, -8.2, 1.12, 0.8, 11],
-  [-18, 4, 0.95, 0.35, 12],
-  [18.2, 3.5, 1.05, 0.6, 13],
-  [-7, -16, 0.88, 0.2, 14],
-  [7.2, -16.2, 1.0, 0.75, 15],
+  [-7.55, -22, 1.08, 0.72, 1],
+  [7.55, -22, 0.98, 0.58, 2],
+  [-7.6, -15, 1.12, 0.82, 3],
+  [7.5, -15, 1.02, 0.48, 4],
+  [-7.45, 8.2, 1.18, 0.78, 5],
+  [7.5, 8.4, 0.92, 0.4, 6],
+  [-7.6, 24, 1.22, 0.22, 7],
+  [7.55, 24.2, 1.08, 0.55, 8],
+  [-7.4, 3.2, 0.95, 0.7, 9],
+  [7.45, 3.0, 1.02, 0.28, 10],
+  [7.4, 12.6, 1.05, 0.62, 11],
+  [7.5, 17.4, 0.92, 0.35, 12],
+  [7.35, 21.8, 1.12, 0.78, 13],
+  [-7.4, 17.2, 1.0, 0.5, 14],
 ];
 
 const HILLS: [number, number, number, number][] = [
-  [-42, -28, 14, 3.2],
-  [-22, -48, 16, 3.6],
-  [8, -52, 18, 4.0],
-  [38, -36, 15, 3.4],
-  [48, -8, 13, 3.0],
-  [46, 22, 16, 3.8],
-  [18, 46, 17, 3.5],
-  [-16, 48, 15, 3.2],
-  [-46, 18, 14, 3.4],
-  [-50, -8, 12, 2.8],
+  [-52, -32, 14, 3.2],
+  [-28, -58, 16, 3.6],
+  [12, -62, 18, 4.0],
+  [48, -42, 15, 3.4],
+  [58, -12, 13, 3.0],
+  [56, 28, 16, 3.8],
+  [22, 58, 17, 3.5],
+  [-22, 58, 15, 3.2],
+  [-56, 24, 14, 3.4],
+  [-58, -14, 12, 2.8],
 ];
 
 function SkyDome() {
@@ -370,10 +263,12 @@ function WorldClock({
   reduced,
   grass,
   stone,
+  road,
 }: {
   reduced: boolean;
   grass: RefObject<THREE.MeshStandardMaterial | null>;
   stone: RefObject<THREE.MeshStandardMaterial | null>;
+  road: RefObject<THREE.MeshStandardMaterial | null>;
 }) {
   const sun = useRef<THREE.DirectionalLight>(null);
   const moon = useRef<THREE.DirectionalLight>(null);
@@ -407,6 +302,7 @@ function WorldClock({
     const dim = 1 - w.night * 0.52;
     if (grass.current) grass.current.color.setRGB(dim, dim * 0.98, dim * 0.92);
     if (stone.current) stone.current.color.setRGB(dim, dim * 0.97, dim * 0.94);
+    if (road.current) road.current.color.setRGB(dim * 0.92, dim * 0.92, dim * 0.95);
     if (sunBall.current) {
       sunBall.current.position.set(w.sunX * 1.6, Math.max(8, w.sunY * 1.15) + 6, w.sunZ * 1.6);
       (sunBall.current.material as THREE.MeshBasicMaterial).color.set(w.night > 0.65 ? "#d8e4f8" : "#fff6d8");
@@ -425,11 +321,11 @@ function WorldClock({
         intensity={2.05}
         color="#fff2d0"
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-far={70}
-        shadow-camera-left={-28}
-        shadow-camera-right={28}
-        shadow-camera-top={28}
-        shadow-camera-bottom={-28}
+        shadow-camera-far={90}
+        shadow-camera-left={-24}
+        shadow-camera-right={24}
+        shadow-camera-top={36}
+        shadow-camera-bottom={-36}
         shadow-bias={-0.00028}
         shadow-radius={1.6}
         shadow-normalBias={0.04}
@@ -439,53 +335,8 @@ function WorldClock({
         <sphereGeometry args={[3.2, 16, 16]} />
         <meshBasicMaterial color="#fff6d8" />
       </mesh>
-      <fog attach="fog" args={["#c8e0f4", 38, 92]} />
+      <fog attach="fog" args={["#c8e0f4", 52, 110]} />
     </>
-  );
-}
-
-function Lamps({ tex }: { tex: PlazaTextures }) {
-  const lights = useRef<(THREE.PointLight | null)[]>([]);
-  const globes = useRef<(THREE.MeshStandardMaterial | null)[]>([]);
-  useFrame(() => {
-    const w = sampleWorld();
-    for (const l of lights.current) if (l) l.intensity = w.lamp;
-    for (const g of globes.current) if (g) g.emissiveIntensity = 0.25 + w.lamp * 1.05;
-  });
-  const spots: [number, number][] = [
-    [6.4, 6.4],
-    [-6.4, 6.4],
-    [6.4, -6.4],
-    [-6.4, -6.4],
-  ];
-  return (
-    <group>
-      {spots.map(([x, z], i) => (
-        <group key={`${x}:${z}`} position={[x, 0, z]}>
-          <mesh position={[0, 1.55, 0]} castShadow>
-            <cylinderGeometry args={[0.07, 0.12, 3.1, 8]} />
-            <meshStandardMaterial map={tex.plasterSand} roughness={0.45} />
-          </mesh>
-          <mesh position={[0, 3.18, 0]}>
-            <sphereGeometry args={[0.22, 12, 12]} />
-            <meshStandardMaterial
-              ref={(m) => { globes.current[i] = m; }}
-              color="#ffe9b0"
-              emissive="#ffc060"
-              emissiveIntensity={0.35}
-            />
-          </mesh>
-          <pointLight
-            ref={(l) => { lights.current[i] = l; }}
-            position={[0, 3.1, 0]}
-            color="#ffb060"
-            intensity={0}
-            distance={14}
-            decay={2}
-          />
-        </group>
-      ))}
-    </group>
   );
 }
 
@@ -493,12 +344,13 @@ export function CityEnvironment({ reducedMotion = false }: { reducedMotion?: boo
   const tex = useTex();
   const grass = useRef<THREE.MeshStandardMaterial>(null);
   const stone = useRef<THREE.MeshStandardMaterial>(null);
+  const road = useRef<THREE.MeshStandardMaterial>(null);
   if (!tex) return null;
 
   return (
     <>
       <color attach="background" args={["#7ec8f0"]} />
-      <WorldClock reduced={reducedMotion} grass={grass} stone={stone} />
+      <WorldClock reduced={reducedMotion} grass={grass} stone={stone} road={road} />
       <SkyDome />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.06, 0]} receiveShadow>
         <planeGeometry args={[160, 160]} />
@@ -510,38 +362,22 @@ export function CityEnvironment({ reducedMotion = false }: { reducedMotion?: boo
           <meshStandardMaterial map={tex.grass} color="#4a9a4e" roughness={0.96} />
         </mesh>
       ))}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.025, 0]} receiveShadow>
-        <circleGeometry args={[14.2, 64]} />
-        <meshStandardMaterial
-          ref={stone}
-          map={tex.cobble}
-          bumpMap={tex.cobbleBump}
-          bumpScale={0.42}
-          roughness={0.78}
-        />
-      </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.07, 0]} receiveShadow>
-        <ringGeometry args={[13.85, 14.45, 64]} />
-        <meshStandardMaterial map={tex.brick} roughness={0.72} />
-      </mesh>
+      <CityStreet tex={tex} sidewalkMat={stone} roadMat={road} />
       <Fountain tex={tex} />
-      <DuelTable x={-3.4} z={0.2} tex={tex} />
-      <DuelTable x={3.4} z={0.2} tex={tex} />
-      <DuelTable x={0} z={3.6} tex={tex} />
-      <DuelTable x={0} z={-3.4} tex={tex} />
-      <Lamps tex={tex} />
+      <DuelTable x={-6.15} z={3.2} tex={tex} />
+      <DuelTable x={6.15} z={3.2} tex={tex} />
+      <DuelTable x={-6.15} z={-11.2} tex={tex} />
+      <DuelTable x={6.15} z={14.2} tex={tex} />
+      <DuelTable x={6.15} z={20.8} tex={tex} />
       {TREES.map(([x, z, s, b, seed], i) => (
         <Tree key={i} x={x} z={z} scale={s} blossom={b} seed={seed} tex={tex} />
-      ))}
-      {HOUSES.map((h, i) => (
-        <TownHouse key={i} {...h} tex={tex} />
       ))}
       <Cloud x={-18} y={16} z={-12} s={1.2} />
       <Cloud x={8} y={18} z={-20} s={0.9} />
       <Cloud x={22} y={15} z={8} s={1.1} />
       <Cloud x={-28} y={17} z={10} s={1} />
-      <ContactShadows position={[0, 0.045, 0]} opacity={0.42} scale={38} blur={2.1} far={7} color="#142018" />
-      {!reducedMotion && <Environment preset="night" />}
+      <ContactShadows position={[0, 0.045, 0]} opacity={0.38} scale={52} blur={2.2} far={8} color="#142018" />
+      {!reducedMotion && <Environment preset="city" background={false} environmentIntensity={0.38} />}
       <OptionalCityGltf />
     </>
   );

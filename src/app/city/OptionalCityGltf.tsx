@@ -3,7 +3,7 @@ import { useGLTF } from "@react-three/drei";
 
 function LampModel({ url }: { url: string }) {
   const gltf = useGLTF(url);
-  return <primitive object={gltf.scene.clone()} position={[0, 0, -8.2]} scale={1.4} />;
+  return <primitive object={gltf.scene.clone()} position={[3.95, 0, 6]} scale={1.25} />;
 }
 
 /** Loads public/city/lamp.gltf when present; otherwise renders nothing. */

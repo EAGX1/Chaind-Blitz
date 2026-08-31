@@ -17,7 +17,7 @@ SR cards use a richer procedural pass (extra sparkles + inner frame), not the N 
 ## City / photoreal
 
 - Optional later assets under `public/city/` (GLTF, HDRI, PBR maps).
-- Live plaza is procedural: cobble disc, road grid, lamps, night sky, skyline windows.
+- Live plaza is procedural: asphalt street, sidewalks, storefronts, lamps, night sky, skyline windows.
 - **LOD / reduced-motion** — teleporter mode skips the walk canvas load when `reducedMotion` is on.
 
 ## Process

@@ -259,6 +259,54 @@ function brickMap() {
   return colorTex(c, 4);
 }
 
+function asphaltMap() {
+  const { c, ctx } = makeCanvas(512);
+  fill(ctx, "#2a2c30");
+  const r = rng(61);
+  for (let i = 0; i < 2800; i++) {
+    const n = r() * 30;
+    ctx.fillStyle = `rgb(${34 + n},${36 + n},${40 + n})`;
+    ctx.fillRect(r() * 512, r() * 512, 1 + r() * 4, 1 + r() * 3);
+  }
+  for (let i = 0; i < 48; i++) {
+    ctx.fillStyle = `rgba(8,8,10,${0.1 + r() * 0.16})`;
+    ctx.beginPath();
+    ctx.ellipse(r() * 512, r() * 512, 16 + r() * 55, 10 + r() * 28, r() * 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  for (let i = 0; i < 22; i++) {
+    ctx.strokeStyle = "rgba(16,16,18,0.5)";
+    ctx.lineWidth = 1 + r();
+    ctx.beginPath();
+    ctx.moveTo(r() * 512, r() * 512);
+    ctx.lineTo(r() * 512, r() * 512);
+    ctx.stroke();
+  }
+  return colorTex(c, 6);
+}
+
+function sidewalkMap() {
+  const { c, ctx } = makeCanvas(512);
+  fill(ctx, "#8a8478");
+  const r = rng(71);
+  const tile = 64;
+  for (let y = 0; y < 512; y += tile) {
+    for (let x = 0; x < 512; x += tile) {
+      const n = r() * 18;
+      ctx.fillStyle = `rgb(${176 + n},${170 + n * 0.85},${156 + n * 0.5})`;
+      ctx.fillRect(x + 2, y + 2, tile - 4, tile - 4);
+      ctx.strokeStyle = "rgba(90,82,72,0.4)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x + 2, y + 2, tile - 4, tile - 4);
+    }
+  }
+  for (let i = 0; i < 80; i++) {
+    ctx.fillStyle = `rgba(60,50,40,${0.08 + r() * 0.12})`;
+    ctx.fillRect(r() * 512, r() * 512, 3, 3);
+  }
+  return colorTex(c, 10);
+}
+
 export type PlazaTextures = ReturnType<typeof buildPlazaTextures>;
 
 function buildPlazaTextures() {
@@ -281,6 +329,8 @@ function buildPlazaTextures() {
     felt: feltMap(),
     water: waterMap(),
     brick: brickMap(),
+    asphalt: asphaltMap(),
+    sidewalk: sidewalkMap(),
   };
 }
 

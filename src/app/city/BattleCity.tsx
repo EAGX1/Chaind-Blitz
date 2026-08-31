@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { CityEnvironment } from "./CityEnvironment";
 import { CityBuildings, isBuildingId } from "./CityBuildings";
-import { BUILDINGS, KIOSKS } from "./buildings";
+import { BUILDINGS, KIOSKS, STREET_WALK } from "./buildings";
 import { PlazaPresence } from "./PlazaPresence";
 import { CharacterBillboard, usePlazaAvatar } from "./CharacterBillboard";
 import { readLocalAvatarFile } from "../../meta/avatarCutout.js";
@@ -13,7 +13,7 @@ import { plazaClock, setClockMode, clockLabel, type ClockMode } from "./plazaTim
 import { puzzleOfTheDay } from "../../meta/labs.js";
 
 const NEAR_RADIUS = 6;
-const PLAZA_CAM = { position: [0, 4.8, 11.5] as [number, number, number], fov: 50 };
+const PLAZA_CAM = { position: [0, 4.8, 11.5] as [number, number, number], fov: 58 };
 const POI_XZ: { id: string; x: number; z: number }[] = [
   ...BUILDINGS.map((b) => ({ id: b.id, x: b.position[0], z: b.position[2] })),
   ...KIOSKS.map((k) => ({ id: k.id, x: k.position[0], z: k.position[2] })),
@@ -82,17 +82,25 @@ function GroundNav({
   enabled: boolean;
   onPoint: (x: number, z: number) => void;
 }) {
+  const down = useRef<{ x: number; y: number; px: number; pz: number } | null>(null);
   if (!enabled) return null;
   return (
     <mesh
       rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, 0.01, 0]}
+      position={[0, 0.08, 0]}
       onPointerDown={(e) => {
-        e.stopPropagation();
-        onPoint(e.point.x, e.point.z);
+        if (e.button !== 0) return;
+        down.current = { x: e.clientX, y: e.clientY, px: e.point.x, pz: e.point.z };
+      }}
+      onPointerUp={(e) => {
+        const d = down.current;
+        down.current = null;
+        if (!d || e.button !== 0) return;
+        if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 8) return;
+        onPoint(d.px, d.pz);
       }}
     >
-      <planeGeometry args={[70, 70]} />
+      <planeGeometry args={[24, 66]} />
       <meshBasicMaterial transparent opacity={0} depthWrite={false} />
     </mesh>
   );
@@ -100,21 +108,28 @@ function GroundNav({
 
 function PlayerRig({
   reducedMotion,
+  lookEnabled,
   walkTarget,
   onNear,
   avatarUrl,
   avatarAspect,
 }: {
   reducedMotion: boolean;
+  lookEnabled: boolean;
   walkTarget: RefObject<{ x: number; z: number } | null>;
   onNear: (id: string | null) => void;
   avatarUrl: string;
   avatarAspect: number;
 }) {
   const groupRef = useRef<THREE.Group>(null);
-  const pos = useRef(new THREE.Vector3(0, 0, 6));
+  const pos = useRef(new THREE.Vector3(0, 0, 4));
   const keys = useRef<Record<string, boolean>>({});
-  const { camera } = useThree();
+  const yaw = useRef(0);
+  const pitch = useRef(0.18);
+  const dist = useRef(7.1);
+  const dragging = useRef(false);
+  const lastPtr = useRef({ x: 0, y: 0 });
+  const { camera, gl } = useThree();
   const moveAcc = useRef(0);
   const lastNear = useRef<string | null>(null);
   const camTarget = useMemo(() => new THREE.Vector3(), []);
@@ -130,6 +145,47 @@ function PlayerRig({
       window.removeEventListener("keyup", up);
     };
   }, []);
+
+  useEffect(() => {
+    if (!lookEnabled) return;
+    const el = gl.domElement;
+    const onDown = (e: PointerEvent) => {
+      dragging.current = true;
+      lastPtr.current = { x: e.clientX, y: e.clientY };
+      try { el.setPointerCapture(e.pointerId); } catch { /* already captured */ }
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!dragging.current) return;
+      const dx = e.clientX - lastPtr.current.x;
+      const dy = e.clientY - lastPtr.current.y;
+      lastPtr.current = { x: e.clientX, y: e.clientY };
+      yaw.current -= dx * 0.005;
+      pitch.current = THREE.MathUtils.clamp(pitch.current + dy * 0.0034, -0.08, 0.72);
+    };
+    const onUp = (e: PointerEvent) => {
+      dragging.current = false;
+      try { el.releasePointerCapture(e.pointerId); } catch { /* released */ }
+    };
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      dist.current = THREE.MathUtils.clamp(dist.current + e.deltaY * 0.008, 5, 14.5);
+    };
+    const onCtx = (e: Event) => e.preventDefault();
+    el.addEventListener("pointerdown", onDown);
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerup", onUp);
+    el.addEventListener("pointercancel", onUp);
+    el.addEventListener("wheel", onWheel, { passive: false });
+    el.addEventListener("contextmenu", onCtx);
+    return () => {
+      el.removeEventListener("pointerdown", onDown);
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerup", onUp);
+      el.removeEventListener("pointercancel", onUp);
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("contextmenu", onCtx);
+    };
+  }, [gl, lookEnabled]);
 
   useLayoutEffect(() => {
     groupRef.current?.position.set(pos.current.x, 0, pos.current.z);
@@ -149,32 +205,45 @@ function PlayerRig({
     const step = Math.min(dt, 0.05);
     const speed = 8;
     const k = keys.current;
+    if (k.KeyQ) yaw.current += 1.7 * step;
+    if (k.KeyC) yaw.current -= 1.7 * step;
+    const sin = Math.sin(yaw.current);
+    const cos = Math.cos(yaw.current);
     const forward = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0);
     const strafe = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0);
     if (forward || strafe) {
       walkTarget.current = null;
-      pos.current.x += strafe * speed * step;
-      pos.current.z -= forward * speed * step;
+      pos.current.x -= sin * forward * speed * step;
+      pos.current.z -= cos * forward * speed * step;
+      pos.current.x += cos * strafe * speed * step;
+      pos.current.z -= sin * strafe * speed * step;
     } else if (walkTarget.current) {
       const tx = walkTarget.current.x - pos.current.x;
       const tz = walkTarget.current.z - pos.current.z;
-      const dist = Math.hypot(tx, tz);
-      if (dist < 0.35) walkTarget.current = null;
+      const d = Math.hypot(tx, tz);
+      if (d < 0.35) walkTarget.current = null;
       else {
-        pos.current.x += (tx / dist) * speed * step;
-        pos.current.z += (tz / dist) * speed * step;
+        pos.current.x += (tx / d) * speed * step;
+        pos.current.z += (tz / d) * speed * step;
       }
     }
-    pos.current.x = THREE.MathUtils.clamp(pos.current.x, -28, 28);
-    pos.current.z = THREE.MathUtils.clamp(pos.current.z, -28, 28);
+    pos.current.x = THREE.MathUtils.clamp(pos.current.x, -STREET_WALK.x, STREET_WALK.x);
+    pos.current.z = THREE.MathUtils.clamp(pos.current.z, -STREET_WALK.z, STREET_WALK.z);
 
     if (groupRef.current) {
       groupRef.current.position.set(pos.current.x, 0, pos.current.z);
     }
 
-    camTarget.set(pos.current.x, 4.55, pos.current.z + 7.1);
+    const lookDist = dist.current * Math.cos(pitch.current);
+    const lookH = 1.42 + dist.current * Math.sin(pitch.current);
+    const pull = Math.abs(Math.cos(yaw.current)) * 0.34;
+    camTarget.set(
+      pos.current.x * (1 - pull) + sin * lookDist,
+      lookH,
+      pos.current.z + cos * lookDist
+    );
     camera.position.lerp(camTarget, 1 - Math.exp(-8 * step));
-    lookTarget.set(pos.current.x, 1.05, pos.current.z);
+    lookTarget.set(pos.current.x, 1.12, pos.current.z);
     camera.lookAt(lookTarget);
 
     moveAcc.current += step;
@@ -283,7 +352,7 @@ export function BattleCity({
         onCreated={({ gl }) => {
           gl.setClearColor("#7ec8f0", 1);
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.12;
+          gl.toneMappingExposure = 1.2;
           gl.shadowMap.enabled = true;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
         }}
@@ -308,6 +377,7 @@ export function BattleCity({
         />
         <PlayerRig
           reducedMotion={reducedMotion}
+          lookEnabled={!reducedMotion && !panelOpen}
           walkTarget={walkTarget}
           onNear={setNearId}
           avatarUrl={avatar.url}
@@ -415,7 +485,7 @@ export function BattleCity({
         </nav>
         {!nearId && !panelOpen && (
           <p className="city-hint">
-            {reducedMotion ? "Teleporter mode" : "Click to walk · WASD · E near a door · Hub (top right) opens menus"}
+            {reducedMotion ? t("city.hintReduced") : t("city.hint")}
           </p>
         )}
       </div>
