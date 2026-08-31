@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CATALOG, buyCosmetic, equipCosmetic, readLocalMatFile, applyEquippedToDom, loadCustomMatUrl } from "../../meta/cosmetics.js";
 import { readLocalAvatarFile } from "../../meta/avatarCutout.js";
 import { GATES, isUnlocked, clearGate } from "../../meta/soloGates.js";
@@ -11,6 +11,7 @@ import { spendGems, canAffordGems } from "../../meta/campaign.js";
 import { poolForTier } from "../../meta/pools.js";
 import { makeRng } from "../../engine/rng.js";
 import { slamPackCards, packRecapLine } from "../../ui/packSlam.js";
+import { fetchLeaderboard } from "../../meta/backendClient.js";
 
 type Props = {
   buildingId: string;
@@ -20,15 +21,24 @@ type Props = {
   onClose: () => void;
   onStartGateDuel: (gateId: string) => void;
   onStartRanked: () => void;
+  onStartRankedPvp?: () => void;
   onOpenHubTab: (tab: string) => void;
 };
 
 export function BuildingPanel(props: Props) {
   const {
     buildingId, label, profile, save, onClose,
-    onStartGateDuel, onStartRanked, onOpenHubTab,
+    onStartGateDuel, onStartRanked, onStartRankedPvp, onOpenHubTab,
   } = props;
   const [msg, setMsg] = useState("");
+  const [board, setBoard] = useState<{ name: string; score: number }[]>([]);
+
+  useEffect(() => {
+    if (buildingId !== "coliseum") return;
+    fetchLeaderboard("ranked").then((r) => {
+      if (r?.rows) setBoard(r.rows);
+    });
+  }, [buildingId]);
 
   let body: React.ReactNode = <p className="dim">Unknown building.</p>;
 
@@ -212,6 +222,9 @@ export function BuildingPanel(props: Props) {
         )}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button type="button" className="cb-btn primary bp-cta" onClick={onStartRanked}>QUEUE RANKED · VS CPU</button>
+          {onStartRankedPvp && (
+            <button type="button" className="cb-btn" onClick={onStartRankedPvp}>QUEUE RANKED · PVP</button>
+          )}
           <button
             type="button"
             className="cb-btn"
@@ -239,7 +252,7 @@ export function BuildingPanel(props: Props) {
         </div>
         <h3>Dailies</h3>
         <ul>
-          {missionStatus(profile).dailies.map((d) => (
+          {missionStatus(profile).dailies.map((d: { id: string; label: string; have: number; goal: number; done?: boolean; claimed?: boolean }) => (
             <li key={d.id}>
               {d.label} ({d.have}/{d.goal}){" "}
               <button
@@ -277,6 +290,16 @@ export function BuildingPanel(props: Props) {
             </li>
           ))}
         </ul>
+        <h3>Leaderboard</h3>
+        {board.length ? (
+          <ul>
+            {board.slice(0, 10).map((row, i) => (
+              <li key={`${row.name}-${i}`}>{i + 1}. {row.name} · {row.score}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="dim">Empty until the optional backend is running and ranked games post a score.</p>
+        )}
       </div>
     );
   }

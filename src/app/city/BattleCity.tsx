@@ -22,6 +22,8 @@ const POI_XZ: { id: string; x: number; z: number }[] = [
 type Props = {
   reducedMotion: boolean;
   panelOpen?: boolean;
+  /** Drop the plaza WebGL canvas so an interior can take the only GPU context. */
+  suspendCanvas?: boolean;
   onEnterBuilding: (id: string) => void;
   onOpenKiosk: (tab: string) => void;
   onOpenClassicHub: () => void;
@@ -199,6 +201,7 @@ function PlayerRig({
 export function BattleCity({
   reducedMotion,
   panelOpen = false,
+  suspendCanvas = false,
   onEnterBuilding,
   onOpenKiosk,
   onOpenClassicHub,
@@ -269,6 +272,7 @@ export function BattleCity({
 
   return (
     <div className="battle-city">
+      {!suspendCanvas && (
       <Canvas
         shadows
         camera={PLAZA_CAM}
@@ -309,8 +313,9 @@ export function BattleCity({
           avatarUrl={avatar.url}
           avatarAspect={avatar.aspect}
         />
-        <PlazaPresence />
+        <PlazaPresence roomCode={typeof window !== "undefined" ? String((window as unknown as { __CB_PVP_CODE?: string }).__CB_PVP_CODE || "") : ""} />
       </Canvas>
+      )}
 
       <div className={`city-hud city-hud-${tod.toLowerCase()}`}>
         <div className="city-brand">

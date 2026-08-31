@@ -823,6 +823,7 @@ async function damageCalcWindow(G, attackerController) {
   let cur = attackerController;
   let passes = 0;
   while (true) {
+    if (G.chain.length >= 16) break;
     const last = G.chain[G.chain.length - 1] || null;
     const legal = [];
     if (!last || last.speed < 3) {

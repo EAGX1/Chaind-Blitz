@@ -4,7 +4,7 @@ import { ThreeBackdrop } from "./ThreeBackdrop";
 import { cloudPull, cloudPush, deviceId, fetchBanlist } from "../meta/backendClient.js";
 import { bindSettings, applyVolumes, playBed } from "../meta/music.js";
 import { exportSaveJson, importSaveJson } from "../meta/backups.js";
-import { t, setLocale } from "../meta/i18n.js";
+import { t, setLocale, LOCALES } from "../meta/i18n.js";
 import { openReplayScrubber } from "../ui/replayScrubber.js";
 import {
   loadSettings,
@@ -25,6 +25,7 @@ import {
   setMaxRank,
 } from "../meta/campaign.js";
 import { resetProfile } from "../meta/profile.js";
+import { setPlazaName } from "../meta/plazaNet.js";
 
 type Settings = ReturnType<typeof loadSettings> & { aiTier: AiTier; cloudSync: boolean };
 
@@ -227,7 +228,7 @@ export function AppChrome({ hideChrome = false }: { hideChrome?: boolean }) {
           <button type="button" className="cb-chrome-btn cb-replay" onClick={openLastReplay} title="Duel log">
             ▶
           </button>
-          <span className="cb-version">v0.2 · offline</span>
+          <span className="cb-version">v0.2 · offline-first</span>
         </div>
       ) : null}
 
@@ -235,6 +236,34 @@ export function AppChrome({ hideChrome = false }: { hideChrome?: boolean }) {
         <div className="cb-modal" role="dialog" aria-label={t("hub.settings")}>
           <div className="cb-modal-card">
             <h2>{t("hub.settings")}</h2>
+            <label>
+              {t("settings.locale")}
+              <select
+                value={settings.locale || "en"}
+                onChange={(e) => patch({ locale: e.target.value })}
+              >
+                {LOCALES.map((loc) => (
+                  <option key={loc.id} value={loc.id}>{loc.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              {t("settings.displayName")}
+              <input
+                className="cb-input"
+                defaultValue={((window as unknown as { __CB?: { profile?: { name?: string } } }).__CB?.profile?.name) || "Duelist"}
+                maxLength={24}
+                onBlur={(e) => {
+                  const name = e.target.value.trim().slice(0, 24) || "Duelist";
+                  const cb = liveProfile();
+                  if (cb?.profile) {
+                    cb.profile.name = name;
+                    persistProfile();
+                    setPlazaName(name);
+                  }
+                }}
+              />
+            </label>
             <label>
               AI difficulty
               <select

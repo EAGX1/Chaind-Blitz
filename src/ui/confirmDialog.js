@@ -1,5 +1,6 @@
-/** Small confirm modal. Resolves true/false. */
-
+/** Small confirm modal. Resolves true/false.
+ * @param {{ title?: string, body?: string, confirm?: string, cancel?: string, danger?: boolean }} [opts]
+ */
 export function confirmDialog({ title, body, confirm = "CONFIRM", cancel = "CANCEL", danger = false } = {}) {
   return new Promise((resolve) => {
     const modal = document.createElement("div");

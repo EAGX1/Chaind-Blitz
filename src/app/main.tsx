@@ -124,6 +124,16 @@ function Root() {
     });
   }, []);
 
+  const startRankedPvp = useCallback(() => {
+    setClassic(true);
+    requestAnimationFrame(() => {
+      document.querySelector('[data-tab="ranked"]')?.dispatchEvent(new Event("click", { bubbles: true }));
+      requestAnimationFrame(() => {
+        (document.getElementById("btn-queue-pvp") as HTMLButtonElement | null)?.click();
+      });
+    });
+  }, []);
+
   const startGateDuel = useCallback((gateId: string) => {
     setClassic(true);
     (window as any).__CB?.startGateDuel?.(gateId);
@@ -148,6 +158,7 @@ function Root() {
           onOpenHubTab={openHubTab}
           onStartGateDuel={startGateDuel}
           onStartRanked={startRanked}
+          onStartRankedPvp={startRankedPvp}
           onQuickDuel={startQuickDuel}
         />
       )}

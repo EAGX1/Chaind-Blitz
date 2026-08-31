@@ -1,13 +1,14 @@
 /**
  * Battle City plaza — textured low-poly town square.
- * Procedural only (no GLTF / HDRI). Day/night from plazaTime.
+ * Procedural plaza plus optional GLTF props and a drei HDRI when motion is on.
  */
 import { useMemo, useRef, type RefObject } from "react";
-import { ContactShadows } from "@react-three/drei";
+import { ContactShadows, Environment } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { sampleWorld, tickClock } from "./plazaTime";
 import { getPlazaTextures, type PlazaTextures } from "./plazaTextures";
+import { OptionalCityGltf } from "./OptionalCityGltf";
 
 function useTex() {
   return useMemo(() => getPlazaTextures(), []);
@@ -540,6 +541,8 @@ export function CityEnvironment({ reducedMotion = false }: { reducedMotion?: boo
       <Cloud x={22} y={15} z={8} s={1.1} />
       <Cloud x={-28} y={17} z={10} s={1} />
       <ContactShadows position={[0, 0.045, 0]} opacity={0.42} scale={38} blur={2.1} far={7} color="#142018" />
+      {!reducedMotion && <Environment preset="night" />}
+      <OptionalCityGltf />
     </>
   );
 }

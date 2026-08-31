@@ -19,7 +19,8 @@ import { clearGate, isUnlocked, markTutorialSeen } from "../meta/soloGates.js";
 import { clearLab, puzzleOfTheDay, claimPuzzleToday } from "../meta/labs.js";
 import { progress as missionProgress, applyDuelMissions, rollDailies } from "../meta/missions.js";
 import { startRecording, pushAction, exportReplay, wrapIoReplay, captureLog } from "../meta/replay.js";
-import { wrapIoPeer, disconnectPeer } from "../meta/peerNet.js";
+import { wrapIoPeer, disconnectPeer, joinRoom } from "../meta/peerNet.js";
+import { pushLeaderboard, cloudPush, deviceId } from "../meta/backendClient.js";
 import {
   newRun, resolveBattle, openCardReward, openRelicReward,
   duelMods, foeLpBonus, runMetaRewards
@@ -50,7 +51,12 @@ import { HUB_TAB_GUIDE, applyHubTabGuide } from "./hubGuide.js";
 const $ = (id) => document.getElementById(id);
 const profile = loadProfile();
 if (loadSettings(profile).devMode) profile.devCheats = true;
-const save = () => saveProfile(profile);
+const save = () => {
+  saveProfile(profile);
+  if (profile?.settings?.cloudSync) {
+    cloudPush(deviceId(), profile).catch(() => {});
+  }
+};
 let currentDuel = null;
 let hub = null;
 let lastReplay = null;
@@ -245,8 +251,10 @@ async function startDuel({
         if (rk.tierUp) extra += " TIER UP! Your card pool expanded.";
         else if (rk.promoStarted) extra += " Promotion series started — win 2 of 3!";
         else if (rk.promoWon) extra += " Promo won!";
-        else if (rk.promoLost) extra += " Promo lost — back to 60 LP.";
+        else         if (rk.promoLost) extra += " Promo lost — back to 60 LP.";
         else extra += ` ${rk.lpDelta >= 0 ? "+" : ""}${rk.lpDelta} LP.`;
+        const score = (profile.rank.tier || 0) * 100 + (profile.rank.lp || 0);
+        pushLeaderboard("ranked", profile.name || "Duelist", score).catch(() => {});
         if (won && isUnlocked(profile, "gate5") && !profile.soloGates?.cleared?.gate5) {
           clearGate(profile, "gate5");
           extra += " Solo Gate 5 cleared!";
@@ -427,7 +435,7 @@ function startRoomDuel(opts) {
     youName: o.hostName || "HOST",
     foeName: o.guestName || "GUEST",
     seed: seed,
-    mode: "pvp",
+    mode: o.mode || "pvp",
     humanSide: localSeat,
     meta: { pvp: true, room: peer && peer.code },
     wrapIo: (io, ctx) => {
@@ -461,6 +469,28 @@ function startRoomDuel(opts) {
   });
   wireGameoverButtons(launch, { allowRematch: false });
   launch();
+}
+
+async function launchPeerSession(session, ranked) {
+  if (!session?.ok || !session.peer) return false;
+  const start = await session.peer.waitStart();
+  if (!start) {
+    disconnectPeer();
+    return false;
+  }
+  startRoomDuel({
+    peer: session.peer,
+    localSeat: session.seat === 1 ? 1 : 0,
+    seed: start.seed,
+    hostDeck: start.host?.deck || [],
+    guestDeck: start.guest?.deck || [],
+    hostExtra: start.host?.extra || [],
+    guestExtra: start.guest?.extra || [],
+    hostName: start.host?.name || "HOST",
+    guestName: start.guest?.name || "GUEST",
+    mode: ranked ? "ranked" : "pvp"
+  });
+  return true;
 }
 
 function startRoomSeedCpu(opts) {
@@ -699,7 +729,19 @@ function boot() {
     },
     startHotseat,
     startRoomDuel,
-    startRoomSeedCpu
+    startRoomSeedCpu,
+    startPeerDuel: launchPeerSession
+  });
+  window.addEventListener("cb-join-room", async (ev) => {
+    const code = ev.detail?.code;
+    if (!code) return;
+    const deck = STARTERS[profile.starterId] || STARTERS.ignis;
+    const session = await joinRoom(code, {
+      name: profile.name || "Guest",
+      deck: deck.deck,
+      extra: deck.extra || []
+    });
+    if (session.ok) launchPeerSession(session, false);
   });
   showScreen("hub");
   window.__CB = {
@@ -709,6 +751,7 @@ function boot() {
     startHotseat,
     startRoomDuel,
     startRoomSeedCpu,
+    startPeerDuel: launchPeerSession,
     startQuickDuel: launchQuickDuel,
     startGateDuel(gateId) {
       if (gateId === "puzzle") {
@@ -744,7 +787,11 @@ function boot() {
       this.startLabs("labs_fanfare");
     },
     startLabs(labId, extraMeta = {}) {
-      const restLanes = () => FIELD_LANES.filter((l) => l.id !== "mirror_pool").slice(0, 2);
+      const safePlay = [
+        FIELD_LANES.find((l) => l.id === "high_ground"),
+        FIELD_LANES.find((l) => l.id === "stillwater"),
+        FIELD_LANES.find((l) => l.id === "echo_canyon")
+      ];
       const setups = {
         labs_fanfare: () => {
           const pool = FIELD_LANES.find((l) => l.id === "mirror_pool");
@@ -756,7 +803,11 @@ function boot() {
             youName: "LABS",
             foeName: "MIRROR POOL",
             firstPlayer: 0,
-            laneDefs: [pool, ...restLanes()],
+            laneDefs: [
+              pool,
+              FIELD_LANES.find((l) => l.id === "high_ground"),
+              FIELD_LANES.find((l) => l.id === "echo_canyon")
+            ],
             meta: { labs: "fanfare_lane", labId: "labs_fanfare", noShuffle: true },
             seed: 7
           };
@@ -770,6 +821,7 @@ function boot() {
           foeName: "WARD WALL",
           firstPlayer: 0,
           seed: 11,
+          laneDefs: safePlay,
           meta: {
             labs: "ward",
             labId: "labs_ward",
@@ -791,6 +843,7 @@ function boot() {
           foeName: "CONTACT",
           firstPlayer: 0,
           seed: 13,
+          laneDefs: safePlay,
           meta: {
             labs: "contact",
             labId: "labs_contact",
@@ -810,6 +863,7 @@ function boot() {
           foeName: "COUNTER",
           firstPlayer: 0,
           seed: 17,
+          laneDefs: safePlay,
           meta: {
             labs: "counter",
             labId: "labs_counter",
@@ -830,6 +884,7 @@ function boot() {
           foeName: "AMBUSH",
           firstPlayer: 0,
           seed: 19,
+          laneDefs: safePlay,
           meta: {
             labs: "ambush",
             labId: "labs_ambush",
@@ -850,6 +905,7 @@ function boot() {
           foeName: "TRIBUTE",
           firstPlayer: 0,
           seed: 23,
+          laneDefs: safePlay,
           meta: {
             labs: "tribute",
             labId: "labs_tribute",
@@ -869,6 +925,7 @@ function boot() {
           foeName: "DAMAGE STEP",
           firstPlayer: 0,
           seed: 29,
+          laneDefs: safePlay,
           meta: {
             labs: "damage_step",
             labId: "labs_damage_step",

@@ -7,7 +7,7 @@ export const HUB_TAB_GUIDE = {
   shop: "SHOP — packs from your ranked pool. 100 gems for 10 cards.",
   ranked: "RANK — ladder vs CPU. Your own 40-card list, not a loaner.",
   rogue: "RUN — a 20-card gauntlet. HP carries between nodes.",
-  modes: "MORE — draft, sealed, brawl, hotseat. Ranked PvP is not in this build.",
+  modes: "MORE — draft, sealed, brawl, hotseat, Host/Join. Ranked PvP needs the optional backend.",
   rulebook: "RULES — combat, chains, combos, and how DEF works as HP."
 };
 

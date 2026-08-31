@@ -40,6 +40,7 @@ for (let i = 0; i < pool.length; i++) {
     const a = pool[i], b = pool[j];
     const seed = 2000 + i * 97 + j * 13;
     try {
+      process.stderr.write(`\r${a.id} vs ${b.id}   `);
       const r = await playOne(seed, a, b, 0);
       rec[a.id].games++; rec[b.id].games++;
       rec[a.id].turns += r.turns; rec[b.id].turns += r.turns;

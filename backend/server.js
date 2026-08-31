@@ -178,7 +178,7 @@ server.listen(PORT, () => {
 
 /* ---- Plaza WebSocket presence ---- */
 const plaza = new Map(); // ws -> { id, name, x, z }
-const wss = new WebSocketServer({ server, path: "/plaza" });
+const wss = new WebSocketServer({ noServer: true });
 
 function broadcastPeers() {
   const peers = [...plaza.values()].map((p) => ({ id: p.id, name: p.name, x: p.x, z: p.z }));
@@ -208,6 +208,18 @@ wss.on("connection", (socket) => {
       } else if (msg.type === "chat") {
         const payload = JSON.stringify({ type: "chat", id: me.id, name: me.name, msg: String(msg.msg || "").slice(0, 240) });
         for (const client of plaza.keys()) if (client.readyState === 1) client.send(payload);
+      } else if (msg.type === "invite") {
+        const payload = JSON.stringify({
+          type: "invite",
+          fromId: me.id,
+          name: me.name,
+          toId: String(msg.toId || ""),
+          code: String(msg.code || "").toUpperCase().slice(0, 6)
+        });
+        for (const [client, peer] of plaza) {
+          if (client.readyState !== 1) continue;
+          if (!msg.toId || peer.id === msg.toId) client.send(payload);
+        }
       }
     } catch { /* ignore */ }
   });
@@ -215,4 +227,129 @@ wss.on("connection", (socket) => {
     plaza.delete(socket);
     broadcastPeers();
   });
+});
+
+/* ---- Live duel rooms (Host/Join + ranked queue) ---- */
+const duelWss = new WebSocketServer({ noServer: true });
+const liveRooms = new Map();
+let rankedWait = null;
+
+function sendJson(ws, obj) {
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj));
+}
+
+function roomCode() {
+  return randomBytes(3).toString("hex").toUpperCase().slice(0, 6);
+}
+
+function ensureRoom(code, seed) {
+  const id = String(code || roomCode()).toUpperCase().slice(0, 6);
+  if (!liveRooms.has(id)) {
+    liveRooms.set(id, {
+      code: id,
+      seed: seed ?? Math.floor(Math.random() * 2 ** 31),
+      seats: [null, null],
+      decks: [null, null],
+      extras: [[], []],
+      names: ["Host", "Guest"]
+    });
+  }
+  return liveRooms.get(id);
+}
+
+function tryStart(room) {
+  if (!room.seats[0] || !room.seats[1]) return;
+  if (!room.decks[0] || !room.decks[1]) return;
+  const payload = {
+    type: "start",
+    code: room.code,
+    seed: room.seed,
+    host: { name: room.names[0], deck: room.decks[0], extra: room.extras[0] },
+    guest: { name: room.names[1], deck: room.decks[1], extra: room.extras[1] }
+  };
+  sendJson(room.seats[0], payload);
+  sendJson(room.seats[1], payload);
+}
+
+function seatOf(room, ws) {
+  if (room.seats[0] === ws) return 0;
+  if (room.seats[1] === ws) return 1;
+  return -1;
+}
+
+duelWss.on("connection", (socket) => {
+  let room = null;
+  socket.on("message", (buf) => {
+    let msg;
+    try { msg = JSON.parse(String(buf)); } catch { return; }
+    if (msg.type === "host") {
+      room = ensureRoom(msg.code, msg.seed);
+      room.seats[0] = socket;
+      room.names[0] = String(msg.name || "Host").slice(0, 24);
+      room.decks[0] = Array.isArray(msg.deck) ? msg.deck : [];
+      room.extras[0] = Array.isArray(msg.extra) ? msg.extra : [];
+      if (msg.seed != null) room.seed = Number(msg.seed) || room.seed;
+      sendJson(socket, { type: "hosted", code: room.code, seed: room.seed, seat: 0 });
+      tryStart(room);
+    } else if (msg.type === "join") {
+      const code = String(msg.code || "").toUpperCase().slice(0, 6);
+      room = liveRooms.get(code) || ensureRoom(code, msg.seed);
+      room.seats[1] = socket;
+      room.names[1] = String(msg.name || "Guest").slice(0, 24);
+      room.decks[1] = Array.isArray(msg.deck) ? msg.deck : [];
+      room.extras[1] = Array.isArray(msg.extra) ? msg.extra : [];
+      sendJson(socket, { type: "joined", code: room.code, seed: room.seed, seat: 1 });
+      tryStart(room);
+    } else if (msg.type === "queue") {
+      const entry = {
+        ws: socket,
+        name: String(msg.name || "Duelist").slice(0, 24),
+        deck: Array.isArray(msg.deck) ? msg.deck : [],
+        extra: Array.isArray(msg.extra) ? msg.extra : []
+      };
+      if (rankedWait && rankedWait.ws.readyState === 1 && rankedWait.ws !== socket) {
+        const other = rankedWait;
+        rankedWait = null;
+        room = ensureRoom(roomCode(), Math.floor(Math.random() * 2 ** 31));
+        room.seats[0] = other.ws;
+        room.seats[1] = socket;
+        room.names = [other.name, entry.name];
+        room.decks = [other.deck, entry.deck];
+        room.extras = [other.extra, entry.extra];
+        other.ws._cbRoom = room;
+        socket._cbRoom = room;
+        sendJson(other.ws, { type: "matched", code: room.code, seed: room.seed, seat: 0 });
+        sendJson(socket, { type: "matched", code: room.code, seed: room.seed, seat: 1 });
+        tryStart(room);
+      } else {
+        rankedWait = entry;
+        sendJson(socket, { type: "queued", code: "", seed: null, seat: 0 });
+      }
+    } else if (msg.type === "pick" && room) {
+      const from = seatOf(room, socket);
+      const other = from === 0 ? room.seats[1] : room.seats[0];
+      sendJson(other, msg);
+    }
+  });
+  socket.on("close", () => {
+    if (rankedWait && rankedWait.ws === socket) rankedWait = null;
+    if (!room) return;
+    const other = room.seats[0] === socket ? room.seats[1] : room.seats[0];
+    sendJson(other, { type: "peer-left" });
+    liveRooms.delete(room.code);
+    room = null;
+  });
+});
+
+server.on("upgrade", (req, socket, head) => {
+  const path = String(req.url || "").split("?")[0];
+  if (path === "/plaza") {
+    wss.handleUpgrade(req, socket, head, (ws) => wss.emit("connection", ws, req));
+    return;
+  }
+  if (path === "/duel") {
+    duelWss.handleUpgrade(req, socket, head, (ws) => duelWss.emit("connection", ws, req));
+    return;
+  }
+  socket.destroy();
 });

@@ -41,7 +41,7 @@ import {
 import { validateDeck, asSavedDeck, getBanlist, setCopyLimit, banlistFromPreset, EXTRA_MAX, copyLimit, isExtraCard, banlistSummary, activeFormat } from "../meta/banlist.js";
 import { loadSettings } from "./settingsStore.js";
 import { openReplayScrubber } from "./replayScrubber.js";
-import { connectPeer } from "../meta/peerNet.js";
+import { createAndHost, joinRoom, queueRankedPvp, formatRoomCode, BACKEND_OFFLINE_REASON } from "../meta/peerNet.js";
 import { deckCurveHtml } from "./deckCurve.js";
 import { deckCircuits, deckComboLine, suggestedGlueForDeck, CIRCUITS, comboTagsFor, circuitClass } from "../data/comboTags.js";
 import { serializeDeckList, parseDeckList, drawOpeningHand, openingSeatNote } from "./deckList.js";
@@ -1028,7 +1028,7 @@ export function initHub(ctx) {
         <section class="rank-hero" style="--rank:${tier.color}">
           <div class="rank-badge" style="border-color:${tier.color};color:${tier.color}">${tier.name.toUpperCase()}</div>
           <div class="rank-info">
-            <p class="home-kicker">Ladder practice vs CPU</p>
+            <p class="home-kicker">Ladder vs CPU, or PvP when the backend is up</p>
             <h2>${rankLabel(profile)}</h2>
             <div class="lp-bar"><div class="lp-fill" style="width:${lpPct}%;background:${tier.color}"></div></div>
             ${r.promo ? `<p class="rank-promo">PROMO SERIES — win ${2 - r.promo.wins} more of ${3 - r.promo.wins - r.promo.losses} remaining (separate ranked queues)</p>` : `<p class="dim">100 LP starts a promotion series: queue ranked duels one at a time, win 2 of 3. Pool: ${pool.length} cards.</p>`}
@@ -1036,6 +1036,7 @@ export function initHub(ctx) {
             <div class="home-tile-row" style="margin-top:10px;">
               <select class="cb-select" id="ranked-you" title="Deck for this ranked queue">${deckOpts}</select>
               <button class="home-cta" id="btn-queue">QUEUE RANKED · VS CPU</button>
+              <button class="cb-btn" id="btn-queue-pvp">QUEUE RANKED · PVP</button>
             </div>
             <p class="dim" style="font-size:11px;margin:6px 0 0;">Starters and your own lists only — loaners cover Quick Duel and Labs. Ladder soft-resets each monthly season.</p>
             <p class="dim" id="ranked-door-msg" style="font-size:12px;margin:8px 0 0;"></p>
@@ -1050,6 +1051,29 @@ export function initHub(ctx) {
     if (sel && [...sel.options].some((o) => o.value === selected)) sel.value = selected;
     sel?.addEventListener("change", () => saveSessionRankedToken(sel.value));
     $("btn-queue").addEventListener("click", () => queueRanked(sel?.value));
+    $("btn-queue-pvp")?.addEventListener("click", async () => {
+      const customNames = Object.keys(profile.decks);
+      const t = sel?.value || pickRankedToken({ loaners: shippedLoaners(), starters: STARTERS, customNames });
+      const result = tryQueueDeck(t, { ...queueCtx(), ranked: true });
+      const el = $("ranked-door-msg");
+      if (!result.ok) {
+        refuseDoor("ranked-door-msg", result.error);
+        return;
+      }
+      if (el) el.textContent = "Searching for a ranked opponent…";
+      const session = await queueRankedPvp({
+        name: profile.name || "Duelist",
+        deck: result.deck,
+        extra: result.extra || []
+      });
+      if (!session.ok) {
+        if (el) el.textContent = session.reason || BACKEND_OFFLINE_REASON;
+        return;
+      }
+      if (el) el.textContent = session.waiting ? "Waiting for another ranked queue…" : "Match found.";
+      const ok = await ctx.startPeerDuel?.(session, true);
+      if (!ok && el) el.textContent = "No opponent (backend dropped or queue timed out).";
+    });
   }
 
   /* ================= MODES (draft/cube/sealed/highlander/tourney/brawl/hotseat) ================= */
@@ -1057,14 +1081,14 @@ export function initHub(ctx) {
   const MODE_TABS = [
     ["draft", "DRAFT"], ["cube", "CUBE DRAFT"], ["sealed", "SEALED"],
     ["highlander", "HIGHLANDER"], ["tourney", "TOURNAMENT"], ["brawl", "TAVERN BRAWL"],
-    ["hotseat", "HOTSEAT"]
+    ["hotseat", "HOTSEAT"], ["pvp", "HOST / JOIN"]
   ];
 
   function renderModes() {
     const panel = $("panel-modes");
     panel.innerHTML = `
       <div class="panel-head"><h2>GAME MODES</h2>
-        <p class="dim" style="font-size:11px;">All modes are vs CPU or local — Hotseat is two players on this device.</p>
+        <p class="dim" style="font-size:11px;">CPU modes stay offline. Host/Join uses the optional local backend.</p>
       </div>
       <div class="modes-nav">
         ${MODE_TABS.map(([k, label]) => `<button class="cb-btn mode-nav-btn ${modesView === k ? "active" : ""}" data-mode="${k}">${label}</button>`).join("")}
@@ -1082,6 +1106,7 @@ export function initHub(ctx) {
     else if (modesView === "highlander") renderHighlanderDetail(box);
     else if (modesView === "tourney") renderTourneyDetail(box);
     else if (modesView === "hotseat") renderHotseatDetail(box);
+    else if (modesView === "pvp") renderPvpDetail(box);
     else renderBrawlDetail(box);
   }
 
@@ -1346,7 +1371,60 @@ export function initHub(ctx) {
       </div>`;
     renderDeckCounts($("tourney-deck-list"), t.deck);
     if (t.alive) $("btn-tourney-play").addEventListener("click", () => ctx.startTourneyMatch());
-    else $("btn-tourney-new").addEventListener("click", () => { profile.modes.tourney = null; ctx.save(); renderModes(); });
+    else $("btn-tourney-new").addEventListener("click", () => { profile.modes.tourney = null; ctx.save(); renderModes();     });
+  }
+
+  function activePvpList() {
+    const name = profile.activeDeck;
+    if (name && profile.decks?.[name]) {
+      const saved = playFromSave(profile.decks[name]);
+      return { deck: saved.deck, extra: saved.extra, name };
+    }
+    const s = STARTERS[profile.starterId] || STARTERS.ignis;
+    return { deck: s.deck, extra: s.extra || [], name: s.name };
+  }
+
+  function renderPvpDetail(box) {
+    const list = activePvpList();
+    box.innerHTML = `
+      <div class="mode-intro">
+        <h3>HOST / JOIN</h3>
+        <p>Two browsers, one optional backend (<code>npm run backend</code>). Airplane mode still plays vs CPU.</p>
+        <p class="dim">Using <b>${list.name}</b> (active list or starter).</p>
+        <div class="row" style="margin-top:14px;flex-wrap:wrap;gap:8px;">
+          <button class="cb-btn primary" id="btn-pvp-host">HOST ROOM</button>
+          <input class="cb-input" id="pvp-code" maxlength="6" placeholder="ROOM CODE" style="width:8em;text-transform:uppercase;">
+          <button class="cb-btn" id="btn-pvp-join">JOIN</button>
+        </div>
+        <p class="dim" id="pvp-msg" style="margin-top:10px;"></p>
+      </div>`;
+    const note = (m) => { const el = $("pvp-msg"); if (el) el.textContent = m; };
+    $("btn-pvp-host").addEventListener("click", async () => {
+      note("Opening room…");
+      const session = await createAndHost({
+        name: profile.name || "Host",
+        deck: list.deck,
+        extra: list.extra
+      });
+      if (!session.ok) { note(session.reason || BACKEND_OFFLINE_REASON); return; }
+      window.__CB_PVP_CODE = session.code;
+      note(`Room ${session.code} — wait for a guest, then the duel starts.`);
+      const ok = await ctx.startPeerDuel?.(session, false);
+      if (!ok) note("Guest never joined (or backend dropped).");
+    });
+    $("btn-pvp-join").addEventListener("click", async () => {
+      const code = formatRoomCode($("pvp-code").value);
+      if (code.length < 4) { note("Enter a room code."); return; }
+      note(`Joining ${code}…`);
+      const session = await joinRoom(code, {
+        name: profile.name || "Guest",
+        deck: list.deck,
+        extra: list.extra
+      });
+      if (!session.ok) { note(session.reason || BACKEND_OFFLINE_REASON); return; }
+      const ok = await ctx.startPeerDuel?.(session, false);
+      if (!ok) note("Could not start the room duel.");
+    });
   }
 
   /* ---- hotseat (local two-player) ---- */
@@ -1476,7 +1554,7 @@ export function initHub(ctx) {
       elites, rests, shops and events, relics, and a boss.</p>
       <p><b>Draft / Cube Draft</b> — pick 1-of-3 forty times, then survive a 3-round gauntlet. <b>Sealed</b> — crack 6 packs, build 30, same gauntlet.</p>
       <p><b>Highlander</b> — singleton decks. <b>Tournament</b> — a 3-round CPU gauntlet with escalating foe LP. <b>Tavern Brawl</b> — a new rule-breaking modifier every week.</p>
-      <p><b>Two players</b> — Hotseat is local pass-and-play on this device. Chaind Blitz is offline-first: there is no online PvP.</p>`]
+      <p><b>Two players</b> — Hotseat is local pass-and-play. Host/Join and ranked PvP use the optional local backend (<code>npm run backend</code>). Offline, every mode still plays vs CPU.</p>`]
   ];
 
   function renderRulebook() {
@@ -1493,7 +1571,7 @@ export function initHub(ctx) {
         <details class="rule-section">
           <summary>PRIVACY & CREDITS</summary>
           <div class="rule-body">
-            <p>Chaind Blitz keeps all progress <b>on this device</b>. There are no accounts, no cloud login, and no remote profile by default.</p>
+            <p>Chaind Blitz keeps progress <b>on this device</b> by default. Opt-in cloud sync mirrors the save to the optional backend. Host/Join rooms work when that backend is running.</p>
             <p>Local storage holds decks, collection, and settings. Nothing is uploaded unless you opt into cloud sync or export a backup yourself.</p>
             <p><b>Credits</b> — Chaind Blitz engine &amp; UI. Procedural card art; plaza GLTF/HDRI/PBR placeholders documented in docs/ART.md. Music/SFX are procedural beds. Third-party fonts and libraries retain their own licenses.</p>
           </div>

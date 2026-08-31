@@ -1535,8 +1535,48 @@ export function laneTheme(id) {
   return LANE_THEMES[id] || "gold";
 }
 
+function dummyLockG(turn) {
+  return {
+    turnCount: turn,
+    players: [0, 1].map(() => ({
+      mz: [null, null, null, null, null, null],
+      stz: [null, null, null, null, null, null]
+    }))
+  };
+}
+
+/** True when this lane would seal both of its monster zones on this turn (empty board). */
+export function laneLocksBothZones(def, index, turn) {
+  if (typeof def?.locksZone !== "function") return false;
+  const lane = { def, index, revealed: true };
+  const G = dummyLockG(turn);
+  const a = index * 2, b = a + 1;
+  return !!(def.locksZone(G, lane, 0, a) && def.locksZone(G, lane, 0, b));
+}
+
+/** False if some turn 1–12 would seal all 6 monster zones once lanes reveal on 1/3/5. */
+export function laneComboPlayable(defs) {
+  if (!defs?.length) return true;
+  for (let t = 1; t <= 12; t++) {
+    let locked = 0;
+    defs.forEach((def, i) => {
+      const due = i === 0 ? 1 : i === 1 ? 3 : 5;
+      if (t < due) return;
+      if (laneLocksBothZones(def, i, t)) locked += 2;
+    });
+    if (locked >= 6) return false;
+  }
+  return true;
+}
+
+const SAFE_DRAW_IDS = ["ember_rift", "high_ground", "echo_canyon"];
+
 export function drawLanes(rng, count = 3) {
-  const pool = [...FIELD_LANES];
-  rng.shuffle(pool);
-  return pool.slice(0, count);
+  for (let n = 0; n < 120; n++) {
+    const pool = [...FIELD_LANES];
+    rng.shuffle(pool);
+    const pick = pool.slice(0, count);
+    if (laneComboPlayable(pick)) return pick;
+  }
+  return SAFE_DRAW_IDS.map((id) => FIELD_LANES.find((l) => l.id === id));
 }

@@ -59,7 +59,7 @@ export const LOANER_DECKS = {
       x("scav_wisp", 2), x("ash_prophet", 2), x("nimbus_knight", 2),
       ["jestling"],
       x("gy_fusion_rite", 1), x("ash_whisper", 2), x("ember_spark", 2),
-      x("null_seal", 2), x("burning_lance", 2), ["flame_banner", "tidal_snare"]
+      x("null_seal", 2), x("burning_lance", 2), x("fever_pitch", 1), ["tidal_snare"]
     ]),
     extra: ["fusion_ember_drake"]
   },
@@ -70,8 +70,9 @@ export const LOANER_DECKS = {
       x("sigil_courier", 1), x("chain_acolyte", 1), x("relay_sprite", 1),
       x("echo_adept", 1), x("ledger_imp", 1), x("salvage_wisp", 1),
       x("carrion_bell", 1), x("exile_warden", 1), x("muster_drum", 1),
-      x("grave_ledger", 1), x("gem_golem", 3), x("grove_elder", 3),
-      x("moss_sprite", 3), x("shield_sprite", 2),
+      x("grave_ledger", 1), x("gem_golem", 1), x("grove_elder", 1),
+      x("stoneback", 3), x("ward_sentinel", 2),
+      x("moss_sprite", 2), x("shield_sprite", 2),
       x("spark_offering", 1), x("exile_pact", 1), x("rally_horn", 1),
       x("hand_relay", 1), x("scroll_greed", 2), x("relay_chain", 1),
       x("null_seal", 2), ["loop_warden", "dawn_pixie", "wild_call"]
@@ -96,14 +97,14 @@ export const LOANER_DECKS = {
     id: "gy", name: "GY Grind", pillar: "GY", ship: "must",
     desc: "Fill the GY, Call the Fallen, grind value.",
     deck: deck40([
-      x("scav_wisp", 2), x("jestling", 1), x("mawling", 3),
+      x("scav_wisp", 2), x("jestling", 1), x("mawling", 2),
       x("drain_leech", 2), x("mill_spore", 2), x("tide_priestess", 3),
       x("depths_lurker", 2), x("oracle_eel", 2), x("grinning_echo", 2),
       x("frost_mage", 2), ["kraken", "void_pilgrim"],
-      x("call_fallen", 2), x("tidal_snare", 2), x("moonwell", 2),
+      x("call_fallen", 1), x("tidal_snare", 2), x("moonwell", 2),
       x("riptide", 2), x("null_seal", 2), x("silencing_depths", 2),
       ["tide_cutter"]
-    ], "call_fallen"),
+    ], "ember_spark"),
     extra: ["fusion_abyss_leviathan"]
   },
   mill: {
@@ -150,14 +151,13 @@ export const LOANER_DECKS = {
     id: "big_evolve", name: "Big Evolve", pillar: "Ramp", ship: "must",
     desc: "Survive to turn 3+, Evolve Colossus and wolves for lethal.",
     deck: deck40([
-      x("evolve_colossus", 3), x("wolf_alpha", 3), x("thorn_archer", 3),
-      x("grove_elder", 2), x("nimbus_knight", 2), x("seed_sage", 2),
-      x("shield_sprite", 2), x("void_pilgrim", 2), x("pyre_colossus", 2),
-      ["world_turtle"],
-      x("overgrowth", 3), x("stone_skin", 2), x("wild_call", 2),
-      x("null_seal", 2), x("verdant_rebuke", 2), x("root_snare", 2),
-      x("lane_breaker", 2), ["final_edict"]
-    ], "overgrowth"),
+      x("evolve_colossus", 2), x("wolf_alpha", 3), x("thorn_archer", 3),
+      x("swift_falcon", 3), x("moss_sprite", 3), x("dawn_pixie", 2),
+      x("nimbus_knight", 2), x("seed_sage", 2), ["grove_elder"],
+      x("overgrowth", 2), x("wild_call", 2), x("lane_breaker", 2),
+      x("ember_spark", 3), x("null_seal", 2), x("root_snare", 2),
+      ["verdant_rebuke", "fever_pitch"]
+    ]),
     extra: ["fusion_terra_crown"]
   },
   fusion_ladder: {
@@ -213,10 +213,10 @@ export const LOANER_DECKS = {
     id: "wide_rush", name: "Wide Rush", pillar: "Aggro", ship: "silver",
     desc: "Silver rush engines flood lanes and race face.",
     deck: deck40([
-      x("rush_swarmling", 3), x("silver_ember_scout", 3), x("swift_falcon", 3),
+      x("rush_swarmling", 2), x("silver_ember_scout", 3), x("swift_falcon", 3),
       x("ember_fox", 3), x("silver_lane_surfer", 2), x("cinder_knight", 3),
       x("nimbus_knight", 2), x("doomblade_novice", 2), ["jestling"],
-      x("silver_going_second", 2), x("ember_spark", 2), x("fever_pitch", 1),
+      x("silver_going_second", 1), x("ember_spark", 2), x("fever_pitch", 1),
       x("burning_lance", 2), x("ash_whisper", 2), x("null_seal", 2)
     ]),
     extra: ["fusion_ember_drake", "fusion_choice_blade"]
@@ -238,12 +238,12 @@ export const LOANER_DECKS = {
     id: "token_walls", name: "Token Walls", pillar: "Walls", ship: "silver",
     desc: "Mason and Sprouter raise real token walls; Warden Titan crowns them.",
     deck: deck40([
-      x("silver_token_mason", 2), x("token_sprouter", 2), x("ward_sentinel", 3),
-      x("shield_sprite", 3), x("stoneback", 3), x("heal_bloom", 2),
+      x("silver_token_mason", 2), x("token_sprouter", 2), x("ward_sentinel", 2),
+      x("shield_sprite", 2), x("stoneback", 3), x("heal_bloom", 2),
       x("gem_golem", 2), x("moss_sprite", 2), x("dawn_pixie", 2), ["grove_elder"],
-      x("stone_skin", 3), x("moonwell", 2), x("overgrowth", 2),
+      x("stone_skin", 2), x("moonwell", 2), x("overgrowth", 2),
       x("root_snare", 2), x("verdant_rebuke", 2), x("null_seal", 2)
-    ], "stone_skin"),
+    ], "ember_spark"),
     extra: ["fusion_choice_shield", "fusion_warden_titan"]
   },
   discard_payoff: {
@@ -264,13 +264,13 @@ export const LOANER_DECKS = {
     id: "lane_surfer", name: "Lane Surfer", pillar: "Midrange", ship: "silver",
     desc: "Lane Surfer and rush packages contest every row.",
     deck: deck40([
-      x("silver_lane_surfer", 3), x("swift_falcon", 3), x("rush_swarmling", 3),
+      x("silver_lane_surfer", 2), x("swift_falcon", 2), x("rush_swarmling", 2),
       x("nimbus_knight", 2), x("ember_fox", 2), x("cinder_knight", 2),
       x("thorn_archer", 2), x("doomblade_novice", 2), x("silver_ember_scout", 2),
       ["surge_imp"],
-      x("ember_spark", 2), x("lane_breaker", 2), x("burning_lance", 2),
-      x("null_seal", 2), x("fever_pitch", 1), x("silver_tempo_bolt", 2),
-      ["flame_banner", "verdant_rebuke"]
+      x("ember_spark", 2), x("lane_breaker", 2), x("ash_whisper", 2),
+      x("null_seal", 2), x("root_snare", 2), x("verdant_rebuke", 2),
+      ["burning_lance"]
     ]),
     extra: ["fusion_choice_blade"]
   },
@@ -291,10 +291,11 @@ export const LOANER_DECKS = {
     id: "heal_stall", name: "Heal Stall", pillar: "Walls", ship: "silver",
     desc: "Stall Shell and lifegain force the opponent into bad clocks.",
     deck: deck40([
-      x("silver_token_mason", 3), x("token_sprouter", 3), x("ward_sentinel", 3),
-      x("shield_sprite", 3), x("heal_bloom", 3), x("silver_stall_shell", 2),
-      x("wolf_alpha", 2), ["world_turtle"],
-      x("stone_skin", 3), x("overgrowth", 2), x("root_snare", 2),
+      x("silver_token_mason", 2), x("token_sprouter", 2), x("ward_sentinel", 2),
+      x("shield_sprite", 2), x("heal_bloom", 3), x("silver_stall_shell", 2),
+      x("wolf_alpha", 3), x("thorn_archer", 3), x("moss_sprite", 2),
+      ["world_turtle"],
+      x("stone_skin", 2), x("overgrowth", 2), x("root_snare", 2),
       x("verdant_rebuke", 2), x("null_seal", 2), x("ash_whisper", 2),
       ["final_edict", "wild_call"]
     ], "stone_skin"),
@@ -319,20 +320,20 @@ export const LOANER_DECKS = {
     desc: "Chain Lock Adept and counters freeze the opponent's options.",
     deck: deck40([
       x("silver_chain_lock", 3), x("tide_caller", 3), x("frost_mage", 3),
-      x("ambush_stalker", 2), x("oracle_eel", 2), x("abyss_warden", 2),
-      x("deep_serpent", 2), x("scav_wisp", 2), x("tide_cutter", 2),
-      ["chrono_mite"],
-      x("tidal_snare", 3), x("null_seal", 2), x("judgment_chain", 2),
-      x("veil_negate", 2), x("ash_whisper", 2), x("deep_freeze", 2),
-      x("edict_squire", 2), ["final_edict", "sealbreak"]
-    ], "moonwell"),
+      x("ambush_stalker", 2), x("swift_falcon", 2), x("doomblade_novice", 2),
+      x("tide_cutter", 3), x("oracle_eel", 2),
+      ["cinder_knight"],
+      x("riptide", 3), x("lane_breaker", 2), x("tidal_snare", 2),
+      x("null_seal", 2), x("ash_whisper", 2), x("ember_spark", 2),
+      ["veil_negate", "judgment_chain"]
+    ]),
     extra: ["fusion_abyss_leviathan"]
   },
   choice_recipe: {
     id: "choice_recipe", name: "Choice Recipe", pillar: "Combo", ship: "silver",
     desc: "Choice Agent substitutes flex into Blade or Shield lines.",
     deck: deck40([
-      x("silver_choice_agent", 1), x("fusion_polymer", 1), x("ember_fox", 3),
+      x("silver_choice_agent", 1), x("fusion_polymer", 1), x("ember_fox", 2),
       x("cinder_knight", 3), x("scav_wisp", 2), x("moss_sprite", 2),
       x("doomblade_novice", 2), x("swift_falcon", 2), x("dawn_pixie", 2),
       x("frost_mage", 2), x("spark_raider", 2), ["jestling"],
@@ -360,11 +361,11 @@ export const LOANER_DECKS = {
     id: "comeback_toolbox", name: "Comeback Toolbox", pillar: "Midrange", ship: "silver",
     desc: "Comeback Scroll and resilient midrange claw back from low LP.",
     deck: deck40([
-      x("silver_lifegain_mid", 3), x("heal_bloom", 3), x("scav_wisp", 2),
+      x("silver_lifegain_mid", 2), x("heal_bloom", 2), x("scav_wisp", 2),
       x("void_pilgrim", 2), x("ward_sentinel", 2), x("cinder_knight", 2),
       x("tide_caller", 2), x("doomblade_novice", 2), x("shield_sprite", 2),
       ["nimbus_knight"],
-      x("silver_comeback_draw", 2), x("moonwell", 2), x("call_fallen", 2),
+      x("silver_comeback_draw", 2), x("moonwell", 2), x("call_fallen", 1),
       x("null_seal", 2), x("lane_breaker", 2), x("root_snare", 2),
       ["verdant_rebuke"]
     ], "moonwell"),
@@ -374,10 +375,10 @@ export const LOANER_DECKS = {
     id: "going_second", name: "Going Second", pillar: "Aggro", ship: "silver",
     desc: "Second-Strike Banner buffs rush after the opponent commits.",
     deck: deck40([
-      x("rush_swarmling", 3), x("silver_ember_scout", 3), x("swift_falcon", 3),
+      x("rush_swarmling", 2), x("silver_ember_scout", 3), x("swift_falcon", 3),
       x("ember_fox", 2), x("cinder_knight", 3), x("spark_raider", 2),
       x("silver_otk_blade", 2), x("doomblade_novice", 2), ["surge_imp"],
-      x("silver_going_second", 3), x("fever_pitch", 3), x("ember_spark", 3),
+      x("silver_going_second", 2), x("fever_pitch", 2), x("ember_spark", 3),
       x("burning_lance", 2), x("null_seal", 2), x("lane_breaker", 2),
       ["flame_banner"]
     ]),
@@ -400,10 +401,10 @@ export const LOANER_DECKS = {
     id: "tempo_bounce", name: "Tempo Bounce", pillar: "Midrange", ship: "silver",
     desc: "Bounce Tide and Riptide reset boards while advancing yours.",
     deck: deck40([
-      x("silver_bounce_tide", 3), x("tide_caller", 3), x("frost_mage", 3),
+      x("silver_bounce_tide", 2), x("tide_caller", 3), x("frost_mage", 3),
       x("ambush_stalker", 2), x("swift_falcon", 2), x("doomblade_novice", 2),
       x("depths_lurker", 2), x("cinder_knight", 2), ["oracle_eel"],
-      x("riptide", 3), x("tidal_snare", 2), x("ember_spark", 2),
+      x("riptide", 2), x("tidal_snare", 2), x("ember_spark", 2),
       x("null_seal", 2), x("ash_whisper", 2), x("tide_cutter", 2),
       x("lane_breaker", 2), ["shatter_sigil"]
     ]),
@@ -413,14 +414,13 @@ export const LOANER_DECKS = {
     id: "ramp_into_boss", name: "Ramp into Boss", pillar: "Ramp", ship: "silver",
     desc: "Ramp Seed accelerates into turtles, titans, and crowns.",
     deck: deck40([
-      x("silver_ramp_seed", 3), x("seed_sage", 3), x("moss_sprite", 3),
-      x("grove_elder", 2), x("evolve_colossus", 2), x("world_turtle", 2),
-      x("wolf_alpha", 2), x("dawn_pixie", 2), x("heal_bloom", 2),
-      x("thorn_archer", 2), ["nimbus_knight"],
-      x("overgrowth", 3), x("wild_call", 2), x("moonwell", 2),
-      x("stone_skin", 2), x("null_seal", 2), x("ash_whisper", 2),
-      ["root_snare"]
-    ], "overgrowth"),
+      x("silver_ramp_seed", 2), x("moss_sprite", 3),
+      x("swift_falcon", 3), x("wolf_alpha", 3), x("thorn_archer", 3),
+      x("rush_swarmling", 2), x("cinder_knight", 2), ["nimbus_knight"],
+      x("overgrowth", 2), x("wild_call", 2), x("ember_spark", 3),
+      x("lane_breaker", 2), x("null_seal", 2), x("root_snare", 2),
+      ["fever_pitch"]
+    ]),
     extra: []
   },
   stall_to_fusion: {
@@ -441,10 +441,10 @@ export const LOANER_DECKS = {
     id: "handtrap_midrange", name: "Hand-Trap Mid", pillar: "Midrange", ship: "silver",
     desc: "Veil Adept and interaction keep midrange trades honest.",
     deck: deck40([
-      x("silver_handtrap_mid", 3), x("cinder_knight", 3), x("tide_caller", 2),
+      x("silver_handtrap_mid", 2), x("cinder_knight", 3), x("tide_caller", 2),
       x("frost_mage", 2), x("ember_fox", 3), x("swift_falcon", 2),
-      x("doomblade_novice", 2), x("rush_swarmling", 2), x("spark_raider", 2),
-      x("lane_breaker", 2), x("edict_squire", 2), ["ash_prophet"],
+      x("doomblade_novice", 2), x("rush_swarmling", 1), x("spark_raider", 2),
+      x("lane_breaker", 2), x("edict_squire", 1), ["ash_prophet"],
       x("ash_whisper", 2), x("veil_negate", 2), x("null_seal", 2),
       x("ember_spark", 2), ["riptide", "judgment_chain"]
     ]),
@@ -454,14 +454,13 @@ export const LOANER_DECKS = {
     id: "lifegain_midrange", name: "Lifegain Mid", pillar: "Midrange", ship: "silver",
     desc: "Grove Mid and blooms stabilize into value trades.",
     deck: deck40([
-      x("silver_lifegain_mid", 2), x("heal_bloom", 2), x("moss_sprite", 3),
-      x("thorn_archer", 2), x("evolve_colossus", 2), x("seed_sage", 2),
-      x("grove_elder", 2), x("dawn_pixie", 3), x("wolf_alpha", 2),
-      x("world_turtle", 2),
-      x("overgrowth", 2), x("wild_call", 2),
-      x("root_snare", 2), x("null_seal", 2), x("verdant_rebuke", 2),
-      x("ember_spark", 2), ["stone_skin"]
-    ], "overgrowth"),
+      x("silver_lifegain_mid", 2), x("thorn_archer", 3), x("wolf_alpha", 3),
+      x("cinder_knight", 2), x("swift_falcon", 3), x("moss_sprite", 2),
+      x("ember_fox", 2), x("heal_bloom", 1), x("rush_swarmling", 2),
+      x("ember_spark", 3), x("lane_breaker", 2), x("wild_call", 2),
+      x("null_seal", 2), x("root_snare", 2), x("overgrowth", 2),
+      ["verdant_rebuke", "fever_pitch"]
+    ]),
     extra: ["fusion_terra_crown"]
   },
   value_midrange: {
@@ -470,11 +469,10 @@ export const LOANER_DECKS = {
     deck: deck40([
       x("silver_lifegain_mid", 2), x("cinder_knight", 3), x("frost_mage", 2),
       x("thorn_archer", 2), x("scav_wisp", 2), x("wolf_alpha", 2),
-      x("nimbus_knight", 2), x("doomblade_novice", 2), x("tide_caller", 2),
-      x("grove_elder", 2), ["ember_fox"],
-      x("lane_breaker", 2), x("ash_whisper", 2), x("null_seal", 2),
-      x("ember_spark", 2), x("root_snare", 2), x("tidal_snare", 2),
-      ["verdant_rebuke", "moonwell"]
+      x("rush_swarmling", 2), x("doomblade_novice", 2), x("tide_caller", 2),
+      x("ember_fox", 3), x("swift_falcon", 3),
+      x("lane_breaker", 2), x("ember_spark", 3), x("null_seal", 2),
+      x("fever_pitch", 2), x("root_snare", 2), ["ash_whisper"]
     ]),
     extra: ["fusion_choice_blade", "fusion_choice_shield"]
   },
@@ -496,14 +494,14 @@ export const LOANER_DECKS = {
     id: "ambush_trapdoor", name: "Ambush Trapdoor", pillar: "Control", ship: "silver",
     desc: "Ambush Door and the Queen punish overextension; the Fiend flips them all up.",
     deck: deck40([
-      x("silver_ambush_door", 3), x("ambush_stalker", 3), x("trapdoor_queen", 2),
+      x("silver_ambush_door", 2), x("ambush_stalker", 3), x("trapdoor_queen", 2),
       x("sudden_maw", 2), x("tide_caller", 2),
       x("frost_mage", 2), x("abyss_warden", 2), x("depths_lurker", 2),
       x("drain_leech", 2), x("oracle_eel", 2), ["chrono_mite"],
-      x("tidal_snare", 3), x("ash_whisper", 2), x("veil_negate", 2),
+      x("tidal_snare", 2), x("ash_whisper", 2), x("veil_negate", 2),
       x("null_seal", 2), x("trapdoor_lurker", 1), x("riptide", 2),
       x("lane_breaker", 2), x("tide_cutter", 2), ["final_edict"]
-    ], "tidal_snare"),
+    ], "ember_spark"),
     extra: ["fusion_abyss_leviathan", "fusion_trapdoor_fiend"]
   },
   gy_fusion_combo: {
@@ -552,13 +550,12 @@ export const LOANER_DECKS = {
     desc: "Terra beatdown with archers and wolves; Crown as finisher.",
     deck: deck40([
       x("moss_sprite", 3), x("thorn_archer", 3), x("wolf_alpha", 3),
-      x("grove_elder", 2), x("dawn_pixie", 3), x("seed_sage", 2),
-      x("nimbus_knight", 2), x("gem_golem", 2), x("shield_sprite", 2),
-      ["world_turtle"],
-      x("wild_call", 3), x("overgrowth", 2), x("root_snare", 2),
-      x("verdant_rebuke", 2), x("null_seal", 2), x("stone_skin", 2),
-      ["moonwell", "final_edict"]
-    ], "overgrowth"),
+      x("swift_falcon", 3), x("cinder_knight", 2), x("doomblade_novice", 2),
+      x("nimbus_knight", 2), x("rush_swarmling", 2), ["grove_elder"],
+      x("wild_call", 2), x("lane_breaker", 3), x("ember_spark", 3),
+      x("null_seal", 2), x("root_snare", 2), x("fever_pitch", 1),
+      ["verdant_rebuke", "overgrowth"]
+    ]),
     extra: []
   },
   counter_war: {
@@ -592,15 +589,78 @@ export const LOANER_DECKS = {
     id: "jest_engine", name: "Jest Engine", pillar: "GY", ship: "silver",
     desc: "Jestling loops and scavengers refill; Call the Fallen for swings.",
     deck: deck40([
-      x("scav_wisp", 2), x("frost_mage", 3), x("mawling", 2),
+      x("scav_wisp", 2), x("frost_mage", 2), x("mawling", 2),
       x("cinder_knight", 2), x("chrono_mite", 2),
       x("void_pilgrim", 2), x("doomblade_novice", 2), x("oracle_eel", 2),
-      x("tide_caller", 2), x("grinning_echo", 2), ["tide_priestess"],
-      x("call_fallen", 1), x("lane_breaker", 2), x("tidal_snare", 2),
+      x("tide_caller", 2), x("grinning_echo", 1), ["tide_priestess"],
+      x("call_fallen", 1), x("lane_breaker", 1), x("tidal_snare", 2),
       x("null_seal", 2), x("riptide", 2), x("moonwell", 2),
       x("ash_whisper", 2), ["gy_fusion_rite"]
-    ], "call_fallen"),
+    ]),
     extra: ["fusion_choice_blade", "fusion_abyss_leviathan"]
+  },
+  token_flood: {
+    id: "token_flood", name: "Token Flood", pillar: "Walls", ship: "silver",
+    desc: "Mason and Sprouter go wide; every token is another body for contact.",
+    deck: deck40([
+      x("silver_token_mason", 3), x("token_sprouter", 3), x("moss_sprite", 3),
+      x("dawn_pixie", 3), x("ward_sentinel", 2), x("shield_sprite", 2),
+      x("heal_bloom", 2), x("wolf_alpha", 2), ["grove_elder"],
+      x("wild_call", 3), x("overgrowth", 3), x("stone_skin", 2),
+      x("null_seal", 2), x("root_snare", 2), ["moonwell", "verdant_rebuke"]
+    ], "wild_call"),
+    extra: ["fusion_warden_titan", "fusion_grove_knight"]
+  },
+  spell_engine: {
+    id: "spell_engine", name: "Spell Engine", pillar: "Aggro", ship: "silver",
+    desc: "Bolts, banners, and draw spells chain into a burn close.",
+    deck: deck40([
+      x("ash_prophet", 3), x("ember_fox", 3), x("cinder_knight", 2),
+      x("silver_ember_scout", 2), x("burn_spark_imp", 2), x("doomblade_novice", 2),
+      x("swift_falcon", 2), ["jestling"],
+      x("silver_tempo_bolt", 3), x("ember_spark", 3), x("scroll_greed", 3),
+      x("mind_surge", 2), x("flame_banner", 3), x("shatter_sigil", 2),
+      x("fever_pitch", 2), x("null_seal", 2), ["burning_lance"]
+    ]),
+    extra: ["fusion_ember_drake", "fusion_tempo_ace"]
+  },
+  continuous_engine: {
+    id: "continuous_engine", name: "Continuous Engine", pillar: "Midrange", ship: "silver",
+    desc: "Banners, skins, and wells stay on the field and grind value.",
+    deck: deck40([
+      x("ward_sentinel", 2), x("cinder_knight", 3), x("ember_fox", 2),
+      x("swift_falcon", 2), x("ash_prophet", 2), x("moss_sprite", 2),
+      x("shield_sprite", 2), x("heal_bloom", 2), ["grove_elder"],
+      x("flame_banner", 2), x("stone_skin", 2), x("overgrowth", 2),
+      x("ember_spark", 2), x("lane_breaker", 1), x("null_seal", 2),
+      ["moonwell", "root_snare"]
+    ]),
+    extra: ["fusion_choice_shield", "fusion_grove_titan"]
+  },
+  lane_hate: {
+    id: "lane_hate", name: "Lane Hate", pillar: "Aggro", ship: "silver",
+    desc: "Lane Breaker and surfers punish Snap rows and steal the twist.",
+    deck: deck40([
+      x("lane_breaker", 3), x("silver_lane_surfer", 3), x("swift_falcon", 3),
+      x("ember_fox", 3), x("rush_swarmling", 3), x("nimbus_knight", 2),
+      x("cinder_knight", 2), x("doomblade_novice", 2), ["surge_imp"],
+      x("ember_spark", 3), x("burning_lance", 2), x("fever_pitch", 2),
+      x("null_seal", 2), x("silver_tempo_bolt", 2), ["flame_banner", "verdant_rebuke"]
+    ]),
+    extra: ["fusion_tempo_ace", "fusion_rush_general"]
+  },
+  midrange_evolve: {
+    id: "midrange_evolve", name: "Midrange Evolve", pillar: "Ramp", ship: "silver",
+    desc: "Fair Terra curve into a turn-3 Evolve swing.",
+    deck: deck40([
+      x("silver_evolve_burn", 2), x("evolve_colossus", 2), x("wolf_alpha", 3),
+      x("swift_falcon", 3), x("thorn_archer", 3), x("cinder_knight", 2),
+      x("moss_sprite", 2), x("ember_fox", 2), ["nimbus_knight"],
+      x("ember_spark", 3), x("lane_breaker", 2), x("overgrowth", 2),
+      x("wild_call", 2), x("null_seal", 2), x("root_snare", 2),
+      ["fever_pitch", "verdant_rebuke"]
+    ]),
+    extra: ["fusion_terra_crown", "fusion_worldroot"]
   }
 };
 
@@ -616,7 +676,7 @@ const ARCHETYPE_EXTRA = {
   pyro_control: ["fusion_ember_drake", "fusion_cinder_archon"],
   burn: ["fusion_ember_drake", "fusion_ash_seraph"],
   evolve_burn: ["fusion_ember_drake", "fusion_terra_crown"],
-  going_second: ["fusion_ember_drake", "fusion_rush_general"],
+  going_second: ["fusion_ember_drake"],
   aggro_swarm: ["fusion_ember_drake", "fusion_rush_general"],
   ignis_mid: ["fusion_ember_drake", "fusion_cinder_archon"],
   wide_rush: ["fusion_ember_drake"],
@@ -633,11 +693,11 @@ const ARCHETYPE_EXTRA = {
   chain_lock: abyssBest,
   counter_war: abyssMid,
   abyss_tempo: abyssBest,
-  tempo_bounce: ["fusion_abyss_leviathan", "fusion_tide_hydra"],
-  ambush_trapdoor: ["fusion_abyss_leviathan", "fusion_trapdoor_fiend"],
+  tempo_bounce: ["fusion_abyss_leviathan"],
+  ambush_trapdoor: ["fusion_abyss_leviathan"],
   drain_walls: ["fusion_abyss_leviathan", "fusion_choice_shield", "fusion_veil_lock"],
   mill: ["fusion_mill_maw", "fusion_deep_hollow"],
-  stall_to_fusion: ["fusion_ember_drake", "fusion_choice_shield", "fusion_grove_titan"],
+  stall_to_fusion: ["fusion_ember_drake", "fusion_choice_shield"],
   fusion_ladder: ["fusion_ember_drake"],
   choice_recipe: ["fusion_ember_drake"],
   substitute_toolbox: ["fusion_ember_drake"],
@@ -646,13 +706,18 @@ const ARCHETYPE_EXTRA = {
   big_evolve: [...terraBest, "fusion_worldroot"],
   lifegain_midrange: [...terraMid, "fusion_worldroot"],
   heal_ramp: terraMid,
-  token_walls: ["fusion_grove_knight", "fusion_warden_titan"],
+  token_walls: ["fusion_grove_knight"],
   value_midrange: ["fusion_grove_titan", "fusion_worldroot"],
-  lane_surfer: ["fusion_tempo_ace", "fusion_rush_general"],
+  lane_surfer: ["fusion_tempo_ace"],
   terra_beat: [...terraBest, "fusion_worldroot"],
   ramp_into_boss: [...terraBest, "fusion_worldroot"],
   hybrid_abyss_tempo: ["fusion_ember_drake", "fusion_abyss_leviathan"],
-  hybrid_terra_abyss: ["fusion_abyss_leviathan", "fusion_choice_shield"]
+  hybrid_terra_abyss: ["fusion_abyss_leviathan", "fusion_choice_shield"],
+  token_flood: ["fusion_warden_titan", "fusion_grove_knight", "fusion_grove_titan"],
+  spell_engine: ["fusion_ember_drake", "fusion_tempo_ace"],
+  continuous_engine: ["fusion_choice_shield", "fusion_grove_titan", "fusion_worldroot"],
+  lane_hate: ["fusion_tempo_ace", "fusion_rush_general"],
+  midrange_evolve: [...terraBest, "fusion_worldroot"]
 };
 
 for (const d of Object.values(LOANER_DECKS)) {

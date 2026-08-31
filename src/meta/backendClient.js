@@ -1,22 +1,39 @@
 /** Optional client for Wave O backend — all calls no-op / local fallback if offline. */
 
-const DEFAULT_URL = "http://localhost:8787";
+export const DEFAULT_URL = "http://localhost:8787";
+
+/** Same-origin first (Vite proxy), then the optional :8787 process. */
+export function backendCandidates() {
+  const out = [];
+  if (typeof localStorage !== "undefined") {
+    const override = localStorage.getItem("cb-backend-url");
+    if (override) out.push(String(override).replace(/\/$/, ""));
+  }
+  if (typeof location !== "undefined" && /^https?:$/.test(location.protocol || "")) {
+    out.push(location.origin);
+  }
+  out.push(DEFAULT_URL);
+  return [...new Set(out.filter(Boolean))];
+}
 
 export function backendUrl() {
-  return (typeof localStorage !== "undefined" && localStorage.getItem("cb-backend-url")) || DEFAULT_URL;
+  return backendCandidates()[0];
 }
 
 async function tryFetch(path, opts = {}) {
-  try {
-    const res = await fetch(`${backendUrl()}${path}`, {
-      ...opts,
-      headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
+  for (const base of backendCandidates()) {
+    try {
+      const res = await fetch(`${base}${path}`, {
+        ...opts,
+        headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
+      });
+      if (!res.ok) continue;
+      return await res.json();
+    } catch {
+      /* try next candidate */
+    }
   }
+  return null;
 }
 
 export async function cloudPush(deviceId, profile) {
@@ -40,6 +57,14 @@ export async function fetchLeaderboard(board = "ranked") {
 
 export async function createRoom(seed, host) {
   return tryFetch("/v1/rooms", { method: "POST", body: JSON.stringify({ seed, host }) });
+}
+
+export async function fetchRoom(code) {
+  return tryFetch(`/v1/rooms/${encodeURIComponent(String(code || "").toUpperCase())}`);
+}
+
+export async function pingBackend() {
+  return tryFetch("/health");
 }
 
 export async function fetchBanlist() {

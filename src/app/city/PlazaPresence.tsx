@@ -1,4 +1,16 @@
-/** Static local greeters — unique silhouettes, no plazaNet / no online presence. */
+import { useEffect, useState } from "react";
+import { Html } from "@react-three/drei";
+import { onPeers, sendInvite, isOnline } from "../../meta/plazaNet.js";
+
+const TINTS = ["#c45a3a", "#3aa0c8", "#6bcb77", "#c9a227", "#b08cff", "#e8789a"];
+
+function tintFor(id: string) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return TINTS[h % TINTS.length];
+}
+
+/** Static local greeters — unique silhouettes. Remote peers render when plaza net is up. */
 const GREETERS: {
   id: string;
   poi: string;
@@ -22,7 +34,6 @@ function Shadow() {
   );
 }
 
-/** Stocky pack merchant — crate + visor, navy/gold. */
 function Vendor() {
   return (
     <group>
@@ -43,19 +54,10 @@ function Vendor() {
         <boxGeometry args={[0.34, 0.1, 0.28]} />
         <meshStandardMaterial color="#8a6a12" roughness={0.45} />
       </mesh>
-      <mesh position={[0.42, 0.18, 0.12]} castShadow>
-        <boxGeometry args={[0.28, 0.22, 0.22]} />
-        <meshStandardMaterial color="#6a4a22" roughness={0.7} />
-      </mesh>
-      <mesh position={[0.42, 0.32, 0.12]}>
-        <boxGeometry args={[0.22, 0.06, 0.16]} />
-        <meshStandardMaterial color="#c9a227" roughness={0.4} />
-      </mesh>
     </group>
   );
 }
 
-/** Slim boutique stylist — wide hat + teal cape. */
 function Stylist() {
   return (
     <group>
@@ -63,10 +65,6 @@ function Stylist() {
       <mesh position={[0, 0.62, 0]} castShadow>
         <capsuleGeometry args={[0.12, 0.72, 4, 8]} />
         <meshStandardMaterial color="#2a6a78" roughness={0.45} />
-      </mesh>
-      <mesh position={[0, 0.58, -0.08]} rotation={[0.15, 0, 0]} castShadow>
-        <boxGeometry args={[0.42, 0.7, 0.08]} />
-        <meshStandardMaterial color="#3aa0c8" roughness={0.5} />
       </mesh>
       <mesh position={[0, 1.18, 0]} castShadow>
         <sphereGeometry args={[0.14, 10, 10]} />
@@ -76,15 +74,10 @@ function Stylist() {
         <cylinderGeometry args={[0.32, 0.32, 0.05, 16]} />
         <meshStandardMaterial color="#d8ecf4" roughness={0.4} />
       </mesh>
-      <mesh position={[0, 1.4, 0]} castShadow>
-        <cylinderGeometry args={[0.1, 0.12, 0.22, 8]} />
-        <meshStandardMaterial color="#3aa0c8" roughness={0.4} />
-      </mesh>
     </group>
   );
 }
 
-/** Hooded gatekeeper — robe + green halo. */
 function Keeper() {
   return (
     <group>
@@ -97,23 +90,14 @@ function Keeper() {
         <sphereGeometry args={[0.16, 10, 10]} />
         <meshStandardMaterial color="#c8b090" roughness={0.55} />
       </mesh>
-      <mesh position={[0, 1.18, 0]} rotation={[0.2, 0, 0]} castShadow>
-        <coneGeometry args={[0.22, 0.38, 8]} />
-        <meshStandardMaterial color="#2a6a48" roughness={0.5} />
-      </mesh>
       <mesh position={[0, 1.22, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.22, 0.03, 6, 16]} />
         <meshStandardMaterial color="#6bcb77" emissive="#6bcb77" emissiveIntensity={0.45} />
-      </mesh>
-      <mesh position={[0.28, 0.7, 0]} castShadow>
-        <cylinderGeometry args={[0.03, 0.04, 1.15, 6]} />
-        <meshStandardMaterial color="#8a6a12" roughness={0.5} />
       </mesh>
     </group>
   );
 }
 
-/** Coliseum marshal — pauldrons + banner, crimson/gold. */
 function Marshal() {
   return (
     <group>
@@ -130,21 +114,9 @@ function Marshal() {
         <boxGeometry args={[0.18, 0.22, 0.26]} />
         <meshStandardMaterial color="#c9a227" roughness={0.4} metalness={0.3} />
       </mesh>
-      <mesh position={[0, 0.48, 0.16]}>
-        <boxGeometry args={[0.22, 0.08, 0.04]} />
-        <meshStandardMaterial color="#c9a227" roughness={0.35} metalness={0.35} />
-      </mesh>
       <mesh position={[0, 1.16, 0]} castShadow>
         <sphereGeometry args={[0.16, 10, 10]} />
         <meshStandardMaterial color="#e8c8a8" roughness={0.55} />
-      </mesh>
-      <mesh position={[0.34, 0.95, 0]} castShadow>
-        <cylinderGeometry args={[0.03, 0.035, 1.55, 6]} />
-        <meshStandardMaterial color="#3a2a18" roughness={0.6} />
-      </mesh>
-      <mesh position={[0.48, 1.35, 0]} castShadow>
-        <boxGeometry args={[0.28, 0.36, 0.04]} />
-        <meshStandardMaterial color="#c45a3a" roughness={0.45} />
       </mesh>
     </group>
   );
@@ -157,14 +129,61 @@ function GreeterMesh({ kind }: { kind: (typeof GREETERS)[number]["kind"] }) {
   return <Marshal />;
 }
 
-export function PlazaPresence({ enabled: _enabled }: { enabled?: boolean }) {
-  void _enabled;
+function RemotePawn({
+  peer,
+  roomCode,
+}: {
+  peer: { id: string; name?: string; x: number; z: number };
+  roomCode: string;
+}) {
+  const color = tintFor(peer.id || "x");
+  return (
+    <group position={[peer.x || 0, 0, peer.z || 0]}>
+      <mesh position={[0, 0.9, 0]} castShadow>
+        <boxGeometry args={[0.42, 1.7, 0.32]} />
+        <meshStandardMaterial color={color} roughness={0.5} />
+      </mesh>
+      <mesh position={[0, 1.85, 0]} castShadow>
+        <sphereGeometry args={[0.16, 8, 8]} />
+        <meshStandardMaterial color="#e8c8a8" />
+      </mesh>
+      <Html position={[0, 2.3, 0]} center pointerEvents="none" zIndexRange={[6, 0]}>
+        <div className="city-peer-name">{peer.name || "Duelist"}</div>
+      </Html>
+      {roomCode ? (
+        <Html position={[0, 2.75, 0]} center zIndexRange={[7, 0]}>
+          <button
+            type="button"
+            className="city-invite-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              sendInvite(peer.id, roomCode);
+            }}
+          >
+            Invite
+          </button>
+        </Html>
+      ) : null}
+    </group>
+  );
+}
+
+export function PlazaPresence({ roomCode = "" }: { enabled?: boolean; roomCode?: string }) {
+  const [remotes, setRemotes] = useState<{ id: string; name?: string; x: number; z: number }[]>([]);
+
+  useEffect(() => {
+    return onPeers((list: { id: string; name?: string; x: number; z: number }[]) => setRemotes(list || []));
+  }, []);
+
   return (
     <group>
       {GREETERS.map((g) => (
         <group key={g.id} position={[g.x, 0, g.z]} rotation={[0, g.yaw, 0]}>
           <GreeterMesh kind={g.kind} />
         </group>
+      ))}
+      {isOnline() && remotes.map((p) => (
+        <RemotePawn key={p.id} peer={p} roomCode={roomCode} />
       ))}
     </group>
   );

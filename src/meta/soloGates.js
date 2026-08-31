@@ -28,7 +28,7 @@ export const GATES = [
   {
     id: "gate5",
     label: "Win a ranked duel",
-    hint: "Queue Ranked from the Coliseum and take the win. The ladder is vs CPU until peer duels ship.",
+    hint: "Queue Ranked from the Coliseum and take the win. CPU ladder always works; PvP needs the local backend.",
     reward: { coins: 180, gems: 60 }
   },
   {

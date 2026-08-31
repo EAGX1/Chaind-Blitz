@@ -208,6 +208,10 @@ export async function responseWindow(G, { startPlayer, initialLinks = [], summon
   let passes = 0;
   let cur = startPlayer;
   while (true) {
+    if (G.chain.length >= 16) {
+      log(G, "Chain length cap — resolving now.", "system");
+      break;
+    }
     const last = G.chain[G.chain.length - 1] || null;
     const ctx = { responseToSpeed: last ? last.speed : 0, lastLink: last, summonCtx, damageStep };
     const legal = legalFastEffects(G, cur, ctx);
