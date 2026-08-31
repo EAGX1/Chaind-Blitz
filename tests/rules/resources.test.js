@@ -9,7 +9,7 @@ import {
 } from "../../src/engine/index.js";
 import { FIELD_LANES } from "../../src/data/fields.js";
 import {
-  mkState, makeDriver, addField, addHand, addDeck, addGy
+  mkState, makeDriver, addField, addHand, addDeck, addGy, addSet
 } from "./helpers.js";
 
 const mk40 = (id) => Array(40).fill(id);
@@ -322,15 +322,15 @@ describe("field lanes", () => {
     const names = FIELD_LANES.map((l) => l.name);
     expect(new Set(ids).size).toBe(ids.length);
     expect(new Set(names).size).toBe(names.length);
-    expect(ids.length).toBeGreaterThanOrEqual(130);
+    expect(ids.length).toBe(200);
     expect(ids).toContain("berserker_ring");
     expect(ids).toContain("lone_peak");
     expect(ids).toContain("nidavell_forge");
-    expect(ids).toContain("sinkhole");
-    expect(ids).toContain("kyln_gate");
-    expect(ids).toContain("milano_gate");
-    expect(ids).toContain("quantum_well");
-    expect(ids).toContain("plunder_keep");
+    expect(ids).toContain("last_stand");
+    expect(ids).toContain("moon_book");
+    expect(ids).toContain("dawn_lock");
+    expect(ids).toContain("rickety_bridge");
+    expect(ids).toContain("spell_crash");
     for (const l of FIELD_LANES) {
       expect(l.id && l.name && l.text).toBeTruthy();
       expect(
@@ -656,6 +656,88 @@ describe("field lanes", () => {
     expect(lockedMzZones(even, 0)).toEqual([]);
     even.turnCount = 2;
     expect(lockedMzZones(even, 0)).toEqual([0, 1]);
+  });
+
+  it("third Snap batch: last stand, moon book, rickety, dawn lock, spell crash", async () => {
+    const stand = mkState(1, [lane("last_stand")]);
+    await revealLanes(stand);
+    const fox = addField(stand, 0, "ember_fox", 0);
+    expect(getATK(stand, fox)).toBe(1);
+    P(stand, 0).lp = 8;
+    expect(getATK(stand, fox)).toBe(4);
+
+    const paper = mkState(1, [lane("paper_thin")]);
+    await revealLanes(paper);
+    const thin = addField(paper, 0, "ember_fox", 0);
+    expect(getATK(paper, thin)).toBe(5);
+
+    const moon = mkState(1, [lane("moon_book")]);
+    await revealLanes(moon);
+    const flipped = addField(moon, 0, "gem_golem", 0);
+    moon.lanes[0].def.onSummon(moon, moon.lanes[0], flipped);
+    expect(flipped.faceup).toBe(false);
+
+    const swap = mkState(1, [lane("print_swap")]);
+    await revealLanes(swap);
+    const swapped = addField(swap, 0, "gem_golem", 0);
+    swap.lanes[0].def.onSummon(swap, swap.lanes[0], swapped);
+    expect(getATK(swap, swapped)).toBe(4);
+    expect(getDEF(swap, swapped)).toBe(2);
+
+    const clone = mkState(1, [lane("gy_clone")]);
+    await revealLanes(clone);
+    const src = addField(clone, 0, "gem_golem", 0);
+    clone.lanes[0].def.onSummon(clone, clone.lanes[0], src);
+    expect(P(clone, 0).gy.map((c) => c.id)).toEqual(["gem_golem"]);
+    expect(src.loc).toBe("mz");
+
+    const shell = mkState(1, [lane("double_shell")]);
+    await revealLanes(shell);
+    const tank = addField(shell, 0, "gem_golem", 0);
+    shell.lanes[0].def.onSummon(shell, shell.lanes[0], tank);
+    expect(getDEF(shell, tank)).toBe(8);
+
+    const rickety = mkState(1, [lane("rickety_bridge")]);
+    rickety.tp = 0;
+    await revealLanes(rickety);
+    const left = addField(rickety, 0, "gem_golem", 0);
+    const right = addField(rickety, 0, "ember_fox", 1);
+    rickety.lanes[0].def.onTurnEnd(rickety, rickety.lanes[0]);
+    expect(left.loc).toBe("gy");
+    expect(right.loc).toBe("mz");
+
+    const maw = mkState(1, [lane("titan_maw")]);
+    maw.tp = 0;
+    await revealLanes(maw);
+    const weak = addField(maw, 0, "ember_fox", 0);
+    const strong = addField(maw, 0, "gem_golem", 1);
+    maw.lanes[0].def.onTurnEnd(maw, maw.lanes[0]);
+    expect(weak.loc).toBe("gy");
+    expect(strong.loc).toBe("mz");
+
+    const crash = mkState(1, [lane("spell_crash")]);
+    addSet(crash, 0, "ember_spark", 0);
+    addSet(crash, 1, "scroll_greed", 1);
+    await revealLanes(crash);
+    expect(P(crash, 0).stz[0]).toBeNull();
+    expect(P(crash, 1).stz[1]).toBeNull();
+
+    const dawn = mkState(1, [lane("dawn_lock")]);
+    dawn.turnCount = 1;
+    await revealLanes(dawn);
+    expect(lockedMzZones(dawn, 0)).toEqual([0, 1]);
+    dawn.turnCount = 2;
+    expect(lockedMzZones(dawn, 0)).toEqual([]);
+
+    const split = mkState(1, [lane("split_lock")]);
+    await revealLanes(split);
+    expect(lockedMzZones(split, 0)).toEqual([1]);
+
+    const late = mkState(1, [lane("late_spell")]);
+    await revealLanes(late);
+    expect(lockedStzZones(late, 0)).toEqual([]);
+    late.turnCount = 4;
+    expect(lockedStzZones(late, 0)).toEqual([0, 1]);
   });
 });
 

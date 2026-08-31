@@ -9,7 +9,8 @@
 import { log, monstersOf, opp, P, monsterLevel, hasKeyword, makeCard, getATK, pushEvents } from "../engine/state.js";
 import {
   buff, damageMonster, sweepDestroyed, healPlayer, drawCards, dealDamageToPlayer,
-  banishCard, mill, destroyByEffect, bounceToHand, placeMonster, moveTo, discardCard
+  banishCard, mill, destroyByEffect, bounceToHand, placeMonster, moveTo, discardCard,
+  setMonsterFaceDown
 } from "../engine/ops.js";
 import { TOKEN_DB } from "./cards/tokens.js";
 
@@ -86,6 +87,20 @@ function lockLaneZones(lane, z) {
 }
 function hasAnyKeyword(c) {
   return hasKeyword(c, "rush") || hasKeyword(c, "ward") || !!(c.def?.keywords?.length);
+}
+function lowerLpPlayer(G) {
+  const a = P(G, 0).lp, b = P(G, 1).lp;
+  if (a === b) return null;
+  return a < b ? 0 : 1;
+}
+function destroySpellsInLane(G, lane) {
+  const [a, b] = laneZones(lane);
+  for (const p of [0, 1]) {
+    for (const z of [a, b]) {
+      const c = P(G, p).stz[z];
+      if (c) destroyByEffect(G, c, laneSrc(lane));
+    }
+  }
 }
 
 export const FIELD_LANES = [
@@ -1001,6 +1016,462 @@ export const FIELD_LANES = [
   {
     id: "odd_lock", name: "Even Lock", text: "This lane is sealed on even turns.",
     locksZone: (G, lane, p, z) => G.turnCount % 2 === 0 && lockLaneZones(lane, z)
+  },
+  {
+    id: "tank_line", name: "Tank Line", text: "Monsters with 4 or more DEF get +2 ATK.",
+    modifyStat: stat((G, lane, c, v, s) => (s === "atk" && (c.def.def || 0) >= 4) ? v + 2 : v)
+  },
+  {
+    id: "glass_jaw", name: "Glass Jaw", text: "Monsters with 4 or more ATK get -2 DEF.",
+    modifyStat: stat((G, lane, c, v, s) => (s === "def" && (c.def.atk || 0) >= 4) ? v - 2 : v)
+  },
+  {
+    id: "last_stand", name: "Last Stand", text: "If you have 8 LP or less, monsters here get +3 ATK.",
+    modifyStat: stat((G, lane, c, v, s) => (s === "atk" && P(G, c.controller).lp <= 8) ? v + 3 : v)
+  },
+  {
+    id: "full_life", name: "Full Life", text: "If you have 18 LP or more, monsters here get +2 DEF.",
+    modifyStat: stat((G, lane, c, v, s) => (s === "def" && P(G, c.controller).lp >= 18) ? v + 2 : v)
+  },
+  {
+    id: "empty_grip", name: "Empty Grip", text: "If your hand is empty, monsters here get +3 ATK.",
+    modifyStat: stat((G, lane, c, v, s) => (s === "atk" && P(G, c.controller).hand.length === 0) ? v + 3 : v)
+  },
+  {
+    id: "stuffed_grip", name: "Stuffed Grip", text: "If you have 5 or more cards in hand, monsters here get +2 DEF.",
+    modifyStat: stat((G, lane, c, v, s) => (s === "def" && P(G, c.controller).hand.length >= 5) ? v + 2 : v)
+  },
+  {
+    id: "ban_choir", name: "Ban Choir", text: "Monsters here get +1 ATK for every 2 cards you have banished.",
+    modifyStat: stat((G, lane, c, v, s) => s === "atk" ? v + Math.floor(P(G, c.controller).ban.length / 2) : v)
+  },
+  {
+    id: "extra_hum", name: "Extra Hum", text: "If your Extra Deck is not empty, monsters here get +2 ATK.",
+    modifyStat: stat((G, lane, c, v, s) => (s === "atk" && P(G, c.controller).extra.length) ? v + 2 : v)
+  },
+  {
+    id: "set_battery", name: "Set Battery", text: "Monsters here get +1 ATK for each face-down spell you control.",
+    modifyStat: stat((G, lane, c, v, s) => {
+      if (s !== "atk") return v;
+      return v + P(G, c.controller).stz.filter((x) => x && !x.faceup).length;
+    })
+  },
+  {
+    id: "swarm_hum", name: "Swarm Hum", text: "If you control 4 or more monsters, monsters here get +2 ATK.",
+    modifyStat: stat((G, lane, c, v, s) => (s === "atk" && monstersOf(G, c.controller).length >= 4) ? v + 2 : v)
+  },
+  {
+    id: "paper_thin", name: "Paper Thin", text: "Monsters with 1 DEF or less get +4 ATK.",
+    modifyStat: stat((G, lane, c, v, s) => (s === "atk" && preLaneStat(G, c, "def") <= 1) ? v + 4 : v)
+  },
+  {
+    id: "mid_band", name: "Mid Band", text: "Level 4–6 monsters here get +1/+1.",
+    modifyStat: stat((G, lane, c, v, s) => {
+      const lv = monsterLevel(c.def);
+      return lv >= 4 && lv <= 6 ? v + 1 : v;
+    })
+  },
+  {
+    id: "dual_tribe", name: "Twin Tribe", text: "Ignis or Abyss monsters here get +1/+1.",
+    modifyStat: stat((G, lane, c, v, s) => (c.def?.tribe === "Ignis" || c.def?.tribe === "Abyss") ? v + 1 : v)
+  },
+  {
+    id: "night_blade", name: "Night Blade", text: "During the opponent's turn, monsters here get +3 ATK.",
+    modifyStat: stat((G, lane, c, v, s) => (s === "atk" && G.tp !== c.controller) ? v + 3 : v)
+  },
+  {
+    id: "even_scale", name: "Even Scale", text: "Even-level monsters here get +2 ATK.",
+    modifyStat: stat((G, lane, c, v, s) => (s === "atk" && monsterLevel(c.def) % 2 === 0) ? v + 2 : v)
+  },
+  {
+    id: "odd_scale", name: "Odd Scale", text: "Odd-level monsters here get +2 DEF.",
+    modifyStat: stat((G, lane, c, v, s) => (s === "def" && monsterLevel(c.def) % 2 === 1) ? v + 2 : v)
+  },
+  {
+    id: "clean_gy", name: "Clean GY", text: "If your GY is empty, monsters here get +2/+2.",
+    modifyStat: stat((G, lane, c, v, s) => P(G, c.controller).gy.length === 0 ? v + 2 : v)
+  },
+  {
+    id: "wounded_pride", name: "Wounded Pride", text: "If this monster is damaged and you have less LP, it gets +2 ATK.",
+    modifyStat: stat((G, lane, c, v, s) => {
+      if (s !== "atk" || c.dmg <= 0) return v;
+      return P(G, c.controller).lp < P(G, opp(c.controller)).lp ? v + 2 : v;
+    })
+  },
+  {
+    id: "coin_buff", name: "Coin Buff", text: "Summon here: 50% chance this gets +2/+2, otherwise it takes 1.",
+    onSummon: (G, lane, card) => {
+      if (G.rng.chance(0.5)) buff(G, card, 2, 2, { permanent: true });
+      else {
+        damageMonster(G, card, 1, null);
+        sweepDestroyed(G);
+        log(G, "Coin Buff lands tails.", "lane");
+      }
+    }
+  },
+  {
+    id: "bounce_neighbor", name: "Bounce Neighbor", text: "Summon here: return your other monster in this lane to your hand.",
+    onSummon: (G, lane, card) => {
+      for (const m of monstersInLane(G, card.controller, lane)) {
+        if (m === card) continue;
+        bounceToHand(G, m);
+        log(G, `Bounce Neighbor sends ${m.def.name} home.`, "lane");
+      }
+    }
+  },
+  {
+    id: "spy_mill", name: "Spy Mill", text: "Summon here: mill 2 from the opponent's deck.",
+    onSummon: (G, lane, card) => {
+      const n = mill(G, opp(card.controller), 2).length;
+      if (n) log(G, `Spy Mill dumps ${n} from the opponent.`, "lane");
+    }
+  },
+  {
+    id: "heal_pulse", name: "Heal Pulse", text: "Summon here: heal 2 LP.",
+    onSummon: (G, lane, card) => { healPlayer(G, card.controller, 2); }
+  },
+  {
+    id: "board_ping", name: "Board Ping", text: "Summon here: deal 1 to all enemy monsters.",
+    onSummon: (G, lane, card) => {
+      for (const m of monstersOf(G, opp(card.controller))) damageMonster(G, m, 1, card);
+      sweepDestroyed(G);
+    }
+  },
+  {
+    id: "self_exile", name: "Self Exile", text: "Summon here: banish the top 2 cards of your deck.",
+    onSummon: (G, lane, card) => {
+      for (let i = 0; i < 2; i++) {
+        const top = P(G, card.controller).deck[0];
+        if (!top) break;
+        banishCard(G, top, { from: "deck", kind: "lane" });
+      }
+    }
+  },
+  {
+    id: "gy_clone", name: "GY Clone", text: "Summon here: put a copy of this monster into your GY.",
+    onSummon: (G, lane, card) => {
+      if (card.def?.token) return;
+      const copy = makeCard(card.id, card.def, card.controller);
+      copy.loc = "gy";
+      P(G, card.controller).gy.push(copy);
+      log(G, `GY Clone dumps a spare ${card.def.name}.`, "lane");
+    }
+  },
+  {
+    id: "snatch_set", name: "Snatch Set", text: "Summon here: return a random face-down enemy spell to their hand.",
+    onSummon: (G, lane, card) => {
+      const sets = P(G, opp(card.controller)).stz.filter((c) => c && !c.faceup);
+      if (!sets.length) return;
+      const pick = G.rng.pick(sets);
+      bounceToHand(G, pick);
+      log(G, "Snatch Set bounces a Set card.", "lane");
+    }
+  },
+  {
+    id: "overpay", name: "Overpay", text: "Summon here: if you have EP, spend 1 EP; this gets +2/+2.",
+    onSummon: (G, lane, card) => {
+      const pl = P(G, card.controller);
+      if (pl.ep <= 0) return;
+      pl.ep -= 1;
+      buff(G, card, 2, 2, { permanent: true });
+      log(G, "Overpay spends 1 EP.", "lane");
+    }
+  },
+  {
+    id: "moon_book", name: "Moon Book", text: "Summon here: this monster is flipped face-down.",
+    onSummon: (G, lane, card) => { setMonsterFaceDown(G, card); }
+  },
+  {
+    id: "catchup_rush", name: "Catch-Up Rush", text: "Summon here: if you have less LP, this gains Rush.",
+    onSummon: (G, lane, card) => {
+      if (P(G, card.controller).lp >= P(G, opp(card.controller)).lp) return;
+      card.rushGranted = true;
+      log(G, `${card.def.name} catches up with Rush.`, "lane");
+    }
+  },
+  {
+    id: "tribute_draw", name: "Tribute Draw", text: "Summon here: if this is Level 5 or higher, draw 1.",
+    onSummon: (G, lane, card) => {
+      if (monsterLevel(card.def) >= 5) drawCards(G, card.controller, 1);
+    }
+  },
+  {
+    id: "four_shock", name: "Four Shock", text: "Summon here: if this is Level 4, both leaders take 1.",
+    onSummon: (G, lane, card) => {
+      if (monsterLevel(card.def) !== 4) return;
+      dealDamageToPlayer(G, 0, 1, card);
+      dealDamageToPlayer(G, 1, 1, card);
+    }
+  },
+  {
+    id: "hungry_token", name: "Hungry Token", text: "Summon here: if your hand is empty, summon a 1/1 Recruit Token here.",
+    onSummon: (G, lane, card) => {
+      if (P(G, card.controller).hand.length) return;
+      spawnTokenHere(G, card.controller, lane, "token_recruit");
+    }
+  },
+  {
+    id: "deck_cycle", name: "Deck Cycle", text: "Summon here: put the top card of your deck on the bottom.",
+    onSummon: (G, lane, card) => {
+      const d = P(G, card.controller).deck;
+      if (d.length) d.push(d.shift());
+    }
+  },
+  {
+    id: "force_discard", name: "Force Discard", text: "Summon here: the opponent discards a random card.",
+    onSummon: (G, lane, card) => {
+      const hand = P(G, opp(card.controller)).hand;
+      if (!hand.length) return;
+      discardCard(G, G.rng.pick(hand));
+    }
+  },
+  {
+    id: "twin_mill", name: "Twin Mill", text: "Summon here: both players mill 1.",
+    onSummon: (G, lane, card) => {
+      mill(G, 0, 1);
+      mill(G, 1, 1);
+    }
+  },
+  {
+    id: "rally_turn", name: "Rally Turn", text: "Summon here: your monsters get +1 ATK this turn.",
+    onSummon: (G, lane, card) => {
+      for (const m of monstersOf(G, card.controller)) buff(G, m, 1, 0, { permanent: false });
+    }
+  },
+  {
+    id: "freeze_lane", name: "Freeze Lane", text: "Summon here: enemy monsters in this lane cannot attack this turn.",
+    onSummon: (G, lane, card) => {
+      for (const m of monstersInLane(G, opp(card.controller), lane)) {
+        m.cannotAttackTurn = G.turnCount;
+        log(G, `${m.def.name} is frozen this turn.`, "lane");
+      }
+    }
+  },
+  {
+    id: "print_swap", name: "Print Swap", text: "Summon here: this monster swaps its printed ATK and DEF.",
+    onSummon: (G, lane, card) => {
+      const atk = card.def.atk || 0, def = card.def.def || 0;
+      buff(G, card, def - atk, atk - def, { permanent: true });
+    }
+  },
+  {
+    id: "double_shell", name: "Double Shell", text: "Summon here: this monster gains DEF equal to its printed DEF.",
+    onSummon: (G, lane, card) => {
+      const def = card.def.def || 0;
+      if (def) buff(G, card, 0, def, { permanent: true });
+    }
+  },
+  {
+    id: "hand_burn", name: "Hand Burn", text: "Summon here: if you have 4 or more cards in hand, deal 1 to the enemy leader.",
+    onSummon: (G, lane, card) => {
+      if (P(G, card.controller).hand.length >= 4) dealDamageToPlayer(G, opp(card.controller), 1, card);
+    }
+  },
+  {
+    id: "mutual_discard", name: "Mutual Discard", text: "When this reveals, each player discards a random card.",
+    onReveal: (G) => {
+      for (const p of [0, 1]) {
+        const hand = P(G, p).hand;
+        if (hand.length) discardCard(G, G.rng.pick(hand));
+      }
+      log(G, "Mutual Discard: both players drop a card.", "lane");
+    }
+  },
+  {
+    id: "mutual_exile", name: "Mutual Exile", text: "When this reveals, both players banish the top card of their deck.",
+    onReveal: (G) => {
+      for (const p of [0, 1]) {
+        const top = P(G, p).deck[0];
+        if (top) banishCard(G, top, { from: "deck", kind: "lane" });
+      }
+    }
+  },
+  {
+    id: "shared_core", name: "Shared Core", text: "When this reveals, both players gain 1 EP.",
+    onReveal: (G) => {
+      P(G, 0).ep += 1;
+      P(G, 1).ep += 1;
+      log(G, "Shared Core: both players gain 1 EP.", "lane");
+    }
+  },
+  {
+    id: "lp_tax", name: "LP Tax", text: "When this reveals, both leaders take 2.",
+    onReveal: (G) => {
+      dealDamageToPlayer(G, 0, 2, null);
+      dealDamageToPlayer(G, 1, 2, null);
+      log(G, "LP Tax hits both leaders for 2.", "lane");
+    }
+  },
+  {
+    id: "draw_to_four", name: "Draw to Four", text: "When this reveals, each player draws until they have 4 cards.",
+    onReveal: (G) => {
+      for (const p of [0, 1]) {
+        while (P(G, p).hand.length < 4 && P(G, p).deck.length) drawCards(G, p, 1);
+      }
+      log(G, "Draw to Four fills both hands.", "lane");
+    }
+  },
+  {
+    id: "underdog_ep", name: "Underdog EP", text: "When this reveals, the player with less LP gains 2 EP.",
+    onReveal: (G) => {
+      const p = lowerLpPlayer(G);
+      if (p == null) return;
+      P(G, p).ep += 2;
+      log(G, `${p === 0 ? "You" : "AI"} gain 2 EP from Underdog EP.`, "lane");
+    }
+  },
+  {
+    id: "mill_storm", name: "Mill Storm", text: "When this reveals, both players mill 3.",
+    onReveal: (G) => {
+      mill(G, 0, 3);
+      mill(G, 1, 3);
+      log(G, "Mill Storm dumps 3 each.", "lane");
+    }
+  },
+  {
+    id: "gy_top", name: "GY Top", text: "When this reveals, each player adds the top card of their GY to their hand.",
+    onReveal: (G) => {
+      for (const p of [0, 1]) {
+        const gy = P(G, p).gy;
+        if (!gy.length) continue;
+        const c = gy[gy.length - 1];
+        moveTo(G, c, "hand");
+        c.controller = p;
+        P(G, p).hand.push(c);
+      }
+    }
+  },
+  {
+    id: "spell_crash", name: "Spell Crash", text: "When this reveals, destroy all spells in this lane.",
+    onReveal: (G, lane) => {
+      destroySpellsInLane(G, lane);
+      log(G, "Spell Crash clears the spell columns here.", "lane");
+    }
+  },
+  {
+    id: "unban", name: "Unban", text: "When this reveals, each player shuffles their banished cards into their deck.",
+    onReveal: (G) => {
+      for (const p of [0, 1]) {
+        const pl = P(G, p);
+        while (pl.ban.length) {
+          const c = pl.ban.pop();
+          c.loc = "deck";
+          pl.deck.push(c);
+        }
+        G.rng.shuffle(pl.deck);
+      }
+      log(G, "Unban dumps both banished piles back into the decks.", "lane");
+    }
+  },
+  {
+    id: "mercy_heal", name: "Mercy Heal", text: "When this reveals, each player with 10 LP or less heals 3.",
+    onReveal: (G) => {
+      for (const p of [0, 1]) {
+        if (P(G, p).lp <= 10) healPlayer(G, p, 3);
+      }
+    }
+  },
+  {
+    id: "pity_token", name: "Pity Token", text: "When this reveals, the player with less LP summons a 1/1 Recruit Token here.",
+    onReveal: (G, lane) => {
+      const p = lowerLpPlayer(G);
+      if (p == null) return;
+      spawnTokenHere(G, p, lane, "token_recruit");
+    }
+  },
+  {
+    id: "odd_draw", name: "Odd Draw", text: "When this reveals, each player with an odd hand size draws 1.",
+    onReveal: (G) => {
+      for (const p of [0, 1]) {
+        if (P(G, p).hand.length % 2 === 1) drawCards(G, p, 1);
+      }
+    }
+  },
+  {
+    id: "high_clip", name: "High Clip", text: "When this reveals, each player with more than 15 LP takes 1.",
+    onReveal: (G) => {
+      for (const p of [0, 1]) {
+        if (P(G, p).lp > 15) dealDamageToPlayer(G, p, 1, null);
+      }
+    }
+  },
+  {
+    id: "rickety_bridge", name: "Rickety Bridge", text: "End of turn: if you have 2 monsters here, destroy the left one.",
+    onTurnEnd: (G, lane) => {
+      const [a, b] = laneZones(lane);
+      const pl = P(G, G.tp);
+      if (pl.mz[a] && pl.mz[b]) destroyByEffect(G, pl.mz[a], laneSrc(lane));
+    }
+  },
+  {
+    id: "titan_maw", name: "Titan Maw", text: "End of turn: destroy your lowest-ATK monster here.",
+    onTurnEnd: (G, lane) => {
+      const mine = monstersInLane(G, G.tp, lane);
+      if (!mine.length) return;
+      mine.sort((a, b) => preLaneStat(G, a, "atk") - preLaneStat(G, b, "atk"));
+      destroyByEffect(G, mine[0], laneSrc(lane));
+    }
+  },
+  {
+    id: "nexus_pulse", name: "Nexus Pulse", text: "End of turn: if you have a monster here, your monsters in other lanes get +1 ATK this turn.",
+    onTurnEnd: (G, lane) => {
+      if (!monstersInLane(G, G.tp, lane).length) return;
+      for (const m of monstersOf(G, G.tp)) {
+        if (!inLane(lane, m)) buff(G, m, 1, 0, { permanent: false });
+      }
+    }
+  },
+  {
+    id: "mill_camp", name: "Mill Camp", text: "End of turn: if you have a monster here, mill 1.",
+    onTurnEnd: (G, lane) => {
+      if (monstersInLane(G, G.tp, lane).length) mill(G, G.tp, 1);
+    }
+  },
+  {
+    id: "twin_ping", name: "Twin Ping", text: "End of turn: if you have 2 monsters here, deal 1 to the enemy leader.",
+    onTurnEnd: (G, lane) => {
+      if (monstersInLane(G, G.tp, lane).length >= 2) dealDamageToPlayer(G, opp(G.tp), 1, null);
+    }
+  },
+  {
+    id: "grow_shell", name: "Grow Shell", text: "End of turn: your monsters here get +0/+1.",
+    onTurnEnd: (G, lane) => {
+      for (const m of monstersInLane(G, G.tp, lane)) buff(G, m, 0, 1, { permanent: true });
+    }
+  },
+  {
+    id: "overflow_discard", name: "Overflow", text: "End of turn: if you have 6 or more cards in hand, discard 1 at random.",
+    onTurnEnd: (G) => {
+      const hand = P(G, G.tp).hand;
+      if (hand.length >= 6) discardCard(G, G.rng.pick(hand));
+    }
+  },
+  {
+    id: "ep_steal", name: "EP Steal", text: "End of turn: if you have more ATK here, steal 1 EP from the opponent.",
+    onTurnEnd: (G, lane) => {
+      const power = (p) => monstersInLane(G, p, lane).reduce((n, m) => n + getATK(G, m), 0);
+      const o = opp(G.tp);
+      if (power(G.tp) <= power(o) || P(G, o).ep <= 0) return;
+      P(G, o).ep -= 1;
+      P(G, G.tp).ep += 1;
+      log(G, "EP Steal siphons 1 EP.", "lane");
+    }
+  },
+  {
+    id: "dawn_lock", name: "Dawn Lock", text: "This lane is sealed on odd turns.",
+    locksZone: (G, lane, p, z) => G.turnCount % 2 === 1 && lockLaneZones(lane, z)
+  },
+  {
+    id: "overtime_lock", name: "Overtime Lock", text: "From turn 6 on, nothing can be summoned in this lane.",
+    locksZone: (G, lane, p, z) => G.turnCount >= 6 && lockLaneZones(lane, z)
+  },
+  {
+    id: "split_lock", name: "Split Lock", text: "The right zone in this lane is sealed (odd index).",
+    locksZone: (G, lane, p, z) => z === lane.index * 2 + 1
+  },
+  {
+    id: "late_spell", name: "Late Spell", text: "After turn 3, spell zones in this lane are sealed.",
+    locksSpellZone: (G, lane, p, z) => G.turnCount > 3 && lockLaneZones(lane, z)
   }
 ];
 
@@ -1040,7 +1511,24 @@ export const LANE_THEMES = {
   tinker_bench: "gold", lamentis_cut: "void", boot_camp: "rush", nightmare_vault: "dark",
   embassy_wave: "holy", x_mansion: "gold", stark_spire: "gold", hellfire_cull: "fire",
   big_house: "void", wakanda_mend: "holy", kyln_gate: "void", lockdown_lab: "void",
-  milano_gate: "rush", odd_lock: "dark"
+  milano_gate: "rush", odd_lock: "dark",
+  tank_line: "holy", glass_jaw: "blood", last_stand: "blood", full_life: "holy",
+  empty_grip: "rush", stuffed_grip: "gold", ban_choir: "void", extra_hum: "gold",
+  set_battery: "dark", swarm_hum: "rush", paper_thin: "blood", mid_band: "nature",
+  dual_tribe: "fire", night_blade: "dark", even_scale: "gold", odd_scale: "storm",
+  clean_gy: "holy", wounded_pride: "blood", coin_buff: "gold", bounce_neighbor: "water",
+  spy_mill: "dark", heal_pulse: "holy", board_ping: "fire", self_exile: "void",
+  gy_clone: "dark", snatch_set: "storm", overpay: "gold", moon_book: "void",
+  catchup_rush: "rush", tribute_draw: "gold", four_shock: "storm", hungry_token: "nature",
+  deck_cycle: "water", force_discard: "blood", twin_mill: "void", rally_turn: "rush",
+  freeze_lane: "ice", print_swap: "void", double_shell: "holy", hand_burn: "fire",
+  mutual_discard: "dark", mutual_exile: "void", shared_core: "holy", lp_tax: "blood",
+  draw_to_four: "gold", underdog_ep: "rush", mill_storm: "void", gy_top: "dark",
+  spell_crash: "fire", unban: "holy", mercy_heal: "holy", pity_token: "nature",
+  odd_draw: "gold", high_clip: "blood", rickety_bridge: "void", titan_maw: "blood",
+  nexus_pulse: "storm", mill_camp: "void", twin_ping: "fire", grow_shell: "nature",
+  overflow_discard: "gold", ep_steal: "void", dawn_lock: "holy", overtime_lock: "void",
+  split_lock: "void", late_spell: "dark"
 };
 
 export function laneTheme(id) {
