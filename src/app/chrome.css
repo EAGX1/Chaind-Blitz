@@ -5,6 +5,7 @@
 }
 #react-root .cb-chrome,
 #react-root .cb-modal,
+#react-root .cb-install-hint,
 #react-root .city-root {
   pointer-events: auto;
 }
@@ -217,3 +218,35 @@ html[data-plaza="1"] .cb-chrome {
 .cb-starter-choice.tribe-ignis { border-color: rgba(255, 120, 70, 0.5); }
 .cb-starter-choice.tribe-abyss { border-color: rgba(90, 160, 255, 0.5); }
 .cb-starter-choice.tribe-terra { border-color: rgba(90, 200, 120, 0.5); }
+
+.cb-install-hint {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 80;
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  background: rgba(10, 16, 28, 0.94);
+  color: #f2e6c9;
+  font-family: Rajdhani, sans-serif;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.cb-install-hint p { margin: 0; }
+.cb-install-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.cb-save-xfer {
+  width: 100%;
+  min-height: 72px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.3;
+}

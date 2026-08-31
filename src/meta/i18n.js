@@ -79,7 +79,7 @@ const EN = {
   "live.title": "Live lobbies",
   "live.host": "Host lobby",
   "live.join": "Join",
-  "live.hint": "Host a room, paste a code, or queue ranked / draft / sealed. CPU still works if the backend is down.",
+  "live.hint": "Host a room and send the code — phones can duel without a server. Ranked / draft / sealed queues need a backend.",
   "live.ranked": "Queue ranked",
   "live.draft": "Queue draft",
   "live.sealed": "Queue sealed",
@@ -106,7 +106,19 @@ const EN = {
   "common.cancel": "Cancel",
   "common.close": "Close",
   "common.save": "Save",
-  "common.load": "Load"
+  "common.load": "Load",
+  "install.add": "Add",
+  "install.dismiss": "Not now",
+  "install.ios": "Add to Home Screen: tap Share, then Add to Home Screen.",
+  "install.android": "Add to Home Screen: open the browser menu and tap Add to Home screen.",
+  "save.deviceHint": "Saves stay on this device. Copy this box on your PC, paste it on your phone, then Apply.",
+  "save.copy": "Copy save",
+  "save.share": "Share save",
+  "save.apply": "Apply pasted save",
+  "save.copied": "Copied — paste it in Settings on the other device.",
+  "save.applied": "Imported — reload to apply.",
+  "save.failed": "Could not read that save.",
+  "live.p2p": "Host/Join works phone-to-phone. Ranked queue needs a backend."
 };
 
 const ES = {
@@ -188,7 +200,7 @@ const ES = {
   "live.title": "Salas en vivo",
   "live.host": "Crear sala",
   "live.join": "Unirse",
-  "live.hint": "Crea una sala, pega un código, o cola ranked / draft / sealed. El CPU sigue si el servidor está apagado.",
+  "live.hint": "Crea una sala y envía el código — los teléfonos pueden duelar sin servidor. Ranked / draft / sealed necesitan backend.",
   "live.ranked": "Cola ranked",
   "live.draft": "Cola draft",
   "live.sealed": "Cola sealed",
@@ -215,7 +227,19 @@ const ES = {
   "common.cancel": "Cancelar",
   "common.close": "Cerrar",
   "common.save": "Guardar",
-  "common.load": "Cargar"
+  "common.load": "Cargar",
+  "install.add": "Añadir",
+  "install.dismiss": "Ahora no",
+  "install.ios": "Añadir a inicio: pulsa Compartir y luego Añadir a pantalla de inicio.",
+  "install.android": "Añadir a inicio: menú del navegador → Añadir a pantalla de inicio.",
+  "save.deviceHint": "La partida queda en este aparato. Copia esta caja en el PC, pégala en el teléfono y pulsa Aplicar.",
+  "save.copy": "Copiar partida",
+  "save.share": "Compartir partida",
+  "save.apply": "Aplicar partida pegada",
+  "save.copied": "Copiado — pégalo en Ajustes del otro aparato.",
+  "save.applied": "Importado — recarga para aplicar.",
+  "save.failed": "No se pudo leer esa partida.",
+  "live.p2p": "Crear/Unirse funciona de teléfono a teléfono. La cola ranked necesita servidor."
 };
 
 const JA = {
@@ -304,7 +328,7 @@ const JA = {
   "live.title": "ライブロビー",
   "live.host": "部屋を作る",
   "live.join": "入室",
-  "live.hint": "部屋を作る、コードで入る、ランク／ドラフト／シールドに並ぶ。サーバーが落ちていてもCPUは使えます。",
+  "live.hint": "部屋を作ってコードを送る。スマホ同士はサーバーなしで対戦できます。ランク／ドラフト／シールドのキューにはサーバーが必要です。",
   "live.ranked": "ランクに並ぶ",
   "live.draft": "ドラフトに並ぶ",
   "live.sealed": "シールドに並ぶ",
@@ -324,7 +348,19 @@ const JA = {
   "common.cancel": "キャンセル",
   "common.close": "閉じる",
   "common.save": "保存",
-  "common.load": "読込"
+  "common.load": "読込",
+  "install.add": "追加",
+  "install.dismiss": "あとで",
+  "install.ios": "ホーム画面に追加：共有をタップして「ホーム画面に追加」。",
+  "install.android": "ホーム画面に追加：ブラウザメニューから追加。",
+  "save.deviceHint": "セーブはこの端末に残ります。PCでこの欄をコピーし、スマホに貼って適用。",
+  "save.copy": "セーブをコピー",
+  "save.share": "セーブを共有",
+  "save.apply": "貼ったセーブを適用",
+  "save.copied": "コピーしました。他の端末の設定に貼ってください。",
+  "save.applied": "読み込みました。再読み込みしてください。",
+  "save.failed": "セーブを読めませんでした。",
+  "live.p2p": "ホスト／参加は端末同士でできます。ランクキューにはサーバーが必要です。"
 };
 
 export const LOCALES = [

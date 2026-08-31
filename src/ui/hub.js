@@ -1231,7 +1231,7 @@ export function initHub(ctx) {
     const status = $("live-desk-status");
     pingBackend().then((h) => {
       if (!status) return;
-      const line = h?.ok ? t("live.online") : t("pvp.offline");
+      const line = h?.ok ? t("live.online") : `${t("pvp.offline")} ${t("live.p2p")}`;
       status.textContent = signed ? `${line} · ${t("account.signedIn")}: ${signed}` : line;
     });
     const kindOf = () => $("live-kind")?.value || "pvp";
@@ -1260,7 +1260,7 @@ export function initHub(ctx) {
     const panel = $("panel-modes");
     panel.innerHTML = `
       <div class="panel-head"><h2>GAME MODES</h2>
-        <p class="dim" style="font-size:11px;">CPU modes stay offline. Draft, sealed, ranked, and Host/Join can use the optional backend.</p>
+        <p class="dim" style="font-size:11px;">CPU modes stay offline. Host/Join can duel phone-to-phone. Ranked queues still need the optional backend.</p>
       </div>
       <div class="modes-nav">
         ${MODE_TABS.map(([k, label]) => `<button class="cb-btn mode-nav-btn ${modesView === k ? "active" : ""}" data-mode="${k}">${label}</button>`).join("")}
@@ -1616,7 +1616,7 @@ export function initHub(ctx) {
     box.innerHTML = `
       <div class="mode-intro">
         <h3>HOST / JOIN</h3>
-        <p>Two browsers, one optional backend (<code>npm run backend</code>). Airplane mode still plays vs CPU.</p>
+        <p>Two phones or browsers: Host/Join works without a server. Ranked queues still use the optional backend (<code>npm run backend</code>). Airplane mode still plays vs CPU.</p>
         <p class="dim">Constructed uses <b>${list.name}</b>. Draft and sealed build after both seats fill.</p>
         <div class="row" style="margin-top:14px;flex-wrap:wrap;gap:8px;">
           <select class="cb-select" id="pvp-kind">
@@ -1762,7 +1762,7 @@ export function initHub(ctx) {
       elites, rests, shops and events, relics, and a boss.</p>
       <p><b>Draft / Cube Draft</b> — pick 1-of-3 forty times, then survive a 3-round gauntlet. <b>Sealed</b> — crack 6 packs, build 30, same gauntlet.</p>
       <p><b>Highlander</b> — singleton decks. <b>Tournament</b> — a 3-round CPU gauntlet with escalating foe LP. <b>Tavern Brawl</b> — a new rule-breaking modifier every week.</p>
-      <p><b>Two players</b> — Hotseat is local pass-and-play. Host/Join and ranked PvP use the optional local backend (<code>npm run backend</code>). Offline, every mode still plays vs CPU.</p>`]
+      <p><b>Two players</b> — Hotseat is local pass-and-play. Host/Join works phone-to-phone (share the room code). Ranked PvP queues still use the optional backend (<code>npm run backend</code>). Offline, every mode still plays vs CPU.</p>`]
   ];
 
   function renderRulebook() {
@@ -1779,7 +1779,7 @@ export function initHub(ctx) {
         <details class="rule-section">
           <summary>PRIVACY & CREDITS</summary>
           <div class="rule-body">
-            <p>Chaind Blitz keeps progress <b>on this device</b> by default. Opt-in cloud sync mirrors the save to the optional backend. Host/Join rooms work when that backend is running.</p>
+            <p>Chaind Blitz keeps progress <b>on this device</b> by default. Copy/paste the save in Settings to move it to your phone. Opt-in cloud sync mirrors the save to the optional backend. Host/Join rooms work phone-to-phone without that backend.</p>
             <p>Local storage holds decks, collection, and settings. Nothing is uploaded unless you opt into cloud sync or export a backup yourself.</p>
             <p><b>Credits</b> — Chaind Blitz engine &amp; UI. Procedural card art; plaza GLTF/HDRI/PBR placeholders documented in docs/ART.md. Music/SFX are procedural beds. Third-party fonts and libraries retain their own licenses.</p>
           </div>

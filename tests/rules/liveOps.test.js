@@ -2,21 +2,42 @@ import { describe, it, expect } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { formatRoomCode, serializePick, applyPick, wrapIoPeer, queueModePvp, BACKEND_OFFLINE_REASON } from "../../src/meta/peerNet.js";
+import { formatRoomCode, randomRoomCode, serializePick, applyPick, wrapIoPeer, queueModePvp, BACKEND_OFFLINE_REASON } from "../../src/meta/peerNet.js";
 import { cardName, cardText } from "../../src/meta/cardLocale.js";
 import { CARD_DB } from "../../src/data/cards/index.js";
 import { createAccountStore } from "../../backend/accounts.js";
-import { backendCandidates, DEFAULT_URL } from "../../src/meta/backendClient.js";
+import { backendCandidates, DEFAULT_URL, isStaticHost } from "../../src/meta/backendClient.js";
 import { LOCALES, t, setLocale, EN, ES, JA } from "../../src/meta/i18n.js";
 import { shippedLoaners, loanerById } from "../../src/data/loaners.js";
 import { validateDeck } from "../../src/meta/banlist.js";
 import { STARTERS } from "../../src/data/starters.js";
+import { makePushSession } from "../../src/meta/duelWire.js";
+import { p2pPeerId } from "../../src/meta/p2pDuel.js";
+import { exportSaveJson, importSaveJson } from "../../src/meta/backups.js";
 
 describe("peerNet packing", () => {
   it("formats room codes and stays offline without a socket", () => {
     expect(formatRoomCode("ab-12zz")).toBe("AB12ZZ");
     expect(BACKEND_OFFLINE_REASON).toMatch(/offline/i);
     expect(backendCandidates()).toContain(DEFAULT_URL);
+    expect(randomRoomCode()).toMatch(/^[A-HJ-NP-Z2-9]{6}$/);
+    expect(isStaticHost("https://eagx1.github.io/Chaind-Blitz")).toBe(true);
+    expect(isStaticHost("http://localhost:8787")).toBe(false);
+    expect(p2pPeerId("AB12ZZ")).toBe("cbzab12zz");
+  });
+
+  it("makePushSession delivers start and pick", async () => {
+    const sent = [];
+    const s = makePushSession();
+    s.setSender((p) => { sent.push(p); return true; });
+    s.ingest({ type: "start", seed: 9, host: { deck: [] }, guest: { deck: [] } });
+    const start = await s.waitStart(50);
+    expect(start.seed).toBe(9);
+    const pulled = s.pullAction("chooseMain", 1);
+    s.ingest({ type: "pick", packed: { type: "end" } });
+    expect(await pulled).toEqual({ type: "end" });
+    expect(s.send({ type: "pick" })).toBe(true);
+    expect(sent[0].type).toBe("pick");
   });
 
   it("round-trips chooseMain and askAttack picks", () => {
@@ -63,6 +84,21 @@ describe("locales", () => {
     expect(t("hub.deck")).toBe("デッキ");
     setLocale("en");
     expect(t("hub.play")).toBe("Play");
+    expect(t("install.add")).toBe("Add");
+  });
+});
+
+describe("device save transfer", () => {
+  it("round-trips profile JSON through import", () => {
+    const store = new Map();
+    globalThis.localStorage = {
+      getItem: (k) => store.get(k) ?? null,
+      setItem: (k, v) => store.set(k, String(v)),
+      removeItem: (k) => store.delete(k)
+    };
+    expect(importSaveJson("{not json")).toBe(null);
+    expect(importSaveJson(JSON.stringify({ name: "Test", gems: 3 })).gems).toBe(3);
+    expect(JSON.parse(exportSaveJson()).name).toBe("Test");
   });
 });
 

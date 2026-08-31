@@ -1752,6 +1752,7 @@ describe("GitHub Pages shell", () => {
     const html = await readFile(join(root, "index.html"), "utf8");
     expect(html).toMatch(/href="\.\/manifest\.webmanifest"/);
     expect(html).toMatch(/href="\.\/favicon\.svg"/);
+    expect(html).toMatch(/href="\.\/apple-touch-icon\.png"/);
     expect(html).not.toMatch(/href="\/manifest\.webmanifest"/);
     const main = await readFile(join(root, "src/app/main.tsx"), "utf8");
     expect(main).toMatch(/import\.meta\.env\.BASE_URL/);
@@ -1761,6 +1762,6 @@ describe("GitHub Pages shell", () => {
     const man = JSON.parse(await readFile(join(root, "public/manifest.webmanifest"), "utf8"));
     expect(man.start_url).toBe("./");
     expect(man.scope).toBe("./");
-    expect(man.icons[0].src).toBe("./favicon.svg");
+    expect(man.icons.some((ic) => ic.src === "./apple-touch-icon.png")).toBe(true);
   });
 });

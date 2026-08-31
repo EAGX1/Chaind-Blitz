@@ -4,6 +4,8 @@ A browser TCG that fuses Yu-Gi-Oh chains, Shadowverse evolution, Marvel Snap fie
 
 **Play on a phone or PC:** [https://eagx1.github.io/Chaind-Blitz/](https://eagx1.github.io/Chaind-Blitz/)
 
+On a phone: Add to Home Screen (Share on iOS, or the browser menu on Android). Saves stay on that device — Settings → Copy save, then paste on the other device and Apply. Host/Join duels work phone-to-phone from LIVE; ranked queues still need `npm run backend`.
+
 ## Scripts
 
 - npm run dev: Vite dev server

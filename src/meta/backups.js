@@ -95,3 +95,30 @@ export function importSaveJson(json) {
     return null;
   }
 }
+
+export async function copySaveToClipboard() {
+  const json = exportSaveJson();
+  if (!json || typeof navigator === "undefined" || !navigator.clipboard?.writeText) return false;
+  try {
+    await navigator.clipboard.writeText(json);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function shareSave() {
+  const json = exportSaveJson();
+  if (!json || typeof navigator === "undefined" || typeof navigator.share !== "function") return false;
+  try {
+    const file = new File([json], "chaind-blitz-save.json", { type: "application/json" });
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ title: "Chaind Blitz save", files: [file] });
+      return true;
+    }
+    await navigator.share({ title: "Chaind Blitz save", text: json });
+    return true;
+  } catch {
+    return false;
+  }
+}

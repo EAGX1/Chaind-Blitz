@@ -3,8 +3,9 @@ import { AI_BUDGETS, type AiTier } from "../ai/budgets";
 import { ThreeBackdrop } from "./ThreeBackdrop";
 import { cloudPull, cloudPush, deviceId, fetchBanlist, registerAccount, loginAccount, logoutAccount, authName, savedBackendUrl, setBackendUrl } from "../meta/backendClient.js";
 import { bindSettings, applyVolumes, playBed } from "../meta/music.js";
-import { exportSaveJson, importSaveJson } from "../meta/backups.js";
+import { exportSaveJson, importSaveJson, copySaveToClipboard, shareSave } from "../meta/backups.js";
 import { t, setLocale, LOCALES } from "../meta/i18n.js";
+import { PhoneTips } from "./PhoneTips";
 import { openReplayScrubber } from "../ui/replayScrubber.js";
 import {
   loadSettings,
@@ -39,6 +40,7 @@ export function AppChrome({ hideChrome = false }: { hideChrome?: boolean }) {
   const [glossaryOpen, setGlossaryOpen] = useState(false);
   const [cloudMsg, setCloudMsg] = useState("");
   const [backupMsg, setBackupMsg] = useState("");
+  const [saveText, setSaveText] = useState("");
   const [devMsg, setDevMsg] = useState("");
   const [acctMsg, setAcctMsg] = useState("");
   const [acctName, setAcctName] = useState(() => (typeof localStorage !== "undefined" ? authName() : ""));
@@ -86,6 +88,7 @@ export function AppChrome({ hideChrome = false }: { hideChrome?: boolean }) {
   function openSettings() {
     setOpen(true);
     const s = loadSettings() as Settings;
+    setSaveText(exportSaveJson() || "");
     if (s.music > 0) {
       const city = document.getElementById("app")?.classList.contains("city-mode");
       playBed(city ? "city" : "hub", s);
@@ -136,6 +139,29 @@ export function AppChrome({ hideChrome = false }: { hideChrome?: boolean }) {
     a.click();
     URL.revokeObjectURL(a.href);
     setBackupMsg("Save exported.");
+  }
+
+  async function copySave() {
+    const json = exportSaveJson();
+    if (!json) {
+      setBackupMsg("Nothing to export.");
+      return;
+    }
+    setSaveText(json);
+    const ok = await copySaveToClipboard();
+    setBackupMsg(ok ? t("save.copied") : t("save.deviceHint"));
+  }
+
+  function applyPastedSave() {
+    const ok = importSaveJson(saveText);
+    setBackupMsg(ok ? t("save.applied") : t("save.failed"));
+  }
+
+  async function shareBackup() {
+    const json = exportSaveJson();
+    if (json) setSaveText(json);
+    const ok = await shareSave();
+    setBackupMsg(ok ? t("save.copied") : t("save.deviceHint"));
   }
 
   function liveProfile() {
@@ -219,6 +245,7 @@ export function AppChrome({ hideChrome = false }: { hideChrome?: boolean }) {
   return (
     <>
       <ThreeBackdrop reducedMotion={!!settings.reducedMotion} />
+      <PhoneTips />
       {!hideChrome ? (
         <div className="cb-chrome">
           <button type="button" className="cb-chrome-btn" onClick={() => (open ? setOpen(false) : openSettings())} title={t("hub.settings")}>
@@ -470,7 +497,19 @@ export function AppChrome({ hideChrome = false }: { hideChrome?: boolean }) {
               </div>
             )}
             {cloudMsg && <p className="cb-hint">{cloudMsg}</p>}
+            <p className="cb-hint">{t("save.deviceHint")}</p>
+            <textarea
+              className="cb-input cb-save-xfer"
+              rows={4}
+              value={saveText}
+              onChange={(e) => setSaveText(e.target.value)}
+              spellCheck={false}
+              aria-label={t("save.deviceHint")}
+            />
             <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+              <button type="button" className="cb-btn" onClick={() => { void copySave(); }}>{t("save.copy")}</button>
+              <button type="button" className="cb-btn" onClick={applyPastedSave}>{t("save.apply")}</button>
+              <button type="button" className="cb-btn" onClick={() => { void shareBackup(); }}>{t("save.share")}</button>
               <button type="button" className="cb-btn" onClick={exportBackup}>Export save</button>
               <button type="button" className="cb-btn" onClick={importBackup}>Import save</button>
               <button type="button" className="cb-btn" onClick={openLastReplay}>Duel log</button>

@@ -1,11 +1,21 @@
 // Optional local-backend PvP. Airplane mode still plays vs CPU / hotseat.
+// Host/Join falls back to phone-to-phone WebRTC when the backend is down.
 import { backendCandidates, createRoom } from "./backendClient.js";
+import { makePushSession } from "./duelWire.js";
+import { hostP2p, joinP2p } from "./p2pDuel.js";
 
 export function formatRoomCode(raw) {
   return String(raw || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
 }
 
 export const BACKEND_OFFLINE_REASON = "backend offline";
+
+export function randomRoomCode() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let s = "";
+  for (let i = 0; i < 6; i++) s += alphabet[Math.floor(Math.random() * alphabet.length)];
+  return s;
+}
 
 function duelWsCandidates() {
   return backendCandidates().map((u) => u.replace(/^http/i, "ws") + "/duel");
@@ -31,100 +41,22 @@ function waitOpen(ws, ms = 2000) {
 }
 
 function makeSession(ws) {
-  const inbox = [];
-  const waiters = [];
-  const closeCbs = new Set();
-  let startWait = null;
-  let startPayload = null;
-  let buildWait = null;
-  let buildPayload = null;
-  let closed = false;
-
-  function flush() {
-    while (inbox.length && waiters.length) {
-      const w = waiters.shift();
-      w(inbox.shift());
-    }
-  }
-
-  ws.addEventListener("message", (ev) => {
-    let msg;
-    try { msg = JSON.parse(String(ev.data)); } catch { return; }
-    if (msg.type === "start") {
-      startPayload = msg;
-      startWait?.(msg);
-      startWait = null;
-      return;
-    }
-    if (msg.type === "build") {
-      buildPayload = msg;
-      buildWait?.(msg);
-      buildWait = null;
-      return;
-    }
-    if (msg.type === "pick") {
-      inbox.push(msg);
-      flush();
+  const session = makePushSession();
+  session.setSender((payload) => {
+    if (ws.readyState !== 1) return false;
+    try {
+      ws.send(JSON.stringify(payload));
+      return true;
+    } catch {
+      return false;
     }
   });
-  ws.addEventListener("close", () => {
-    closed = true;
-    startWait?.(null);
-    buildWait?.(null);
-    startWait = null;
-    buildWait = null;
-    while (waiters.length) waiters.shift()(null);
-    for (const cb of closeCbs) {
-      try { cb(); } catch { /* ignore */ }
-    }
+  session.setCloser(() => {
+    try { ws.close(); } catch { /* ignore */ }
   });
-
-  return {
-    ws,
-    get closed() { return closed; },
-    send(payload) {
-      if (closed || ws.readyState !== 1) return false;
-      try {
-        ws.send(JSON.stringify(payload));
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    pullAction(_method, _player) {
-      if (inbox.length) return Promise.resolve(inbox.shift().packed ?? null);
-      if (closed) return Promise.resolve(null);
-      return new Promise((resolve) => {
-        waiters.push((msg) => resolve(msg ? msg.packed ?? null : null));
-      });
-    },
-    onClose(cb) {
-      if (typeof cb === "function") closeCbs.add(cb);
-    },
-    waitStart(ms = 120000) {
-      if (startPayload) return Promise.resolve(startPayload);
-      if (closed) return Promise.resolve(null);
-      return new Promise((resolve) => {
-        const t = setTimeout(() => {
-          if (startWait) { startWait = null; resolve(null); }
-        }, ms);
-        startWait = (msg) => { clearTimeout(t); resolve(msg); };
-      });
-    },
-    waitBuild(ms = 120000) {
-      if (buildPayload) return Promise.resolve(buildPayload);
-      if (closed) return Promise.resolve(null);
-      return new Promise((resolve) => {
-        const t = setTimeout(() => {
-          if (buildWait) { buildWait = null; resolve(null); }
-        }, ms);
-        buildWait = (msg) => { clearTimeout(t); resolve(msg); };
-      });
-    },
-    close() {
-      try { ws.close(); } catch { /* ignore */ }
-    }
-  };
+  ws.addEventListener("message", (ev) => session.ingest(ev.data));
+  ws.addEventListener("close", () => session.markClosed());
+  return session;
 }
 
 let active = null;
@@ -199,6 +131,8 @@ async function attach(role, payload) {
     }
     lastFail = result.reason || lastFail;
   }
+  if (role === "host") return hostP2p(payload);
+  if (role === "join") return joinP2p(payload);
   return { ok: false, reason: lastFail, code: "", seed: null, peer: null };
 }
 
@@ -206,7 +140,7 @@ export async function createAndHost(opts = {}) {
   const name = String(opts.name || "Host").slice(0, 24);
   const http = await createRoom(opts.seed, name);
   const seed = http?.seed ?? Math.floor(Math.random() * 2 ** 31);
-  const code = formatRoomCode(http?.code || "");
+  const code = formatRoomCode(http?.code || "") || randomRoomCode();
   return attach("host", {
     code,
     seed,

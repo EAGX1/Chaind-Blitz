@@ -2,17 +2,28 @@
 
 export const DEFAULT_URL = "http://localhost:8787";
 
-/** Same-origin first (Vite proxy), then the optional :8787 process. */
+export function isStaticHost(url) {
+  try {
+    const u = new URL(url);
+    return /\.github\.io$/i.test(u.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/** Same-origin first (Vite proxy), then the optional :8787 process. Skip GitHub Pages — it is not a backend. */
 export function backendCandidates() {
   const out = [];
   if (typeof localStorage !== "undefined") {
     const override = localStorage.getItem("cb-backend-url");
     if (override) out.push(String(override).replace(/\/$/, ""));
   }
-  if (typeof location !== "undefined" && /^https?:$/.test(location.protocol || "")) {
-    out.push(location.origin);
-  }
-  out.push(DEFAULT_URL);
+  const page = typeof location !== "undefined" && /^https?:$/.test(location.protocol || "")
+    ? location.origin
+    : "";
+  if (page && !isStaticHost(page)) out.push(page);
+  const onPages = page && isStaticHost(page);
+  if (!onPages) out.push(DEFAULT_URL);
   return [...new Set(out.filter(Boolean))];
 }
 
