@@ -96,7 +96,7 @@ export function sampleWorld(phase = plazaClock.phase): WorldLook {
     sunX: Math.cos(ang) * 22,
     sunY: Math.max(-4, elev * 26),
     sunZ: 10,
-    sunInt: Math.max(0, elev) * 2.45,
+    sunInt: Math.max(0, elev) * 2.7,
     ambInt: 0.18 + (1 - night) * 0.28,
     hemiInt: 0.22 + (1 - night) * 0.34,
     lamp: night * 2.4,

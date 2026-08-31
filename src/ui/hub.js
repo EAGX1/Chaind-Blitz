@@ -239,13 +239,18 @@ export function initHub(ctx) {
         ? [`<optgroup label="Custom">${customDecks.map((n) => `<option value="custom:${n}">${n}</option>`).join("")}</optgroup>`]
         : [])
     ].join("");
+    const taught = !!profile.soloGates?.tutorialSeen;
+    const puzzle = puzzleOfTheDay();
+    const puzzleCleared = isLabCleared(profile, puzzle.id);
     $("panel-play").innerHTML = `
       <div class="home-play">
         <section class="home-hero">
           <div class="home-hero-copy">
-            <p class="home-kicker">Solo duel</p>
-            <h2>QUICK DUEL</h2>
-            <p>Gold button starts now. Tabs above open Deck, Cards, Shop, and Rank — the line under them says what each page is for.</p>
+            <p class="home-kicker">${taught ? "Today" : "First duel"}</p>
+            <h2>${taught ? "PUZZLE OF THE DAY" : "LEARN IN ONE FIGHT"}</h2>
+            <p>${taught
+              ? `${puzzle.label}${puzzleCleared ? " · already cleared" : ""} — the reason to open Chaind today.`
+              : "Normal Summon, one Set, one chain, one Evolve. The rulebook stays a tab away."}</p>
           </div>
           <div class="home-hero-actions">
             <select class="cb-select" id="pve-seat" title="Who goes first — going first skips Battle, going second gets 3 EP">
@@ -253,7 +258,11 @@ export function initHub(ctx) {
               <option value="first">I GO FIRST · 2 EP, no Battle</option>
               <option value="second">I GO SECOND · 3 EP, you may attack</option>
             </select>
-            <button class="home-cta" id="btn-quick-duel">DUEL NOW</button>
+            ${taught
+              ? `<button class="home-cta" id="btn-puzzle-day">PLAY ${puzzle.label.toUpperCase()}</button>
+                 <button class="cb-btn" id="btn-quick-duel">QUICK DUEL</button>`
+              : `<button class="home-cta" id="btn-quick-duel">FIRST DUEL</button>
+                 <button class="cb-btn" id="btn-puzzle-day">PUZZLE</button>`}
           </div>
         </section>
         <div class="home-grid">
@@ -269,38 +278,10 @@ export function initHub(ctx) {
             <p class="dim" id="pve-door-msg" style="font-size:12px;margin:8px 0 0;"></p>
           </article>
           <article class="home-tile">
-            <span class="home-tag">LABS</span>
-            <h3>PUZZLE OF THE DAY</h3>
-            <p>${puzzleOfTheDay().label}${isLabCleared(profile, puzzleOfTheDay().id) ? " · lab already cleared" : ""}</p>
-            <button class="cb-btn primary" id="btn-puzzle-day">PLAY PUZZLE</button>
-          </article>
-          <article class="home-tile">
             <span class="home-tag">RANK</span>
             <h3>RANKED</h3>
             <p>${tierName(profile.rank.tier)} · ${profile.rank.lp || 0} LP</p>
             <button class="cb-btn primary" id="btn-home-ranked">QUEUE</button>
-          </article>
-          <article class="home-tile">
-            <span class="home-tag">RUN</span>
-            <h3>ROGUELIKE</h3>
-            <p>${profile.rogue ? "A run is in progress." : "Node map. Draft. Boss."}</p>
-            <button class="cb-btn primary" id="btn-rogue">${profile.rogue ? "CONTINUE" : "START RUN"}</button>
-          </article>
-          <article class="home-tile">
-            <span class="home-tag">WATCH</span>
-            <h3>AI VS AI</h3>
-            <p>Spectate any two decks — all loaners, starters, and your lists.</p>
-            <div class="home-tile-row">
-              <select class="cb-select" id="ava-a">${avaOpts}</select>
-              <select class="cb-select" id="ava-b">${avaOpts}</select>
-              <button class="cb-btn" id="btn-ava">WATCH</button>
-            </div>
-          </article>
-          <article class="home-tile">
-            <span class="home-tag">ARENA</span>
-            <h3>MORE MODES</h3>
-            <p>Draft, sealed, brawl, hotseat.</p>
-            <button class="cb-btn" id="btn-modes">OPEN</button>
           </article>
           <article class="home-tile">
             <span class="home-tag">TODAY</span>
@@ -313,6 +294,33 @@ export function initHub(ctx) {
             <div id="match-history-list" class="home-hist"></div>
             <button class="cb-btn" id="btn-last-replay">DUEL LOG</button>
           </article>
+          <details class="home-more">
+            <summary>MORE MODES</summary>
+            <div class="home-more-grid">
+              <article class="home-tile">
+                <span class="home-tag">RUN</span>
+                <h3>ROGUELIKE</h3>
+                <p>${profile.rogue ? "A run is in progress." : "Node map. Draft. Boss."}</p>
+                <button class="cb-btn primary" id="btn-rogue">${profile.rogue ? "CONTINUE" : "START RUN"}</button>
+              </article>
+              <article class="home-tile">
+                <span class="home-tag">WATCH</span>
+                <h3>AI VS AI</h3>
+                <p>Spectate any two decks.</p>
+                <div class="home-tile-row">
+                  <select class="cb-select" id="ava-a">${avaOpts}</select>
+                  <select class="cb-select" id="ava-b">${avaOpts}</select>
+                  <button class="cb-btn" id="btn-ava">WATCH</button>
+                </div>
+              </article>
+              <article class="home-tile">
+                <span class="home-tag">ARENA</span>
+                <h3>DRAFT &amp; MORE</h3>
+                <p>Draft, sealed, brawl, hotseat.</p>
+                <button class="cb-btn" id="btn-modes">OPEN</button>
+              </article>
+            </div>
+          </details>
         </div>
       </div>
     `;
@@ -346,6 +354,10 @@ export function initHub(ctx) {
       ctx.startPvE(result.deck, result.label, $("pve-foe").value, { extraYou: result.extra, seat: $("pve-seat")?.value });
     });
     $("btn-quick-duel").addEventListener("click", () => {
+      if (ctx.startQuickDuel) {
+        ctx.startQuickDuel();
+        return;
+      }
       const L = shippedLoaners()[0];
       ctx.startPvE(L.deck, L.name.toUpperCase(), "control_counters", {
         extraYou: L.extra || [],

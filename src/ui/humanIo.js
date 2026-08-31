@@ -20,7 +20,7 @@ import { hideCardHover } from "./cardHover.js";
 import {
   watchDrag, clearDragUi, actForZoneDrop, actForBoardDrop, attackFromDrop, zoneKindForType
 } from "./dragPlay.js";
-import { isTeachDuel, teachRecommended, teachAttackHint } from "./teachDuel.js";
+import { isTeachDuel, teachRecommended, teachAttackHint, teachChainHint } from "./teachDuel.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -497,6 +497,12 @@ export function makeHumanIo(G, view) {
           tray.appendChild(wrap);
           chainBtns.push(wrap);
         });
+        const rec = teachChainHint(G, legal);
+        if (rec) {
+          elByUid(rec.card.uid)?.classList.add("teach-next");
+          const idx = legal.indexOf(rec);
+          if (idx >= 0) chainBtns[idx]?.classList.add("teach-next");
+        }
         opts.appendChild(tray);
         const row = document.createElement("div");
         row.className = "chain-pass-row";

@@ -10,6 +10,7 @@ import { readLocalAvatarFile } from "../../meta/avatarCutout.js";
 import { sendMove } from "../../meta/plazaNet.js";
 import { t } from "../../meta/i18n.js";
 import { plazaClock, setClockMode, clockLabel, type ClockMode } from "./plazaTime";
+import { puzzleOfTheDay } from "../../meta/labs.js";
 
 const NEAR_RADIUS = 6;
 const PLAZA_CAM = { position: [0, 4.8, 11.5] as [number, number, number], fov: 50 };
@@ -25,6 +26,7 @@ type Props = {
   onOpenKiosk: (tab: string) => void;
   onOpenClassicHub: () => void;
   onQuickDuel: () => void;
+  plazaCta?: { kind: "puzzle" | "quick"; puzzleLabel: string };
   wallet?: { gems: number; coins: number; rank: string };
 };
 
@@ -201,6 +203,7 @@ export function BattleCity({
   onOpenKiosk,
   onOpenClassicHub,
   onQuickDuel,
+  plazaCta,
   wallet,
 }: Props) {
   const [nearId, setNearId] = useState<string | null>(null);
@@ -380,7 +383,16 @@ export function BattleCity({
           </div>
         )}
         <nav className="city-dock" aria-label="Plaza actions">
-          <button type="button" className="city-quick" onClick={onQuickDuel}>QUICK DUEL</button>
+          {plazaCta?.kind === "quick" ? (
+            <button type="button" className="city-quick" onClick={onQuickDuel}>FIRST DUEL</button>
+          ) : (
+            <button type="button" className="city-quick" onClick={() => onOpenKiosk("puzzle")}>
+              TODAY · {(plazaCta?.puzzleLabel || puzzleOfTheDay().label).toUpperCase()}
+            </button>
+          )}
+          {plazaCta?.kind === "quick"
+            ? <button type="button" className="city-dock-btn" onClick={() => onOpenKiosk("puzzle")}>TODAY</button>
+            : <button type="button" className="city-dock-btn" onClick={onQuickDuel}>QUICK DUEL</button>}
           {BUILDINGS.map((b) => (
             <button key={b.id} type="button" className="city-dock-btn" onClick={() => onEnterBuilding(b.id)}>
               {b.short}

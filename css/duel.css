@@ -283,6 +283,14 @@ body.cb-dragging .you-hand .cb-card:hover { transform: none; box-shadow: none; }
   position: relative;
   z-index: 2;
 }
+#screen-duel .zone .cb-card .card-text { display: none; }
+#screen-duel .zone .cb-card .card-name {
+  font-size: calc(var(--cw) * 0.13);
+  -webkit-line-clamp: 2;
+}
+#screen-duel .zone .cb-card .card-stats { font-size: calc(var(--cw) * 0.22); }
+#screen-duel .zone .cb-card .card-type { font-size: calc(var(--cw) * 0.085); }
+#screen-duel .zone .cb-card .status-badge { font-size: calc(var(--cw) * 0.11); }
 .zone.locked-zone { background: repeating-linear-gradient(45deg, rgba(255,93,93,.06) 0 8px, transparent 8px 16px); border-color: rgba(255,93,93,.4); }
 #screen-duel #mz-0 .zone.locked-zone,
 #screen-duel #stz-0 .zone.locked-zone,

@@ -292,6 +292,8 @@ export function cardStatusBadges(G, card) {
   );
   if (setLocked) {
     badges.push({ id: "locked", label: "SET", title: "Set this turn — cannot activate yet." });
+  } else if (!card.faceup && card.loc === "stz") {
+    badges.push({ id: "setready", label: "SET", title: "Face-down — can activate if legal." });
   }
   if (card.loc === "mz" && card.faceup) {
     if (hasKeyword(card, "ward") && !card.negated) {
@@ -310,6 +312,8 @@ export function cardStatusBadges(G, card) {
       badges.push({ id: "noatk", label: "NO ATK", title: "Already attacked this turn." });
     } else if (card.cannotAttackTurn === G.turnCount) {
       badges.push({ id: "noatk", label: "NO ATK", title: "An effect prevents this monster from attacking this turn." });
+    } else if (G.phase === "BP" && G.tp === card.controller && canAttack(G, card)) {
+      badges.push({ id: "atk", label: "ATK", title: "Can declare an attack." });
     }
   }
   return badges;

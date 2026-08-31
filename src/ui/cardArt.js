@@ -104,7 +104,18 @@ function curatedPortrait(def) {
     relay_chain: `<rect width="100" height="100" fill="${bg}"/><circle cx="28" cy="50" r="12" fill="none" stroke="${low}" stroke-width="6"/><circle cx="50" cy="50" r="12" fill="none" stroke="${mid}" stroke-width="6"/><circle cx="72" cy="50" r="12" fill="none" stroke="${hi}" stroke-width="6"/>`,
     void_ledger: `<rect width="100" height="100" fill="${bg}"/><rect x="26" y="24" width="48" height="54" fill="${low}"/><circle cx="50" cy="52" r="15" fill="${bg}"/><circle cx="50" cy="52" r="15" fill="none" stroke="${hi}" stroke-width="4"/>`,
     summon_toll: `<rect width="100" height="100" fill="${bg}"/><path d="M22 74 L38 40 L54 74 Z" fill="${low}"/><path d="M50 74 L66 30 L82 74 Z" fill="${mid}"/><path d="M14 82 H88" stroke="${hi}" stroke-width="5"/>`,
-    token_recruit: `<rect width="100" height="100" fill="${bg}"/><circle cx="50" cy="36" r="13" fill="${mid}"/><path d="M30 82 C30 62 70 62 70 82 Z" fill="${low}"/>`
+    token_recruit: `<rect width="100" height="100" fill="${bg}"/><circle cx="50" cy="36" r="13" fill="${mid}"/><path d="M30 82 C30 62 70 62 70 82 Z" fill="${low}"/>`,
+    null_seal: `<rect width="100" height="100" fill="${bg}"/><path d="M50 12 L78 24 V52 C78 74 64 86 50 94 C36 86 22 74 22 52 V24 Z" fill="${low}"/><path d="M34 50 L46 62 L70 34" fill="none" stroke="${hi}" stroke-width="6"/>`,
+    ash_whisper: `<rect width="100" height="100" fill="${bg}"/><path d="M28 78 Q50 18 72 78" fill="${low}"/><path d="M38 70 Q50 32 62 70" fill="${mid}"/><circle cx="50" cy="42" r="7" fill="${hi}"/>`,
+    starfall: `<rect width="100" height="100" fill="${bg}"/><path d="M50 8 L58 38 L88 38 L64 56 L74 88 L50 70 L26 88 L36 56 L12 38 L42 38 Z" fill="${mid}"/><circle cx="50" cy="48" r="8" fill="${hi}"/>`,
+    surge_imp: `<rect width="100" height="100" fill="${bg}"/><path d="M54 10 L28 52 H46 L38 90 L74 44 H56 Z" fill="${mid}"/><circle cx="58" cy="28" r="7" fill="${hi}"/>`,
+    veil_needle: `<rect width="100" height="100" fill="${bg}"/><path d="M46 12 L54 12 L58 72 L42 72 Z" fill="${mid}"/><path d="M28 72 H72 L50 92 Z" fill="${low}"/><circle cx="50" cy="22" r="8" fill="${hi}"/>`,
+    fusion_ember_drake: `<rect width="100" height="100" fill="${bg}"/><path d="M10 72 Q38 16 88 40 Q68 32 58 72 Q36 92 10 72" fill="${mid}"/><path d="M72 30 L94 14 L82 44" fill="${hi}"/>`,
+    backdraft: `<rect width="100" height="100" fill="${bg}"/><path d="M22 78 L50 16 L78 78 Z" fill="${low}"/><path d="M50 78 V42" stroke="${hi}" stroke-width="6"/><circle cx="50" cy="32" r="8" fill="${mid}"/>`,
+    grove_elder: `<rect width="100" height="100" fill="${bg}"/><rect x="40" y="42" width="20" height="46" fill="${low}"/><circle cx="50" cy="30" r="18" fill="${mid}"/><path d="M16 42 H84" stroke="${hi}" stroke-width="6"/>`,
+    tidal_snare: `<rect width="100" height="100" fill="${bg}"/><path d="M12 70 Q35 28 50 70 T88 70" fill="none" stroke="${hi}" stroke-width="6"/><path d="M18 52 Q40 20 50 52 T82 52" fill="none" stroke="${mid}" stroke-width="4"/><circle cx="50" cy="78" r="8" fill="${low}"/>`,
+    ward_sentinel: `<rect width="100" height="100" fill="${bg}"/><path d="M50 10 L82 26 V54 C82 76 66 88 50 96 C34 88 18 76 18 54 V26 Z" fill="${low}"/><rect x="38" y="36" width="24" height="36" fill="${mid}"/><circle cx="50" cy="48" r="6" fill="${hi}"/>`,
+    grinning_echo: `<rect width="100" height="100" fill="${bg}"/><circle cx="50" cy="42" r="22" fill="${low}"/><path d="M34 48 Q50 64 66 48" fill="none" stroke="${hi}" stroke-width="5"/><circle cx="42" cy="38" r="4" fill="${hi}"/><circle cx="58" cy="38" r="4" fill="${hi}"/>`
   };
   const body = portraits[def.id];
   if (!body) return null;

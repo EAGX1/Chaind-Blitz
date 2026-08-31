@@ -157,7 +157,8 @@ export function makeAutopilot(G, opts = {}) {
     },
 
     async askAttack(_p, attackers, targetsFn) {
-      return pickAttack(G, attackers, targetsFn, { snipeLethal: tierNow() !== "easy" });
+      const easy = tierNow() === "easy";
+      return pickAttack(G, attackers, targetsFn, { snipeLethal: !easy, evenTrades: !easy });
     }
   };
 }

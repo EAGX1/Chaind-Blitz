@@ -121,7 +121,7 @@ body[data-screen="duel"] .cb-chrome {
 
 /* ---- Duel readability: ATK / DEF ---- */
 .cb-card .card-stats {
-  font-size: calc(var(--cw) * 0.155);
+  font-size: calc(var(--cw) * 0.17);
   letter-spacing: 0.3px;
   gap: 10%;
   padding: 0 6% 3%;

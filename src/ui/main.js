@@ -4,6 +4,7 @@ import { createDuel, runDuel, drawCards } from "../engine/index.js";
 import { CARD_DB } from "../data/cards/index.js";
 import { STARTERS } from "../data/starters.js";
 import { shippedLoaners, loanerById } from "../data/loaners.js";
+import { shouldStartLesson, lessonDuelOpts, lessonLossLine } from "../data/lessonDuel.js";
 import { drawLanes, FIELD_LANES } from "../data/fields.js";
 import { makeRng } from "../engine/rng.js";
 import { loadProfile, saveProfile } from "../meta/profile.js";
@@ -269,7 +270,9 @@ async function startDuel({
     }
     $("go-title").textContent = draw ? "DRAW" : won ? (aiVsAi || side === "both" ? `${youName} WINS` : "VICTORY") : (aiVsAi || side === "both" ? `${foeName} WINS` : "DEFEAT");
     $("go-title").className = won ? "win" : "lose";
-    $("go-reason").textContent = result.reason + extra;
+    $("go-reason").textContent = (G.meta?.teachLesson && !won && !draw && !aiVsAi && side !== "both")
+      ? lessonLossLine(result)
+      : result.reason + extra;
     fillRevealedHands($("go-hands"), G, CARD_DB, {
       youLabel: `${youName} hand`,
       foeLabel: `${foeName} hand (revealed)`
@@ -379,6 +382,21 @@ function runDuelWithRematch(opts, { allowRematch = true, allowSwap = true } = {}
   rematch();
 }
 
+function launchQuickDuel() {
+  if (shouldStartLesson(profile)) {
+    runDuelWithRematch(lessonDuelOpts());
+    return;
+  }
+  const you = shippedLoaners()[0];
+  const foe = loanerById("control_counters") || STARTERS.terra;
+  runDuelWithRematch({
+    deckYou: you.deck, deckFoe: foe.deck,
+    extraYou: you.extra || [], extraFoe: foe.extra || [],
+    youName: you.name.toUpperCase(), foeName: `${foe.name} CPU`, mode: "pve",
+    firstPlayer: parseDuelSeat(document.getElementById("pve-seat")?.value)
+  });
+}
+
 function randomFoeStarter() {
   const ids = Object.keys(STARTERS);
   return ids[Math.floor(Math.random() * ids.length)];
@@ -483,6 +501,7 @@ function boot() {
         firstPlayer: parseDuelSeat(extras.seat)
       });
     },
+    startQuickDuel: launchQuickDuel,
     startLoaner(loanerId, foeId = "control_counters") {
       const you = loanerById(loanerId);
       if (!you) return;
@@ -690,16 +709,7 @@ function boot() {
     startHotseat,
     startRoomDuel,
     startRoomSeedCpu,
-    startQuickDuel() {
-      const you = shippedLoaners()[0];
-      const foe = loanerById("control_counters") || STARTERS.terra;
-      runDuelWithRematch({
-        deckYou: you.deck, deckFoe: foe.deck,
-        extraYou: you.extra || [], extraFoe: foe.extra || [],
-        youName: you.name.toUpperCase(), foeName: `${foe.name} CPU`, mode: "pve",
-        firstPlayer: parseDuelSeat(document.getElementById("pve-seat")?.value)
-      });
-    },
+    startQuickDuel: launchQuickDuel,
     startGateDuel(gateId) {
       if (gateId === "puzzle") {
         this.startPuzzleOfTheDay();

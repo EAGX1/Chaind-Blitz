@@ -14,7 +14,7 @@ export const AI_BUDGETS: Record<AiTier, AiBudget> = {
     ms: 120,
     depth: 1,
     label: "Easy",
-    feel: "Skips board wipes and cheap counters — beatable while you learn",
+    feel: "Summons and swings. Skips wipes, tributes, counters, and even trades",
   },
   normal: {
     ms: 300,
@@ -26,7 +26,7 @@ export const AI_BUDGETS: Record<AiTier, AiBudget> = {
     ms: 800,
     depth: 3,
     label: "Hard",
-    feel: "Holds hand traps, waits on Empty Sky, fuses when ahead — still a heuristic",
+    feel: "Punishes empty boards and unused Evolve. Holds traps, fuses when ahead — still a heuristic",
   },
 };
 

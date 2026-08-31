@@ -870,8 +870,13 @@ export function createDuelView(G) {
     log(msg, cls = "") {
       showActionToast(msg, cls);
       if (cls === "chain") { sfx.chain(); playStinger("chain"); }
+      else if (cls === "set") { sfx.set(); playStinger("set"); }
       else if (cls === "negate") sfx.negate();
-      else if (cls === "dmg") { sfx.damage(); playStinger("damage"); }
+      else if (cls === "dmg") {
+        if (/LP /i.test(msg)) sfx.lp();
+        else sfx.damage();
+        playStinger("damage");
+      }
       else if (cls === "heal") sfx.heal();
       else if (cls === "summon") {
         sfx.summon();

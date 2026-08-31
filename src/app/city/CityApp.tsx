@@ -3,6 +3,7 @@ import { BattleCity } from "./BattleCity";
 import { BUILDINGS } from "./buildings";
 import { BuildingPanel } from "./BuildingPanel";
 import { tierName } from "../../meta/pools.js";
+import { puzzleOfTheDay } from "../../meta/labs.js";
 
 type Props = {
   profile: any;
@@ -51,11 +52,19 @@ export function CityApp({
         panelOpen={!!building}
         onEnterBuilding={(id) => setBuilding(id)}
         onOpenKiosk={(tab) => {
+          if (tab === "puzzle") {
+            onStartGateDuel("puzzle");
+            return;
+          }
           onClassicHub();
           onOpenHubTab(tab);
         }}
         onOpenClassicHub={onClassicHub}
         onQuickDuel={onQuickDuel}
+        plazaCta={{
+          kind: profile?.soloGates?.tutorialSeen ? "puzzle" : "quick",
+          puzzleLabel: puzzleOfTheDay().label,
+        }}
         wallet={{
           gems: profile?.gems ?? 0,
           coins: profile?.coins ?? 0,

@@ -149,6 +149,16 @@ export const sfx = {
   destroy: () => { if (playSample("sfx/destroy")) return; noise({ dur: 0.3, low: 700, gain: 0.12 }); },
   attack: () => { if (playSample("sfx/attack")) return; noise({ dur: 0.12, low: 1200, gain: 0.1 }); tone({ freq: 180, freqEnd: 90, dur: 0.12, type: "square", gain: 0.07 }); },
   click: () => { if (playSample("sfx/click")) return; tone({ freq: 700, dur: 0.04, type: "square", gain: 0.03 }); },
+  set: () => {
+    if (playSample("sfx/set")) return;
+    noise({ dur: 0.1, low: 500, gain: 0.07 });
+    tone({ freq: 240, freqEnd: 140, dur: 0.16, type: "triangle", gain: 0.08 });
+  },
+  lp: () => {
+    if (playSample("sfx/lp")) return;
+    noise({ dur: 0.22, low: 280, gain: 0.18 });
+    tone({ freq: 90, freqEnd: 40, dur: 0.28, type: "sawtooth", gain: 0.12 });
+  },
   pack: () => {
     if (playSample("sfx/pack")) return;
     noise({ dur: 0.12, low: 1400, gain: 0.08 });

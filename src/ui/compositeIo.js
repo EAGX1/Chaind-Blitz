@@ -42,13 +42,15 @@ function flashNamedOnBoard(msg, cls) {
   else flashLatestUid(cls);
 }
 
-function currentAiTier() {
+function currentAiTier(G) {
+  const forced = G?.meta?.aiTier;
+  if (forced === "easy" || forced === "normal" || forced === "hard") return forced;
   return window.__CB_SETTINGS?.aiTier || "normal";
 }
 
 export function makeCompositeIo(G, { humanIo, view, speed = 1, humanSide = 0 }) {
-  const baseAi = makeAutopilot(G, { getTier: currentAiTier });
-  const ai = wrapWithWorkerAi(baseAi, currentAiTier);
+  const baseAi = makeAutopilot(G, { getTier: () => currentAiTier(G) });
+  const ai = wrapWithWorkerAi(baseAi, () => currentAiTier(G));
   const state = {
     humanSide,          // 0, 1, "both", or -1 (AI vs AI)
     autoHuman: false,   // AUTO button: let the AI drive the human side
@@ -65,7 +67,7 @@ export function makeCompositeIo(G, { humanIo, view, speed = 1, humanSide = 0 }) 
   const pace = (p) => {
     if (isHuman(p)) return 0;
     if (state.speed >= 4) return fxDelay(60);
-    return fxDelay(budgetFor(currentAiTier()).ms);
+    return fxDelay(budgetFor(currentAiTier(G)).ms);
   };
 
   const wrap = (p, fn) => async (...args) => {

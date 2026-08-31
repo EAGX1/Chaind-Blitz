@@ -138,6 +138,9 @@ export function BuildingPanel(props: Props) {
   } else if (buildingId === "solo_gates") {
     body = (
       <div className="bp-body">
+        <button type="button" className="cb-btn primary bp-cta" onClick={() => onStartGateDuel("puzzle")}>
+          PUZZLE OF THE DAY · {puzzleOfTheDay().label}
+        </button>
         <ul className="gate-list">
           {GATES.map((g: any) => {
             const unlocked = isUnlocked(profile, g.id);
@@ -174,9 +177,6 @@ export function BuildingPanel(props: Props) {
             );
           })}
         </ul>
-        <button type="button" className="cb-btn primary bp-cta" onClick={() => onStartGateDuel("puzzle")}>
-          PUZZLE OF THE DAY · {puzzleOfTheDay().label}
-        </button>
         {LABS.map((lab) => {
           const done = isLabCleared(profile, lab.id);
           return (

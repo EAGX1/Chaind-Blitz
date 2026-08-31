@@ -231,6 +231,10 @@ function Fountain({ tex }: { tex: PlazaTextures }) {
         <sphereGeometry args={[0.3, 14, 12]} />
         <meshStandardMaterial color="#7ed4ea" emissive="#5ec8e0" emissiveIntensity={0.45} roughness={0.2} />
       </mesh>
+      <mesh position={[0, 2.55, 0]}>
+        <sphereGeometry args={[0.16, 10, 10]} />
+        <meshStandardMaterial color="#f0d78c" emissive="#c9a227" emissiveIntensity={0.95} />
+      </mesh>
       {[0, 1, 2, 3, 4].map((i) => (
         <mesh key={i} position={[Math.sin(i * 1.1) * 0.12, 2.05 + i * 0.12, Math.cos(i * 1.3) * 0.12]}>
           <sphereGeometry args={[0.07 - i * 0.008, 8, 8]} />

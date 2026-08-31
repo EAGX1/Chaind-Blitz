@@ -40,6 +40,7 @@ import { bedNames, stingerNames, busLevel } from "../../src/meta/music.js";
 import { markTutorialSeen, ensureSoloGates } from "../../src/meta/soloGates.js";
 import { hasCuratedPortrait } from "../../src/ui/cardArt.js";
 import { teachStep, isTeachDuel, teachRecommended } from "../../src/ui/teachDuel.js";
+import { LESSON_YOU, LESSON_FOE, lessonLossLine, shouldStartLesson } from "../../src/data/lessonDuel.js";
 import { freshProfile } from "../../src/meta/profile.js";
 import { saveCustomMatUrl, loadCustomMatUrl } from "../../src/meta/cosmetics.js";
 import { opaqueBounds, punchCornerBackground, punchChromaGreen, isChromaGreen, saveCustomAvatar, loadCustomAvatar, STARTER_AVATAR_SRC } from "../../src/meta/avatarCutout.js";
@@ -113,6 +114,26 @@ describe("chain Smart vs Confirm", () => {
 });
 
 describe("AI difficulty changes picks", () => {
+  it("Easy skips a tribute summon Hard takes", async () => {
+    const G = mkState(2);
+    const golem = addHand(G, 0, "gem_golem");
+    const acts = [
+      { type: "summon", card: golem, tributes: 1 },
+      { type: "end" }
+    ];
+    const easy = makeAutopilot(G, { getTier: () => "easy" });
+    const hard = makeAutopilot(G, { getTier: () => "hard" });
+    expect((await easy.chooseMain(0, acts)).type).toBe("end");
+    expect((await hard.chooseMain(0, acts)).type).toBe("summon");
+  });
+
+  it("Hard penalizes ending on an empty board", () => {
+    const G = mkState(2);
+    P(G, 0).normalSummoned = false;
+    expect(scoreMainAct(G, 0, { type: "end" }, { tier: "hard", depth: 3 })).toBeLessThan(0);
+    expect(scoreMainAct(G, 0, { type: "end" }, { tier: "easy", depth: 1 })).toBe(0);
+  });
+
   it("Easy skips a 2-wide Starfall that Hard fires", async () => {
     const G = mkState(2);
     addField(G, 1, "ember_fox", 0);
@@ -200,6 +221,8 @@ describe("AI difficulty changes picks", () => {
     const mine = addField(G, 0, "lava_giant", 1, { summonedTurn: 0 });
     const trade = pickAttack(G, [mine], () => ({ foes: [giant], canDirect: false }));
     expect(trade).toEqual({ attackerUid: mine.uid, targetUid: giant.uid });
+    const easySkip = pickAttack(G, [mine], () => ({ foes: [giant], canDirect: false }), { evenTrades: false });
+    expect(easySkip).toBe(null);
   });
 
   it("mulligan keeps a hand trap and bounces bricks and clutter", async () => {
@@ -258,6 +281,12 @@ describe("AAA identity gaps", () => {
     }
   });
 
+  it("gives staple SRs a curated portrait", () => {
+    for (const id of ["null_seal", "ash_whisper", "starfall", "surge_imp", "veil_needle", "fusion_ember_drake", "ward_sentinel"]) {
+      expect(hasCuratedPortrait(id), id).toBe(true);
+    }
+  });
+
   it("first-duel coach tells you to summon, then end, without a rulebook modal", () => {
     const G = mkState(2);
     G.phase = "M1";
@@ -276,6 +305,31 @@ describe("AAA identity gaps", () => {
     P(G, 0).normalSummoned = true;
     expect(teachStep(G).id).toBe("endFirst");
     globalThis.__CB_TEACH = false;
+  });
+
+  it("after a summon, teaches Set when a spell is in hand", () => {
+    const G = mkState(2);
+    G.phase = "M1";
+    G.tp = 0;
+    G.firstPlayer = 0;
+    G.turnCount = 1;
+    P(G, 0).normalSummoned = true;
+    addField(G, 0, "ember_fox", 0, { summonedTurn: 1 });
+    addHand(G, 0, "null_seal");
+    globalThis.__CB_TEACH = true;
+    expect(teachStep(G).id).toBe("set");
+    const acts = legalMainActions(G, 0);
+    expect(teachRecommended(G, acts)?.type).toBe("set");
+    globalThis.__CB_TEACH = false;
+  });
+
+  it("lesson decks are 40 and the loss line is one sentence", () => {
+    expect(LESSON_YOU).toHaveLength(40);
+    expect(LESSON_FOE).toHaveLength(40);
+    const p = freshProfile();
+    expect(shouldStartLesson(p)).toBe(true);
+    expect(lessonLossLine({ reason: "Your LP hit 0." })).toMatch(/empty/i);
+    expect(lessonLossLine({ reason: "Your LP hit 0." }).includes(".")).toBe(true);
   });
 });
 
@@ -891,6 +945,18 @@ describe("on-card status badges", () => {
     ward.negated = true;
     expect(cardStatusBadges(G, ward).map((b) => b.id)).not.toContain("ward");
   });
+
+  it("marks attack-ready and a Set that can fire", () => {
+    const G = mkState(1);
+    G.turnCount = 4;
+    G.tp = 0;
+    G.phase = "BP";
+    const fox = addField(G, 0, "ember_fox", 0, { summonedTurn: 1 });
+    expect(cardStatusBadges(G, fox).some((b) => b.id === "atk")).toBe(true);
+    G.phase = "M1";
+    const trap = addSet(G, 0, "null_seal", 0, 2);
+    expect(cardStatusBadges(G, trap).some((b) => b.id === "setready")).toBe(true);
+  });
 });
 
 describe("baked audio assets", () => {
@@ -1367,7 +1433,7 @@ describe("seen-set, GY search, hand reorder, beds", () => {
 
   it("ships a city bed and chain/pack/win stingers", () => {
     expect(bedNames()).toEqual(expect.arrayContaining(["hub", "duel", "city"]));
-    expect(stingerNames()).toEqual(expect.arrayContaining(["win", "lose", "chain", "evolve", "fusion", "pack", "turnYou", "turnFoe"]));
+    expect(stingerNames()).toEqual(expect.arrayContaining(["win", "lose", "chain", "evolve", "fusion", "pack", "turnYou", "turnFoe", "set", "summon"]));
   });
 });
 
@@ -1544,6 +1610,8 @@ describe("duel field pads", () => {
     expect(css).toMatch(/grid-template-columns:\s*subgrid/);
     expect(css).toMatch(/#screen-duel \.zone::before[\s\S]*?aspect-ratio:\s*5\s*\/\s*7/);
     expect(css).toMatch(/object-fit:\s*contain/);
+    expect(css).toMatch(/#screen-duel \.zone \.cb-card \.card-text\s*\{\s*display:\s*none/);
+    expect(css).toMatch(/#screen-duel \.zone \.cb-card \.card-name[\s\S]*?font-size:\s*calc\(var\(--cw\) \* 0\.13\)/);
   });
 });
 

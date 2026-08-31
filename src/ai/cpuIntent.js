@@ -1,15 +1,15 @@
 // CPU Battle + chain telegraph. Same heuristic as autopilot — not a search.
 
-import { P, opp, getATK, remainingHealth, cardByUid, monstersOf } from "../engine/index.js";
+import { P, opp, getATK, remainingHealth, cardByUid, monstersOf, canEvolveNow } from "../engine/index.js";
 import { previewCombat } from "../engine/state.js";
 
 /**
  * Pick the next attack the CPU would declare, or null to end Battle.
  * Refuses suicidal trades: after lethal and profitable kills it only takes
  * even trades into bigger monsters, otherwise it holds back.
- * @param {{ snipeLethal?: boolean }} opts Easy skips the lethal-direct snipe.
+ * @param {{ snipeLethal?: boolean, evenTrades?: boolean }} opts Easy skips lethal snipes and even trades.
  */
-export function pickAttack(G, attackers, targetsFn, { snipeLethal = true } = {}) {
+export function pickAttack(G, attackers, targetsFn, { snipeLethal = true, evenTrades = true } = {}) {
   if (!attackers?.length) return null;
   const p = attackers[0].controller;
   const enemyLp = P(G, opp(p)).lp;
@@ -30,6 +30,7 @@ export function pickAttack(G, attackers, targetsFn, { snipeLethal = true } = {})
       .sort((x, y) => getATK(G, y) - getATK(G, x));
     if (killable.length) return { attackerUid: a.uid, targetUid: killable[0].uid };
   }
+  if (!evenTrades) return null;
   // Even trades are only worth it upward: both die, theirs was bigger.
   for (const a of sorted) {
     const { foes } = targetsFn(a);
@@ -105,6 +106,7 @@ export function scoreMainAct(G, p, act, { tier = "normal", depth = 2 } = {}) {
   switch (act.type) {
     case "summon": {
       const trib = act.tributes || 0;
+      if (tier === "easy" && trib > 0) return 0;
       return 6 + numCost * 0.2 + (d?.keywords?.includes("rush") ? 1 : 0) - trib * 0.4;
     }
     case "evolve": {
@@ -150,7 +152,10 @@ export function scoreMainAct(G, p, act, { tier = "normal", depth = 2 } = {}) {
       if (d.id === "equal_cut") {
         return monstersOf(G, p).length < monstersOf(G, opp(p)).length ? 6.4 : 0.4;
       }
-      if (d.spell?.speed === 3) return 5.5 + (depth >= 3 ? 2.2 : depth <= 1 ? -1.5 : 0);
+      if (d.spell?.speed === 3) {
+        if (tier === "easy") return 0;
+        return 5.5 + (depth >= 3 ? 2.2 : depth <= 1 ? -1.5 : 0);
+      }
       if (d.spell?.subtype === "quick") return 4.5 + (depth >= 3 ? 0.8 : 0);
       return 1;
     }
@@ -184,7 +189,16 @@ export function scoreMainAct(G, p, act, { tier = "normal", depth = 2 } = {}) {
       return s;
     }
     case "ambushSet": return 5;
-    case "end": return 0;
+    case "end": {
+      if (tier !== "hard") return 0;
+      const pl = P(G, p);
+      const mine = monstersOf(G, p).length;
+      let s = 0;
+      if (mine === 0 && !pl.normalSummoned) s -= 6;
+      if (canEvolveNow(G, p) && mine > 0) s -= 4;
+      if (pl.ep > 1 && mine > 0) s -= 1;
+      return s;
+    }
     default: return 0;
   }
 }

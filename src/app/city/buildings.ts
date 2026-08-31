@@ -40,6 +40,7 @@ export const KIOSKS = [
   { id: "tavern", label: "Tavern", tab: "rogue", position: [4, 0, 12] as [number, number, number], desc: "Roguelike run" },
   { id: "arena", label: "Arena", tab: "modes", position: [-4, 0, 12] as [number, number, number], desc: "Extra modes" },
   { id: "library", label: "Library", tab: "rulebook", position: [4, 0, -10] as [number, number, number], desc: "How to play" },
+  { id: "today", label: "Today", tab: "puzzle", position: [0, 0, 6.4] as [number, number, number], desc: "Puzzle of the day" },
 ] as const;
 
 export type BuildingId = (typeof BUILDINGS)[number]["id"];

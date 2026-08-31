@@ -315,6 +315,7 @@ const KIOSK_LOOK: Record<string, { body: string; glow: string; desc: string }> =
   tavern: { body: "#d4783a", glow: "#e8a04a", desc: "Roguelike run" },
   arena: { body: "#c45a3a", glow: "#e85d4c", desc: "Extra modes" },
   library: { body: "#4a6a9a", glow: "#c9a227", desc: "How to play" },
+  today: { body: "#f0d78c", glow: "#ffe27a", desc: "Puzzle of the day" },
 };
 
 function KioskMesh({ id, active, tex }: { id: string; active: boolean; tex: PlazaTextures }) {
