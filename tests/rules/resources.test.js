@@ -9,7 +9,7 @@ import {
 } from "../../src/engine/index.js";
 import { FIELD_LANES } from "../../src/data/fields.js";
 import {
-  mkState, makeDriver, addField, addHand, addDeck
+  mkState, makeDriver, addField, addHand, addDeck, addGy
 } from "./helpers.js";
 
 const mk40 = (id) => Array(40).fill(id);
@@ -319,13 +319,25 @@ describe("field lanes", () => {
 
   it("has a unique rotating pool with Gravity Well and Spelllock Reef", async () => {
     const ids = FIELD_LANES.map((l) => l.id);
+    const names = FIELD_LANES.map((l) => l.name);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids.length).toBeGreaterThanOrEqual(60);
+    expect(new Set(names).size).toBe(names.length);
+    expect(ids.length).toBeGreaterThanOrEqual(130);
     expect(ids).toContain("berserker_ring");
-    expect(ids).toContain("crimson_arena");
-    expect(ids).toContain("war_banner");
-    expect(ids).toContain("open_bazaar");
-    expect(ids).toContain("cinder_march");
+    expect(ids).toContain("lone_peak");
+    expect(ids).toContain("nidavell_forge");
+    expect(ids).toContain("sinkhole");
+    expect(ids).toContain("kyln_gate");
+    expect(ids).toContain("milano_gate");
+    expect(ids).toContain("quantum_well");
+    expect(ids).toContain("plunder_keep");
+    for (const l of FIELD_LANES) {
+      expect(l.id && l.name && l.text).toBeTruthy();
+      expect(
+        l.modifyStat || l.onSummon || l.onTurnEnd || l.onReveal
+        || l.locksZone || l.locksSpellZone || l.noAttack
+      ).toBeTruthy();
+    }
 
     const G = mkState(1, [lane("gravity_well"), lane("spell_lock"), lane("ember_rift")]);
     G.turnCount = 1;
@@ -383,6 +395,267 @@ describe("field lanes", () => {
     const kiln = addField(bazaar, 0, "gem_golem", 4);
     bazaar.lanes[2].def.onSummon(bazaar, bazaar.lanes[2], kiln);
     expect(kiln.dmg).toBe(2);
+  });
+
+  it("Snap-style lanes: lone body, copies, swap, delayed wipe, reveal twists", async () => {
+    const peak = mkState(1, [lane("lone_peak")]);
+    await revealLanes(peak);
+    const lone = addField(peak, 0, "gem_golem", 0);
+    expect(getATK(peak, lone)).toBe(6); // 2 + 4
+    addField(peak, 0, "ember_fox", 1);
+    expect(getATK(peak, lone)).toBe(2);
+
+    const pub = mkState(1, [lane("weenie_pub")]);
+    await revealLanes(pub);
+    const fox = addField(pub, 0, "ember_fox", 0);
+    expect(getATK(pub, fox)).toBe(5);
+
+    const gym = mkState(1, [lane("vanilla_gym")]);
+    await revealLanes(gym);
+    const recruit = addField(gym, 0, "token_recruit", 0);
+    expect(getATK(gym, recruit)).toBe(3);
+    expect(getDEF(gym, recruit)).toBe(3);
+    const golemGym = addField(gym, 0, "gem_golem", 1);
+    expect(getATK(gym, golemGym)).toBe(2); // evolveEffect — not quiet
+
+    const mob = mkState(1, [lane("mob_rule")]);
+    await revealLanes(mob);
+    const mobA = addField(mob, 0, "gem_golem", 0);
+    addField(mob, 0, "ember_fox", 1);
+    addField(mob, 1, "shield_sprite", 0);
+    expect(getATK(mob, mobA)).toBe(4);
+    expect(getDEF(mob, mobA)).toBe(6);
+
+    const swap = mkState(1, [lane("inverted_peak")]);
+    await revealLanes(swap);
+    const flipped = addField(swap, 0, "gem_golem", 0);
+    expect(getATK(swap, flipped)).toBe(4);
+    expect(getDEF(swap, flipped)).toBe(2);
+
+    const vats = mkState(1, [lane("clone_vats")]);
+    await revealLanes(vats);
+    const src = addField(vats, 0, "gem_golem", 0);
+    vats.lanes[0].def.onSummon(vats, vats.lanes[0], src);
+    expect(P(vats, 0).hand.map((c) => c.id)).toEqual(["gem_golem"]);
+    expect(P(vats, 0).hand[0].uid).not.toBe(src.uid);
+
+    const twin = mkState(1, [lane("echo_twin")]);
+    await revealLanes(twin);
+    const twinSrc = addField(twin, 0, "gem_golem", 0);
+    twin.lanes[0].def.onSummon(twin, twin.lanes[0], twinSrc);
+    expect(P(twin, 0).mz[1]?.id).toBe("gem_golem");
+    expect(P(twin, 0).mz[1].uid).not.toBe(twinSrc.uid);
+
+    const anvil = mkState(1, [lane("double_anvil")]);
+    await revealLanes(anvil);
+    const doubled = addField(anvil, 0, "gem_golem", 0);
+    anvil.lanes[0].def.onSummon(anvil, anvil.lanes[0], doubled);
+    expect(getATK(anvil, doubled)).toBe(4);
+
+    const bar = mkState(1, [lane("rebound_bar")]);
+    await revealLanes(bar);
+    const bounced = addField(bar, 0, "gem_golem", 0);
+    bar.lanes[0].def.onSummon(bar, bar.lanes[0], bounced);
+    expect(bounced.loc).toBe("hand");
+    expect(P(bar, 0).mz[0]).toBeNull();
+
+    const altar = mkState(1, [lane("death_altar")]);
+    await revealLanes(altar);
+    const ep0 = P(altar, 0).ep;
+    const tribute = addField(altar, 0, "gem_golem", 0);
+    altar.lanes[0].def.onSummon(altar, altar.lanes[0], tribute);
+    expect(tribute.loc).toBe("gy");
+    expect(P(altar, 0).ep).toBe(ep0 + 1);
+
+    const hatch = mkState(1, [lane("hatchery")]);
+    await revealLanes(hatch);
+    expect(P(hatch, 0).mz[0]?.id).toBe("token_recruit");
+    expect(P(hatch, 1).mz[0]?.id).toBe("token_recruit");
+
+    const pega = mkState(1, [lane("pegasus_core")]);
+    const epYou = P(pega, 0).ep;
+    const epAi = P(pega, 1).ep;
+    await revealLanes(pega);
+    expect(P(pega, 0).ep).toBe(epYou + 2);
+    expect(P(pega, 1).ep).toBe(epAi + 2);
+
+    const rift = mkState(1, [lane("mind_rift")]);
+    addHand(rift, 0, "ember_fox");
+    addHand(rift, 1, "scroll_greed");
+    await revealLanes(rift);
+    expect(P(rift, 0).hand.map((c) => c.id)).toEqual(["scroll_greed"]);
+    expect(P(rift, 1).hand.map((c) => c.id)).toEqual(["ember_fox"]);
+
+    const bloom = mkState(1, [lane("muir_bloom")]);
+    bloom.tp = 0;
+    await revealLanes(bloom);
+    const grown = addField(bloom, 0, "ember_fox", 0);
+    bloom.lanes[0].def.onTurnEnd(bloom, bloom.lanes[0]);
+    expect(getATK(bloom, grown)).toBe(2);
+
+    const empty = mkState(1, [lane("empty_current")]);
+    empty.tp = 0;
+    await revealLanes(empty);
+    const epEmpty = P(empty, 0).ep;
+    empty.lanes[0].def.onTurnEnd(empty, empty.lanes[0]);
+    expect(P(empty, 0).ep).toBe(epEmpty + 1);
+
+    const spoils = mkState(1, [lane("victor_spoils")]);
+    spoils.tp = 0;
+    await revealLanes(spoils);
+    addDeck(spoils, 0, ["ember_fox"]);
+    addField(spoils, 0, "gem_golem", 0);
+    addField(spoils, 1, "ember_fox", 0);
+    spoils.lanes[0].def.onTurnEnd(spoils, spoils.lanes[0]);
+    expect(P(spoils, 0).hand.map((c) => c.id)).toContain("ember_fox");
+
+    const pit = mkState(1, [lane("murder_pit")]);
+    await revealLanes(pit);
+    const doomed = addField(pit, 0, "gem_golem", 0);
+    pit.turnCount = 2;
+    pit.lanes[0].def.onTurnEnd(pit, pit.lanes[0]);
+    expect(doomed.loc).toBe("mz");
+    pit.turnCount = 3;
+    pit.lanes[0].def.onTurnEnd(pit, pit.lanes[0]);
+    expect(doomed.loc).toBe("gy");
+
+    const steal = mkState(1, [lane("crosscurrent")]);
+    await revealLanes(steal);
+    addDeck(steal, 1, ["scroll_greed"]);
+    const thief = addField(steal, 0, "gem_golem", 0);
+    steal.lanes[0].def.onSummon(steal, steal.lanes[0], thief);
+    expect(P(steal, 0).hand.map((c) => c.id)).toContain("scroll_greed");
+    expect(P(steal, 1).deck.length).toBe(0);
+
+    const hub = mkState(1, [lane("scout_hub")]);
+    await revealLanes(hub);
+    addDeck(hub, 0, ["ember_fox", "pyro_hydra"]);
+    const scout = addField(hub, 0, "gem_golem", 0);
+    hub.lanes[0].def.onSummon(hub, hub.lanes[0], scout);
+    expect(P(hub, 0).hand.map((c) => c.id)).toEqual(["ember_fox"]);
+    expect(P(hub, 0).deck.map((c) => c.id)).toEqual(["pyro_hydra"]);
+  });
+
+  it("second Snap batch: big ATK, destroy-on-play, turn locks, swap, cull", async () => {
+    const forge = mkState(1, [lane("nidavell_forge")]);
+    await revealLanes(forge);
+    const g = addField(forge, 0, "gem_golem", 0);
+    expect(getATK(forge, g)).toBe(6);
+
+    const citadel = mkState(1, [lane("keyword_citadel")]);
+    await revealLanes(citadel);
+    const falcon = addField(citadel, 0, "swift_falcon", 0);
+    const golem = addField(citadel, 0, "gem_golem", 1);
+    expect(getATK(citadel, falcon)).toBe(4);
+    expect(getATK(citadel, golem)).toBe(2);
+
+    const top = mkState(1, [lane("top_dog")]);
+    await revealLanes(top);
+    const small = addField(top, 0, "ember_fox", 0);
+    const big = addField(top, 1, "gem_golem", 0);
+    expect(getATK(top, big)).toBe(5);
+    expect(getATK(top, small)).toBe(1);
+
+    const hole = mkState(1, [lane("sinkhole")]);
+    await revealLanes(hole);
+    const swallowed = addField(hole, 0, "gem_golem", 0);
+    hole.lanes[0].def.onSummon(hole, hole.lanes[0], swallowed);
+    expect(swallowed.loc).toBe("gy");
+
+    const press = mkState(1, [lane("machine_press")]);
+    await revealLanes(press);
+    const printed = addField(press, 0, "gem_golem", 0);
+    press.lanes[0].def.onSummon(press, press.lanes[0], printed);
+    expect(P(press, 1).hand.map((c) => c.id)).toEqual(["gem_golem"]);
+
+    const q = mkState(1, [lane("quantum_well")]);
+    await revealLanes(q);
+    const ours = addField(q, 0, "ember_fox", 0);
+    const theirs = addField(q, 1, "gem_golem", 0);
+    q.lanes[0].def.onSummon(q, q.lanes[0], ours);
+    expect(ours.controller).toBe(1);
+    expect(theirs.controller).toBe(0);
+    expect(P(q, 0).mz[0]?.id).toBe("gem_golem");
+    expect(P(q, 1).mz[0]?.id).toBe("ember_fox");
+
+    const blood = mkState(1, [lane("first_blood")]);
+    await revealLanes(blood);
+    const first = addField(blood, 0, "ember_fox", 0);
+    blood.lanes[0].def.onSummon(blood, blood.lanes[0], first);
+    const second = addField(blood, 0, "gem_golem", 1);
+    blood.lanes[0].def.onSummon(blood, blood.lanes[0], second);
+    expect(getATK(blood, first)).toBe(4);
+    expect(getATK(blood, second)).toBe(2);
+
+    const rescue = mkState(1, [lane("gy_rescue")]);
+    await revealLanes(rescue);
+    addGy(rescue, 0, "swift_falcon");
+    const r = addField(rescue, 0, "gem_golem", 0);
+    rescue.lanes[0].def.onSummon(rescue, rescue.lanes[0], r);
+    expect(P(rescue, 0).hand.map((c) => c.id)).toContain("swift_falcon");
+
+    const freeze = mkState(1, [lane("freeze_bit")]);
+    freeze.turnCount = 2;
+    await revealLanes(freeze);
+    const iced = addField(freeze, 0, "swift_falcon", 0, { summonedTurn: 0 });
+    freeze.lanes[0].def.onSummon(freeze, freeze.lanes[0], iced);
+    expect(canAttack(freeze, iced)).toBe(false);
+
+    const plunder = mkState(1, [lane("plunder_keep")]);
+    addHand(plunder, 0, "ember_fox");
+    addHand(plunder, 1, "scroll_greed");
+    await revealLanes(plunder);
+    expect(P(plunder, 0).hand.map((c) => c.id)).toEqual(["scroll_greed"]);
+    expect(P(plunder, 1).hand.map((c) => c.id)).toEqual(["ember_fox"]);
+
+    const cave = mkState(1, [lane("cave_in")]);
+    await revealLanes(cave);
+    expect(P(cave, 0).mz[0]?.id).toBe("token_stonewall");
+    expect(P(cave, 1).mz[0]?.id).toBe("token_stonewall");
+
+    const house = mkState(1, [lane("big_house")]);
+    house.tp = 0;
+    await revealLanes(house);
+    const tribute = addField(house, 0, "gem_golem", 0);
+    const weenie = addField(house, 0, "ember_fox", 1);
+    house.lanes[0].def.onTurnEnd(house, house.lanes[0]);
+    expect(tribute.loc).toBe("gy");
+    expect(weenie.loc).toBe("mz");
+
+    const mend = mkState(1, [lane("wakanda_mend")]);
+    mend.tp = 0;
+    await revealLanes(mend);
+    const hurt = addField(mend, 0, "gem_golem", 0);
+    hurt.dmg = 2;
+    mend.lanes[0].def.onTurnEnd(mend, mend.lanes[0]);
+    expect(hurt.dmg).toBe(0);
+
+    const kyln = mkState(1, [lane("kyln_gate")]);
+    await revealLanes(kyln);
+    expect(lockedMzZones(kyln, 0)).toEqual([]);
+    kyln.turnCount = 5;
+    expect(lockedMzZones(kyln, 0)).toEqual([0, 1]);
+
+    const lab = mkState(1, [lane("lockdown_lab")]);
+    await revealLanes(lab);
+    expect(lockedMzZones(lab, 0)).toEqual([]);
+    lab.turnCount = 3;
+    expect(lockedMzZones(lab, 0)).toEqual([0, 1]);
+    lab.turnCount = 6;
+    expect(lockedMzZones(lab, 0)).toEqual([]);
+
+    const milano = mkState(1, [lane("milano_gate")]);
+    await revealLanes(milano);
+    expect(lockedMzZones(milano, 0)).toEqual([0, 1]);
+    milano.turnCount = 5;
+    expect(lockedMzZones(milano, 0)).toEqual([]);
+
+    const even = mkState(1, [lane("odd_lock")]);
+    even.turnCount = 1;
+    await revealLanes(even);
+    expect(lockedMzZones(even, 0)).toEqual([]);
+    even.turnCount = 2;
+    expect(lockedMzZones(even, 0)).toEqual([0, 1]);
   });
 });
 

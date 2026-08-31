@@ -1459,10 +1459,10 @@ export function initHub(ctx) {
       summon a monster into an enemy trap and the trap can chain before the monster's effect ever starts.
       Priority passes on every window, phase change, and summon.</p>`],
     ["FIELD LANES", `
-      <p>Three lanes sit between the boards, drawn from a rotating pool every duel (Berserker Ring, tribe marches, on-reveal bazaars, and worse). <b>Lane 1</b> is revealed at duel start and governs
+      <p>Three lanes sit between the boards, drawn from a rotating pool every duel. <b>Lane 1</b> is revealed at duel start and governs
       monster zones 1–2. <b>Lane 2</b> flips on turn 3 (zones 3–4). <b>Lane 3</b> flips on turn 5 (zones 5–6 and those spell columns).</p>
       <p>When you play a monster or set a spell, <b>click the glowing zone</b> you want — put bodies on the hot lane, park spells off a lock.
-      Lanes grant Rush, Ward, burns, draws, sealed zones, and worse. Scout them, then build around them.</p>`],
+      Lanes are Snap-style twists: lone-body ATK spikes, copies into hand or the other zone, delayed wipes, hand swaps, empty-lane EP, and worse. Scout them, then build around them.</p>`],
     ["PROGRESSION", `
       <p>Ranked climbs Bronze → Silver → Gold → Platinum → Diamond → Master, 100 LP per tier. Hitting 100 LP starts a
       <b>promotion series</b>: you queue ranked duels one at a time and need 2 wins before 2 losses.
