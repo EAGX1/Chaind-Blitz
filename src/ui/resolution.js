@@ -42,26 +42,37 @@ export function parseResolution(id) {
   return BY_ID.get(id) || null;
 }
 
-/** Scale a preset into the window from the top-left, then center the leftover.
- *  Never shrink below 1× — 4K on a 1080p window fills the window instead of
- *  crushing cards and Settings down to unreadably small. */
+export function viewSize() {
+  if (typeof window === "undefined") return { vw: 1, vh: 1 };
+  const root = document.documentElement;
+  const vv = window.visualViewport;
+  const vw = Math.max(1, Math.round(vv?.width || root.clientWidth || window.innerWidth));
+  const vh = Math.max(1, Math.round(vv?.height || root.clientHeight || window.innerHeight));
+  return { vw, vh };
+}
+
+/** Fit a preset into the window.
+ *  Phone: contain (letterbox). PC: cover the screen — no black bars.
+ *  Presets larger than the window fill it instead of shrinking UI. */
 export function resolutionFitTransform(presetW, presetH, viewW, viewH) {
-  const fit = Math.min(viewW / presetW, viewH / presetH);
-  if (fit >= 1) {
-    const x = (viewW - presetW * fit) / 2;
-    const y = (viewH - presetH * fit) / 2;
-    return { scale: fit, x, y, layoutW: presetW, layoutH: presetH, cardScale: 1, fill: false };
+  const contain = Math.min(viewW / presetW, viewH / presetH);
+  const cover = Math.max(viewW / presetW, viewH / presetH);
+  const phone = presetW <= 720;
+  if (contain < 1) {
+    const cardScale = Math.min(1.5, Math.max(1, presetW / 1920));
+    return { scale: 1, x: 0, y: 0, layoutW: viewW, layoutH: viewH, cardScale, fill: true };
   }
-  const cardScale = Math.min(1.5, Math.max(1, presetW / 1920));
-  return { scale: 1, x: 0, y: 0, layoutW: viewW, layoutH: viewH, cardScale, fill: true };
+  const scale = phone ? contain : cover;
+  const x = (viewW - presetW * scale) / 2;
+  const y = (viewH - presetH * scale) / 2;
+  return { scale, x, y, layoutW: presetW, layoutH: presetH, cardScale: 1, fill: false };
 }
 
 export function applyResolution(id) {
   if (typeof document === "undefined" || typeof window === "undefined") return;
   const html = document.documentElement;
   const preset = parseResolution(id);
-  const vw = Math.max(1, window.innerWidth);
-  const vh = Math.max(1, window.innerHeight);
+  const { vw, vh } = viewSize();
   if (!preset) {
     html.dataset.res = "native";
     html.dataset.resolution = RESOLUTION_NATIVE;

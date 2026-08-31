@@ -45,7 +45,7 @@ const EN = {
   "settings.resolutionNative": "Fit window",
   "settings.resolutionPc": "PC",
   "settings.resolutionPhone": "Phone",
-  "settings.resolutionHint": "Fit window uses this display. Phone sizes letterbox. 4K and other large PC sizes fill this window so cards and menus stay readable.",
+  "settings.resolutionHint": "Fit window fills this browser. PC presets cover the screen. Phone sizes letterbox.",
   "settings.chainMode": "Chain mode",
   "settings.board3d": "3D board overlay (decorative — 2D stays clickable)",
   "settings.colorblind": "Colorblind tribe patterns",

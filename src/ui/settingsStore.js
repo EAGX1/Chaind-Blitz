@@ -148,4 +148,7 @@ function bindResolutionResize() {
   window.addEventListener("resize", () => {
     applyResolution(loadSettings().resolution);
   });
+  window.visualViewport?.addEventListener("resize", () => {
+    applyResolution(loadSettings().resolution);
+  });
 }

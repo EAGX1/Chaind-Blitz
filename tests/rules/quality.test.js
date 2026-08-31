@@ -1422,6 +1422,10 @@ describe("twenty-third polish: FX speed, mute, chain stack, Esc, GY order", () =
     expect(phone.scale).toBeGreaterThan(1);
     expect(phone.x).toBeGreaterThan(400);
     expect(phone.y).toBeCloseTo(0);
+    const cover = resolutionFitTransform(1600, 900, 1600, 1000);
+    expect(cover.fill).toBe(false);
+    expect(cover.scale).toBeCloseTo(1000 / 900);
+    expect(cover.y).toBeCloseTo(0);
   });
 
   it("chain hover targets every link, not only the last", () => {

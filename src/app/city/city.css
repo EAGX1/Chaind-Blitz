@@ -1,9 +1,17 @@
-.battle-city {
-  position: fixed;
+.city-root {
+  position: absolute;
   inset: 0;
+  z-index: 2;
+}
+.battle-city {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: 2;
   background: #7eb8e0;
 }
+.battle-city > div,
 .battle-city canvas {
   width: 100% !important;
   height: 100% !important;

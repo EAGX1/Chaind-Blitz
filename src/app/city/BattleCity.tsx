@@ -40,6 +40,37 @@ export function DuelAvatar({
   return <CharacterBillboard groupRef={groupRef} url={url} aspect={aspect} />;
 }
 
+function FitPlaza() {
+  const gl = useThree((s) => s.gl);
+  const camera = useThree((s) => s.camera);
+  useLayoutEffect(() => {
+    const host = gl.domElement.parentElement;
+    if (!host) return;
+    const apply = () => {
+      const w = host.clientWidth;
+      const h = host.clientHeight;
+      if (w < 1 || h < 1) return;
+      gl.setSize(w, h, false);
+      if (camera instanceof THREE.PerspectiveCamera) {
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      }
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(host);
+    const onWin = () => apply();
+    window.addEventListener("resize", onWin);
+    window.visualViewport?.addEventListener("resize", onWin);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", onWin);
+      window.visualViewport?.removeEventListener("resize", onWin);
+    };
+  }, [gl, camera]);
+  return null;
+}
+
 function GroundNav({
   enabled,
   onPoint,
@@ -239,6 +270,8 @@ export function BattleCity({
         shadows
         camera={PLAZA_CAM}
         dpr={[1, 1.75]}
+        resize={{ debounce: 0 }}
+        style={{ width: "100%", height: "100%", display: "block" }}
         gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
         onCreated={({ gl }) => {
           gl.setClearColor("#7ec8f0", 1);
@@ -248,6 +281,7 @@ export function BattleCity({
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
         }}
       >
+        <FitPlaza />
         <CityEnvironment reducedMotion={reducedMotion} />
         <GroundNav
           enabled={!reducedMotion && !panelOpen}

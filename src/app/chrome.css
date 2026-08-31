@@ -1,5 +1,7 @@
 #react-root {
   pointer-events: none;
+  position: absolute;
+  inset: 0;
 }
 #react-root .cb-chrome,
 #react-root .cb-modal,
@@ -7,7 +9,7 @@
   pointer-events: auto;
 }
 .cb-backdrop {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none !important;
@@ -22,7 +24,8 @@
   pointer-events: none !important;
 }
 #app {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 1;
 }
 #app.classic-mode {
